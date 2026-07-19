@@ -12,4 +12,4 @@ class Settings(BaseSettings):
     whatsapp_verify_token: str
 
 
-settings = Settings()
+settings = Settings()  # type: ignore[call-arg]
