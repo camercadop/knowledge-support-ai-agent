@@ -99,6 +99,12 @@ Known triggers that would cause this decision to be revisited. Written as condit
 | ID | Title | Status |
 |----|-------|--------|
 | [ADR-001](001-layered-architecture.md) | Layered Architecture | Accepted |
+| [ADR-002](002-architecture-first-technology-second.md) | Architecture First, Technology Second | Accepted |
+| [ADR-003](003-dependency-inversion.md) | Dependency Inversion | Accepted |
+| [ADR-004](004-use-case-oriented-application-layer.md) | Use Case Oriented Application Layer | Accepted |
+| [ADR-005](005-repository-pattern.md) | Repository Pattern | Accepted |
+| [ADR-006](006-unit-of-work.md) | Unit of Work | Accepted |
+| [ADR-007](007-provider-independence.md) | Provider Independence | Accepted |
 
 ## Template
 
