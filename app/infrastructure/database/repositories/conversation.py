@@ -2,10 +2,13 @@ import uuid
 
 from sqlalchemy.orm import Session
 
+from app.application.models.conversation import Conversation
 from app.application.ports.repositories.conversation import (
     AbstractConversationRepository,
 )
-from app.infrastructure.database.models.conversation import Conversation
+from app.infrastructure.database.models.conversation import (
+    Conversation as ConversationORM,
+)
 
 
 class ConversationRepository(AbstractConversationRepository):
@@ -20,14 +23,14 @@ class ConversationRepository(AbstractConversationRepository):
 
         Flushes the session so the new conversation gets an id before commit.
         """
-        conversation = (
-            self._db.query(Conversation)
-            .filter(Conversation.contact_id == contact_id)
-            .order_by(Conversation.created_at.desc())
+        orm = (
+            self._db.query(ConversationORM)
+            .filter(ConversationORM.contact_id == contact_id)
+            .order_by(ConversationORM.created_at.desc())
             .first()
         )
-        if conversation is None:
-            conversation = Conversation(contact_id=contact_id)
-            self._db.add(conversation)
+        if orm is None:
+            orm = ConversationORM(contact_id=contact_id)
+            self._db.add(orm)
             self._db.flush()
-        return conversation
+        return Conversation(id=orm.id, contact_id=orm.contact_id)

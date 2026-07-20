@@ -1,7 +1,8 @@
 from sqlalchemy.orm import Session
 
+from app.application.models.contact import Contact
 from app.application.ports.repositories.contact import AbstractContactRepository
-from app.infrastructure.database.models.contact import Contact
+from app.infrastructure.database.models.contact import Contact as ContactORM
 
 
 class ContactRepository(AbstractContactRepository):
@@ -16,9 +17,9 @@ class ContactRepository(AbstractContactRepository):
 
         Flushes the session so the new contact gets an id before commit.
         """
-        contact = self._db.query(Contact).filter(Contact.phone == phone).first()
-        if contact is None:
-            contact = Contact(phone=phone)
-            self._db.add(contact)
+        orm = self._db.query(ContactORM).filter(ContactORM.phone == phone).first()
+        if orm is None:
+            orm = ContactORM(phone=phone)
+            self._db.add(orm)
             self._db.flush()
-        return contact
+        return Contact(id=orm.id, phone=orm.phone)

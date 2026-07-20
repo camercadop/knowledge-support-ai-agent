@@ -29,6 +29,6 @@ class MyResourceResponse(BaseModel):
 
 - One file per domain, named after the domain (e.g. `chat.py`, `contact.py`).
 - Request schemas use the `Request` suffix; response schemas use the `Response` suffix.
-- Schemas must not import from `app/models/` — they are independent of the ORM layer.
+- Schemas must not import from `app/infrastructure/database/models/` — they are independent of the ORM layer.
 - All fields must have type annotations.
 - Every schema class must have a docstring describing its contract.

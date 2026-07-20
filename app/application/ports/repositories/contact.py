@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 
-from app.infrastructure.database.models.contact import Contact
+from app.application.models.contact import Contact
 
 
 class AbstractContactRepository(ABC):

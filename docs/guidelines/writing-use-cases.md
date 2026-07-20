@@ -70,3 +70,4 @@ self._uow.commit()
 - Call `uow.commit()` exactly once, at the end of the use case.
 - Never put query logic in a use case — all DB access goes through `uow.<repository>`.
 - Use cases may call infrastructure clients (e.g. LLM) through ports but must not be called by them.
+- A use case must not import from another use case — shared logic belongs in `app/domain/` or a dedicated service in `app/application/`.

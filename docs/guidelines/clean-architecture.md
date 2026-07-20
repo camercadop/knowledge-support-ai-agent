@@ -1,6 +1,6 @@
-# Layered Architecture
+# Clean Architecture
 
-This document describes how to work within the project's layered architecture. For the architectural decision behind this structure, see [ADR-001](../adr/001-layered-architecture.md).
+This document describes how to work within the project's Clean Architecture. For the architectural decision behind this structure, see [ADR-001](../adr/001-clean-architecture.md).
 
 ## Project Structure
 
@@ -29,9 +29,14 @@ app/
 
 Dependencies flow inward only. Outer layers may import from inner layers; inner layers must never import from outer layers.
 
+```mermaid
+flowchart LR
+    api --> application
+    application --> domain
+    infrastructure --> application
 ```
-api  →  application  →  infrastructure
-```
+
+`infrastructure` is an outer layer — it implements ports defined by `application` and may import from `application` and `domain`, but `application` and `domain` must never import from `infrastructure`.
 
 ## Where to Put New Code
 
@@ -45,10 +50,10 @@ Create a route handler in `app/api/`. The handler must:
 
 ```python
 # app/api/my_resource.py
-@router.post("/my-resource")
+@router.post("/my-resource", response_model=MyResponseSchema)
 def create(payload: MySchema, db: Session = Depends(get_db)) -> MyResponseSchema:
-    service = MyService(db)
-    return service.create(payload)
+    use_case = MyUseCase(uow=SqlAlchemyUnitOfWork(db), client=_my_client)
+    return MyResponseSchema(field=use_case.handle(payload.field))
 ```
 
 ### Adding a new use case
@@ -56,18 +61,17 @@ def create(payload: MySchema, db: Session = Depends(get_db)) -> MyResponseSchema
 Create a use case class in `app/application/<domain>/`. The class must:
 
 1. Coordinate repositories and infrastructure clients to fulfill the use case.
-2. Call `db.commit()` once at the end — the use case owns the transaction boundary.
+2. Call `uow.commit()` once at the end — the use case owns the transaction boundary.
 
 ```python
 # app/application/my_domain/do_something.py
 class DoSomething:
-    def __init__(self, db: Session) -> None:
-        self._db = db
-        self._repo = MyRepository(db)
+    def __init__(self, uow: UnitOfWork) -> None:
+        self._uow = uow
 
     def handle(self, value: str) -> str:
-        entity = self._repo.create(value)
-        self._db.commit()
+        entity = self._uow.my_entities.create(value)
+        self._uow.commit()
         return entity.field
 ```
 
@@ -102,3 +106,11 @@ app.include_router(<domain>_router)
 - Do not call `db.commit()` inside a repository — only the use case commits.
 - Do not put query logic in `app/api/` or `app/application/` — all DB access goes through repositories.
 - Do not import from `app/api/` or `app/application/` inside `app/infrastructure/`.
+
+## Rules
+
+- `app/domain/` must not import from any other `app/` layer.
+- `app/application/` must only import from `app/domain/` and `app/application/` — never from `app/infrastructure/` or `app/api/`.
+- `app/infrastructure/` must not import from `app/api/`.
+- Every external dependency used by the application layer must have a port defined in `app/application/ports/` before any infrastructure code is written.
+- Dependencies are injected at the composition root (`app/api/` route handlers) — never instantiated inside use cases or domain objects.

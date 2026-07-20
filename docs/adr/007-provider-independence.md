@@ -68,7 +68,7 @@ The system treats all external providers as interchangeable behind stable interf
 
 ## Related Documents
 
-- [ADR-001](001-layered-architecture.md)
+- [ADR-001](001-clean-architecture.md)
 - [ADR-002](002-architecture-first-technology-second.md)
 - [ADR-003](003-dependency-inversion.md)
 

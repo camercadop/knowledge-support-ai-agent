@@ -69,7 +69,7 @@ All data access is encapsulated behind repository interfaces. The application la
 
 ## Related Documents
 
-- [ADR-001](001-layered-architecture.md)
+- [ADR-001](001-clean-architecture.md)
 - [ADR-003](003-dependency-inversion.md)
 - [ADR-004](004-use-case-oriented-application-layer.md)
 

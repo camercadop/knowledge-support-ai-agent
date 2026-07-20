@@ -37,7 +37,7 @@ Ordered from foundational to specific — read top to bottom when onboarding.
 
 | Document | Description |
 |----------|-------------|
-| [Layered Architecture](layered-architecture.md) | How to work within the layered architecture, including adding a new domain |
+| [Clean Architecture](clean-architecture.md) | How to work within the Clean Architecture, including adding a new domain |
 | [Writing Database Models](writing-database-models.md) | How to create a new SQLAlchemy model |
 | [Writing Repositories](writing-repositories.md) | How to implement a repository |
 | [Writing Use Cases](writing-use-cases.md) | How to implement a use case |

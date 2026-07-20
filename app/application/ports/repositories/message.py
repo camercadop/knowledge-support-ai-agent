@@ -1,7 +1,7 @@
 import uuid
 from abc import ABC, abstractmethod
 
-from app.infrastructure.database.models.message import Message
+from app.application.models.message import Message
 
 
 class AbstractMessageRepository(ABC):

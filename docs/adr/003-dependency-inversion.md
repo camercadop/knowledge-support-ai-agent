@@ -6,7 +6,7 @@ Accepted
 
 ## Context
 
-The layered architecture established in ADR-001 requires that inner layers remain independent of outer layers. Without an explicit mechanism to enforce this, inner layers naturally accumulate direct dependencies on concrete implementations — databases, HTTP clients, AI SDKs — because those are the easiest things to reach for.
+The Clean Architecture established in ADR-001 requires that inner layers remain independent of outer layers. Without an explicit mechanism to enforce this, inner layers naturally accumulate direct dependencies on concrete implementations — databases, HTTP clients, AI SDKs — because those are the easiest things to reach for.
 
 Direct dependencies on concrete implementations make inner layers impossible to test in isolation and tightly couple business logic to infrastructure choices.
 

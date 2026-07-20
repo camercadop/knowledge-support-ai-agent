@@ -1,7 +1,7 @@
 import uuid
 from abc import ABC, abstractmethod
 
-from app.infrastructure.database.models.conversation import Conversation
+from app.application.models.conversation import Conversation
 
 
 class AbstractConversationRepository(ABC):

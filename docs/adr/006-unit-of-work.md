@@ -68,7 +68,7 @@ A Unit of Work abstraction is responsible for grouping repository operations int
 
 ## Related Documents
 
-- [ADR-001](001-layered-architecture.md)
+- [ADR-001](001-clean-architecture.md)
 - [ADR-003](003-dependency-inversion.md)
 - [ADR-005](005-repository-pattern.md)
 
