@@ -2,10 +2,13 @@ import uuid
 
 from sqlalchemy.orm import Session
 
+from app.application.ports.repositories.conversation import (
+    AbstractConversationRepository,
+)
 from app.infrastructure.database.models.conversation import Conversation
 
 
-class ConversationRepository:
+class ConversationRepository(AbstractConversationRepository):
     """Handles persistence operations for Conversation entities."""
 
     def __init__(self, db: Session) -> None:

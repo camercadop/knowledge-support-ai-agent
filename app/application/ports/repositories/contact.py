@@ -11,4 +11,5 @@ class AbstractContactRepository(ABC):
 
     @abstractmethod
     def get_or_create_by_phone(self, phone: str) -> Contact:
-        """Return the contact with the given phone, creating one if it does not exist."""
+        """Return the contact with the given phone, creating one if it does not exist.
+        """

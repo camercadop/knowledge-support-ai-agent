@@ -1,13 +1,38 @@
 from abc import ABC, abstractmethod
+from dataclasses import dataclass
+from enum import StrEnum
 
 
-class ChatModelResponse:
-    """Holds the text reply and token usage from a chat model call."""
+class Role(StrEnum):
+    """Valid roles for a chat message."""
 
-    def __init__(self, content: str, total_tokens: int | None) -> None:
-        """Initialize with the reply content and token count."""
-        self.content = content
-        self.total_tokens = total_tokens
+    USER = "user"
+    ASSISTANT = "assistant"
+    SYSTEM = "system"
+    DEVELOPER = "developer"
+
+
+@dataclass(frozen=True)
+class ChatMessage:
+    """A single message in a conversation turn."""
+
+    role: Role
+    content: str
+
+
+@dataclass(frozen=True)
+class TokenUsage:
+    """Token consumption reported by the model."""
+
+    total: int | None
+
+
+@dataclass(frozen=True)
+class ChatResponse:
+    """The model's reply to a list of messages."""
+
+    message: ChatMessage
+    usage: TokenUsage
 
 
 class ChatModel(ABC):
@@ -18,12 +43,12 @@ class ChatModel(ABC):
     """
 
     @abstractmethod
-    def generate(self, messages: list[dict[str, str]]) -> ChatModelResponse:
+    def generate(self, messages: list[ChatMessage]) -> ChatResponse:
         """Generate a reply for the given message history.
 
         Args:
-            messages: List of dicts with 'role' and 'content' keys.
+            messages: Ordered list of ChatMessage value objects.
 
         Returns:
-            A ChatModelResponse with the reply text and optional token count.
+            A ChatResponse with the reply and token usage.
         """

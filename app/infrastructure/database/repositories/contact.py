@@ -1,9 +1,10 @@
 from sqlalchemy.orm import Session
 
+from app.application.ports.repositories.contact import AbstractContactRepository
 from app.infrastructure.database.models.contact import Contact
 
 
-class ContactRepository:
+class ContactRepository(AbstractContactRepository):
     """Handles persistence operations for Contact entities."""
 
     def __init__(self, db: Session) -> None:

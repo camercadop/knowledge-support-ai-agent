@@ -1,9 +1,16 @@
 import logging
-from typing import Literal, get_args
+from typing import get_args
 
 from openai import OpenAI
 from openai.types.responses import EasyInputMessageParam
 
+from app.application.ports.chat_model import (
+    ChatMessage,
+    ChatModel,
+    ChatResponse,
+    Role,
+    TokenUsage,
+)
 from app.config.settings import settings
 
 logger = logging.getLogger(__name__)
@@ -12,31 +19,15 @@ SYSTEM_PROMPT = (
     "You are a helpful support assistant. Answer questions clearly and concisely."
 )
 
-_client = OpenAI(
-    api_key=settings.openai_api_key,
-    base_url=settings.openai_base_url,
-)
-
 _ALLOWED_ROLES = set(
     get_args(EasyInputMessageParam.__annotations__["role"])
 )
 
-Role = Literal["user", "assistant", "system", "developer"]
-
-
-class LLMResponse:
-    """Holds the text reply and token usage from an LLM call."""
-
-    def __init__(self, content: str, total_tokens: int | None) -> None:
-        """Initialize with the reply content and token count."""
-        self.content = content
-        self.total_tokens = total_tokens
-
 
 def _to_input(
-    messages: list[dict[str, str]],
+    messages: list[ChatMessage],
 ) -> list[EasyInputMessageParam]:
-    """Convert plain dicts to typed EasyInputMessageParam entries.
+    """Convert ChatMessage value objects to typed EasyInputMessageParam entries.
 
     Prepends the system prompt. Skips entries with unrecognised roles.
     """
@@ -44,31 +35,40 @@ def _to_input(
         EasyInputMessageParam(role="system", content=SYSTEM_PROMPT)
     ]
     for m in messages:
-        role = m.get("role", "")
-        if role in _ALLOWED_ROLES:
+        if m.role in _ALLOWED_ROLES:
             result.append(
                 EasyInputMessageParam(
-                    role=role,  # type: ignore[typeddict-item]
-                    content=m["content"],
+                    role=m.role,  # type: ignore[typeddict-item]
+                    content=m.content,
                 )
             )
     return result
 
 
-def chat(messages: list[dict[str, str]]) -> LLMResponse:
-    """Send a list of messages to the OpenAI Responses API and return the reply.
+class OpenAIChatModel(ChatModel):
+    """ChatModel implementation backed by the OpenAI Responses API."""
 
-    Expects messages in OpenAI format: [{"role": "...", "content": "..."}].
-    Prepends the system prompt automatically.
-    """
-    logger.info("Calling LLM with %s messages", len(messages))
-    response = _client.responses.create(
-        model=settings.openai_model,
-        input=_to_input(messages),  # type: ignore[arg-type]
-    )
+    def __init__(self) -> None:
+        """Initialize the OpenAI client from application settings."""
+        self._client = OpenAI(
+            api_key=settings.openai_api_key,
+            base_url=settings.openai_base_url,
+        )
 
-    content = response.output_text
-    total_tokens = response.usage.total_tokens if response.usage else None
-    logger.info("LLM response received, total_tokens=%s", total_tokens)
+    def generate(self, messages: list[ChatMessage]) -> ChatResponse:
+        """Send messages to the OpenAI Responses API and return the reply.
 
-    return LLMResponse(content=content, total_tokens=total_tokens)
+        Prepends the system prompt automatically. Skips messages with
+        unrecognised roles.
+        """
+        logger.info("Calling LLM with %s messages", len(messages))
+        response = self._client.responses.create(
+            model=settings.openai_model,
+            input=_to_input(messages),  # type: ignore[arg-type]
+        )
+        total_tokens = response.usage.total_tokens if response.usage else None
+        logger.info("LLM response received, total_tokens=%s", total_tokens)
+        return ChatResponse(
+            message=ChatMessage(role=Role.ASSISTANT, content=response.output_text),
+            usage=TokenUsage(total=total_tokens),
+        )

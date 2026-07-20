@@ -2,10 +2,11 @@ import uuid
 
 from sqlalchemy.orm import Session
 
+from app.application.ports.repositories.message import AbstractMessageRepository
 from app.infrastructure.database.models.message import Message
 
 
-class MessageRepository:
+class MessageRepository(AbstractMessageRepository):
     """Handles persistence operations for Message entities."""
 
     def __init__(self, db: Session) -> None:
