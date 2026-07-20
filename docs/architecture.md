@@ -39,24 +39,45 @@ flowchart TB
     infra -->|"Reads/writes"| db
 ```
 
-## System Layers
+## C4 Level 2 — Component
 
 ```mermaid
 flowchart TB
-    client["HTTP Client"]
-    api["FastAPI\nAPI Layer"]
-    app["Application Layer\nChatService"]
-    llm["LLM Provider\nOpenAI Client"]
-    repo["Repositories\nContact / Conversation / Message"]
-    openai["OpenAI"]
-    postgres["PostgreSQL"]
+    subgraph api["API Layer"]
+        chat_router["chat.py\nFastAPI router"]
+    end
 
-    client -->|"POST /chat"| api
-    api --> app
-    app --> llm
-    app --> repo
-    llm --> openai
-    repo --> postgres
+    subgraph app["Application Layer"]
+        use_case["AnswerQuestion\nUse case"]
+        port_uow["UnitOfWork\n[port]"]
+        port_chat["ChatModel\n[port]"]
+    end
+
+    subgraph infra["Infrastructure Layer"]
+        sql_uow["SqlAlchemyUnitOfWork"]
+        contact_repo["ContactRepository"]
+        conv_repo["ConversationRepository"]
+        msg_repo["MessageRepository"]
+        openai_chat["OpenAIChatModel"]
+    end
+
+    subgraph external["External"]
+        postgres["PostgreSQL"]
+        openai["OpenAI API"]
+    end
+
+    chat_router --> use_case
+    use_case --> port_uow
+    use_case --> port_chat
+    port_uow -.->|implements| sql_uow
+    port_chat -.->|implements| openai_chat
+    sql_uow --> contact_repo
+    sql_uow --> conv_repo
+    sql_uow --> msg_repo
+    contact_repo --> postgres
+    conv_repo --> postgres
+    msg_repo --> postgres
+    openai_chat --> openai
 ```
 
 ## Code Structure

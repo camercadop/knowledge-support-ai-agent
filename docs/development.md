@@ -107,6 +107,38 @@ docs/
     adr/          # Architecture Decision Records
 ```
 
+## Request Flow
+
+```mermaid
+sequenceDiagram
+    participant Client
+    participant Router as chat.py (API)
+    participant UC as AnswerQuestion
+    participant UoW as SqlAlchemyUnitOfWork
+    participant DB as PostgreSQL
+    participant LLM as OpenAIChatModel
+    participant OpenAI as OpenAI API
+
+    Client->>Router: POST /chat {phone, message}
+    Router->>UC: handle(phone, message)
+    UC->>UoW: contacts.get_or_create_by_phone(phone)
+    UoW->>DB: SELECT / INSERT contact
+    UC->>UoW: conversations.get_or_create_for_contact(contact_id)
+    UoW->>DB: SELECT / INSERT conversation
+    UC->>UoW: messages.list_by_conversation(conversation_id)
+    UoW->>DB: SELECT messages
+    UC->>LLM: generate(history + user_message)
+    LLM->>OpenAI: responses.create(model, input)
+    OpenAI-->>LLM: output_text, token usage
+    LLM-->>UC: ChatResponse
+    UC->>UoW: messages.create(conversation_id, "user", ...)
+    UC->>UoW: messages.create(conversation_id, "assistant", ...)
+    UC->>UoW: commit()
+    UoW->>DB: COMMIT
+    UC-->>Router: reply text
+    Router-->>Client: {reply}
+```
+
 ## Decision Tracking
 
 Architectural decisions are tracked in two places:
