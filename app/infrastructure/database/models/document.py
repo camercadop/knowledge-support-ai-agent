@@ -6,7 +6,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.infrastructure.database.base import Base
 
 if TYPE_CHECKING:
-    from app.models.document_chunk import DocumentChunk
+    from app.infrastructure.database.models.document_chunk import DocumentChunk
 
 
 class Document(Base):

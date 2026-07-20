@@ -7,8 +7,8 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.infrastructure.database.base import Base
 
 if TYPE_CHECKING:
-    from app.models.contact import Contact
-    from app.models.message import Message
+    from app.infrastructure.database.models.contact import Contact
+    from app.infrastructure.database.models.message import Message
 
 
 class Conversation(Base):

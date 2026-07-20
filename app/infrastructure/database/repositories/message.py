@@ -2,7 +2,7 @@ import uuid
 
 from sqlalchemy.orm import Session
 
-from app.models.message import Message
+from app.infrastructure.database.models.message import Message
 
 
 class MessageRepository:

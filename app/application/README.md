@@ -4,4 +4,4 @@ This package contains the use cases of the system. Each sub-package groups the s
 
 ## Sub-packages
 
-- `chat/` — handles a full chat turn: contact and conversation resolution, history retrieval, LLM call, and message persistence
+- `support/` — handles a full chat turn: contact and conversation resolution, history retrieval, LLM call, and message persistence

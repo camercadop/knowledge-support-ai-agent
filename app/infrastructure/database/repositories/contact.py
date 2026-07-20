@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 
-from app.models.contact import Contact
+from app.infrastructure.database.models.contact import Contact
 
 
 class ContactRepository:

@@ -2,15 +2,15 @@ import logging
 
 from sqlalchemy.orm import Session
 
-from app.infrastructure.llm import openai_client
-from app.repositories.contact import ContactRepository
-from app.repositories.conversation import ConversationRepository
-from app.repositories.message import MessageRepository
+from app.infrastructure.ai.chat import openai
+from app.infrastructure.database.repositories.contact import ContactRepository
+from app.infrastructure.database.repositories.conversation import ConversationRepository
+from app.infrastructure.database.repositories.message import MessageRepository
 
 logger = logging.getLogger(__name__)
 
 
-class ChatService:
+class AnswerQuestion:
     """Orchestrates a full chat turn: persistence, history retrieval, and LLM call."""
 
     def __init__(self, db: Session) -> None:
@@ -34,7 +34,7 @@ class ChatService:
         messages = [{"role": m.role, "content": m.content} for m in history]
         messages.append({"role": "user", "content": user_message})
 
-        response = openai_client.chat(messages)
+        response = openai.chat(messages)
 
         self._messages.create(conversation.id, "user", user_message)
         self._messages.create(

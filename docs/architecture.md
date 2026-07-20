@@ -64,15 +64,17 @@ flowchart TB
 ```
 app/
     api/              # Route handlers and webhook endpoints
-    core/             # Shared utilities and base classes
     config/           # Settings and environment configuration
     domain/           # Domain models and business logic
     application/      # Use cases and orchestration
+        ports/        # Interfaces for infrastructure dependencies
     infrastructure/   # External integrations (DB, LLM, WhatsApp)
-    repositories/     # Data access layer
-    models/           # SQLAlchemy models
+        ai/
+            chat/     # Chat completion provider implementations
+            embeddings/ # Embedding provider implementations
+            mock/     # Mock implementations for testing
+        database/     # Models, repositories, and migrations
     schemas/          # Pydantic schemas
-    workers/          # Background tasks
 
 tests/
 ```

@@ -42,11 +42,15 @@ Or use the interactive docs at `http://localhost:8000/docs`.
 | Variable | Description |
 |----------|-------------|
 | `DATABASE_URL` | PostgreSQL connection string |
-| `OPENAI_API_KEY` | OpenAI API key |
-| `OPENAI_MODEL` | Model name to use (default: `gpt-4o-mini`) |
-| `OPENAI_BASE_URL` | Optional base URL override (e.g. for proxies or compatible APIs) |
-| `OPENAI_EMBEDDING_MODEL` | Embedding model name (default: `text-embedding-3-small`) |
+| `CHAT_PROVIDER` | Chat provider: `openai`, `ollama`, `openrouter`, `mock` |
+| `CHAT_API_KEY` | API key for the chat provider |
+| `CHAT_MODEL` | Model name (e.g. `gpt-4o-mini`) |
+| `CHAT_BASE_URL` | Optional base URL override for the chat provider |
+| `EMBEDDING_PROVIDER` | Embedding provider: `openai`, `ollama`, `mock` |
+| `EMBEDDING_API_KEY` | API key for the embedding provider |
+| `EMBEDDING_MODEL` | Embedding model name (default: `text-embedding-3-small`) |
 | `EMBEDDING_DIMENSIONS` | Embedding vector dimensions (default: `1536`) |
+| `EMBEDDING_BASE_URL` | Optional base URL override for the embedding provider |
 | `WHATSAPP_TOKEN` | WhatsApp Cloud API token |
 | `WHATSAPP_VERIFY_TOKEN` | Webhook verification token |
 
@@ -89,16 +93,16 @@ uv run mypy app/
 ```
 app/
     api/          # Route handlers
-    core/         # Shared utilities and base classes
+    application/  # Use cases and ports
+        ports/    # Interfaces for infrastructure dependencies
     config/       # Settings and environment configuration
     domain/       # Domain models and business logic
-    application/  # Use cases and orchestration
-    infrastructure/  # Database, LLM, WhatsApp, vector store
-    repositories/ # Data access layer
-    models/       # SQLAlchemy models
+    infrastructure/
+        ai/       # Chat and embedding provider implementations
+        database/ # Models, repositories, and migrations
+        whatsapp/ # WhatsApp Cloud API integration
     schemas/      # Pydantic schemas
 
-tests/
 docs/
     adr/          # Architecture Decision Records
 ```

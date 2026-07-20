@@ -2,7 +2,7 @@ import uuid
 
 from sqlalchemy.orm import Session
 
-from app.models.conversation import Conversation
+from app.infrastructure.database.models.conversation import Conversation
 
 
 class ConversationRepository:
