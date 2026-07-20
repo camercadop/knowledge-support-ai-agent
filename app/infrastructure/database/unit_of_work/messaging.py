@@ -13,8 +13,8 @@ from app.infrastructure.database.repositories.conversation import (
 from app.infrastructure.database.repositories.message import MessageRepository
 
 
-class SqlAlchemyUnitOfWork(UnitOfWork):
-    """UnitOfWork implementation backed by a SQLAlchemy session."""
+class SqlAlchemyMessagingUnitOfWork(UnitOfWork):
+    """UnitOfWork implementation for the messaging domain, backed by a SQLAlchemy session."""
 
     def __init__(self, db: Session) -> None:
         """Initialize with an active database session."""

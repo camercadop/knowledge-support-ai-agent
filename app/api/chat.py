@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 from app.application.support.answer_question import AnswerQuestion
 from app.infrastructure.ai.chat.openai import OpenAIChatModel
 from app.infrastructure.database.engine import get_db
-from app.infrastructure.database.unit_of_work import SqlAlchemyUnitOfWork
+from app.infrastructure.database.unit_of_work import SqlAlchemyMessagingUnitOfWork
 from app.schemas.chat import ChatRequest, ChatResponse
 
 router = APIRouter()
@@ -20,7 +20,7 @@ def chat(request: ChatRequest, db: Session = Depends(get_db)) -> ChatResponse:
     """Receive a user message and return the assistant reply."""
     logger.info("Received chat request from %s", request.phone)
     use_case = AnswerQuestion(
-        uow=SqlAlchemyUnitOfWork(db),
+        uow=SqlAlchemyMessagingUnitOfWork(db),
         chat_model=_chat_model,
     )
     reply = use_case.handle(request.phone, request.message)
