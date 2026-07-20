@@ -41,6 +41,13 @@ uv run ruff check .
 uv run mypy app/
 ```
 
+## Documentation
+
+- [Architecture](docs/architecture.md)
+- [Development Guide](docs/development.md)
+- [Data Model](docs/data-model.md)
+- [Architecture Decision Records](docs/adr/)
+
 ## License
 
 MIT
