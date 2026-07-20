@@ -40,7 +40,11 @@ Ordered from foundational to specific — read top to bottom when onboarding.
 | [Layered Architecture](layered-architecture.md) | How to work within the layered architecture, including adding a new domain |
 | [Writing Database Models](writing-database-models.md) | How to create a new SQLAlchemy model |
 | [Writing Repositories](writing-repositories.md) | How to implement a repository |
-| [Writing Application Services](writing-application-services.md) | How to implement an application service |
+| [Writing Use Cases](writing-use-cases.md) | How to implement a use case |
+| [Writing API Endpoints](writing-api-endpoints.md) | How to implement a route handler |
+| [Dependency Injection](dependency-injection.md) | How dependencies are wired across layers |
+| [Error Handling](error-handling.md) | How to handle and translate errors across layers |
+| [AI Architecture Principles](ai-architecture-principles.md) | How AI providers are abstracted and wired |
 | [Writing Request Schemas](writing-request-schemas.md) | How to define Pydantic request/response schemas |
 | [Writing Infrastructure Clients](writing-infrastructure-clients.md) | How to wrap an external SDK or service |
 | [Writing Settings](writing-settings.md) | How to add and access application settings |
