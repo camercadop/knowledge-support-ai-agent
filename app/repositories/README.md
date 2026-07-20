@@ -9,6 +9,7 @@ This package is the data access layer. Each repository class wraps one ORM model
 | `ContactRepository` | `Contact` | `get_or_create_by_phone(phone)` |
 | `ConversationRepository` | `Conversation` | `get_or_create_for_contact(contact_id)` |
 | `MessageRepository` | `Message` | `list_by_conversation(conversation_id)`, `create(...)` |
+| `DocumentChunkRepository` | `DocumentChunk` | `create(...)`, `search_similar(embedding, top_k)` |
 
 ## Transaction boundary
 

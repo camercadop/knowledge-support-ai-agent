@@ -29,6 +29,24 @@ erDiagram
         datetime updated_at
     }
 
+    Document {
+        UUID id PK
+        string title
+        string source
+        text content
+        datetime created_at
+        datetime updated_at
+    }
+    DocumentChunk {
+        UUID id PK
+        UUID document_id FK
+        text chunk
+        vector embedding
+        datetime created_at
+        datetime updated_at
+    }
+
     Contact ||--o{ Conversation : "has"
     Conversation ||--o{ Message : "contains"
+    Document ||--o{ DocumentChunk : "split into"
 ```

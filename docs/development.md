@@ -14,8 +14,28 @@ cp .env.example .env
 
 uv sync
 docker compose up -d
+uv run alembic upgrade head
+```
+
+## Running
+
+```bash
 uv run uvicorn app.main:app --reload
 ```
+
+API docs available at `http://localhost:8000/docs`.
+
+## Trying it out
+
+Send a chat message:
+
+```bash
+curl -X POST http://localhost:8000/chat \
+  -H "Content-Type: application/json" \
+  -d '{"phone": "+1234567890", "message": "Hello, what can you help me with?"}'
+```
+
+Or use the interactive docs at `http://localhost:8000/docs`.
 
 ## Environment Variables
 
@@ -25,6 +45,8 @@ uv run uvicorn app.main:app --reload
 | `OPENAI_API_KEY` | OpenAI API key |
 | `OPENAI_MODEL` | Model name to use (default: `gpt-4o-mini`) |
 | `OPENAI_BASE_URL` | Optional base URL override (e.g. for proxies or compatible APIs) |
+| `OPENAI_EMBEDDING_MODEL` | Embedding model name (default: `text-embedding-3-small`) |
+| `EMBEDDING_DIMENSIONS` | Embedding vector dimensions (default: `1536`) |
 | `WHATSAPP_TOKEN` | WhatsApp Cloud API token |
 | `WHATSAPP_VERIFY_TOKEN` | Webhook verification token |
 

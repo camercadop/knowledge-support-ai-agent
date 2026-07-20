@@ -10,6 +10,8 @@ class Settings(BaseSettings):
     openai_api_key: str
     openai_model: str = "gpt-4o-mini"
     openai_base_url: str | None = None
+    openai_embedding_model: str = "text-embedding-3-small"
+    embedding_dimensions: int = 1536
     whatsapp_token: str
     whatsapp_verify_token: str
 

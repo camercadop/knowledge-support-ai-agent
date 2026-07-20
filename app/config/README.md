@@ -10,6 +10,8 @@ This package centralizes all application configuration. Settings are declared as
 | `OPENAI_API_KEY` | `str` | — | OpenAI API key |
 | `OPENAI_MODEL` | `str` | `gpt-4o-mini` | Model name |
 | `OPENAI_BASE_URL` | `str \| None` | `None` | Optional base URL override |
+| `OPENAI_EMBEDDING_MODEL` | `str` | `text-embedding-3-small` | Embedding model name |
+| `EMBEDDING_DIMENSIONS` | `int` | `1536` | Embedding vector dimensions |
 | `WHATSAPP_TOKEN` | `str` | — | WhatsApp Cloud API token |
 | `WHATSAPP_VERIFY_TOKEN` | `str` | — | Webhook verification token |
 

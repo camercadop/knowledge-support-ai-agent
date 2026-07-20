@@ -18,6 +18,7 @@ cp .env.example .env
 
 uv sync
 docker compose up -d
+uv run alembic upgrade head
 ```
 
 ## Running
@@ -27,6 +28,18 @@ uv run uvicorn app.main:app --reload
 ```
 
 API docs available at `http://localhost:8000/docs`.
+
+## Trying it out
+
+Once the server is running, send a chat message:
+
+```bash
+curl -X POST http://localhost:8000/chat \
+  -H "Content-Type: application/json" \
+  -d '{"phone": "+1234567890", "message": "Hello, what can you help me with?"}'
+```
+
+Or use the interactive docs at `http://localhost:8000/docs`.
 
 ## Testing
 
