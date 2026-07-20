@@ -4,6 +4,8 @@ This document defines the logging conventions for the project.
 
 ## Setup
 
+Logging is configured globally in `app/main.py` using `logging.basicConfig`. The log level is controlled by the `LOG_LEVEL` environment variable (default: `INFO`).
+
 Every module that emits log output must declare a module-level logger:
 
 ```python

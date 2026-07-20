@@ -14,6 +14,7 @@ class Settings(BaseSettings):
     embedding_dimensions: int = 1536
     whatsapp_token: str
     whatsapp_verify_token: str
+    log_level: str = "INFO"
 
 
 settings = Settings()  # type: ignore[call-arg]

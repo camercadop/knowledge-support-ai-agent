@@ -1,9 +1,12 @@
+import logging
 from typing import Literal, get_args
 
 from openai import OpenAI
 from openai.types.responses import EasyInputMessageParam
 
 from app.config.settings import settings
+
+logger = logging.getLogger(__name__)
 
 SYSTEM_PROMPT = (
     "You are a helpful support assistant. Answer questions clearly and concisely."
@@ -58,6 +61,7 @@ def chat(messages: list[dict[str, str]]) -> LLMResponse:
     Expects messages in OpenAI format: [{"role": "...", "content": "..."}].
     Prepends the system prompt automatically.
     """
+    logger.info("Calling LLM with %s messages", len(messages))
     response = _client.responses.create(
         model=settings.openai_model,
         input=_to_input(messages),  # type: ignore[arg-type]
@@ -65,5 +69,6 @@ def chat(messages: list[dict[str, str]]) -> LLMResponse:
 
     content = response.output_text
     total_tokens = response.usage.total_tokens if response.usage else None
+    logger.info("LLM response received, total_tokens=%s", total_tokens)
 
     return LLMResponse(content=content, total_tokens=total_tokens)

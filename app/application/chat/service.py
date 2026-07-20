@@ -1,9 +1,13 @@
+import logging
+
 from sqlalchemy.orm import Session
 
 from app.infrastructure.llm import openai_client
 from app.repositories.contact import ContactRepository
 from app.repositories.conversation import ConversationRepository
 from app.repositories.message import MessageRepository
+
+logger = logging.getLogger(__name__)
 
 
 class ChatService:
@@ -24,6 +28,7 @@ class ChatService:
         """
         contact = self._contacts.get_or_create_by_phone(phone)
         conversation = self._conversations.get_or_create_for_contact(contact.id)
+        logger.info("Handling chat turn for conversation %s", conversation.id)
 
         history = self._messages.list_by_conversation(conversation.id)
         messages = [{"role": m.role, "content": m.content} for m in history]
@@ -36,5 +41,6 @@ class ChatService:
             conversation.id, "assistant", response.content, response.total_tokens
         )
         self._db.commit()
+        logger.info("Chat turn complete for conversation %s", conversation.id)
 
         return response.content
