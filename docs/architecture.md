@@ -34,21 +34,9 @@ app/
     api/              # Route handlers and webhook endpoints
     core/             # Shared utilities and base classes
     config/           # Settings and environment configuration
-    domain/
-        conversation/ # Conversation and message domain
-        knowledge/    # Document and chunk domain
-        tools/        # Tool definitions
-        embeddings/   # Embedding domain
-    application/
-        chat/         # Chat use cases
-        rag/          # RAG orchestration
-        memory/       # Memory management
-        agents/       # Agent orchestration
-    infrastructure/
-        database/     # SQLAlchemy engine and session
-        llm/          # OpenAI client
-        whatsapp/     # WhatsApp Cloud API client
-        vectorstore/  # pgvector integration
+    domain/           # Domain models and business logic
+    application/      # Use cases and orchestration
+    infrastructure/   # External integrations (DB, LLM, WhatsApp)
     repositories/     # Data access layer
     models/           # SQLAlchemy models
     schemas/          # Pydantic schemas

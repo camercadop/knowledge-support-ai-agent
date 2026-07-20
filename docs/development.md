@@ -23,6 +23,8 @@ uv run uvicorn app.main:app --reload
 |----------|-------------|
 | `DATABASE_URL` | PostgreSQL connection string |
 | `OPENAI_API_KEY` | OpenAI API key |
+| `OPENAI_MODEL` | Model name to use (default: `gpt-4o-mini`) |
+| `OPENAI_BASE_URL` | Optional base URL override (e.g. for proxies or compatible APIs) |
 | `WHATSAPP_TOKEN` | WhatsApp Cloud API token |
 | `WHATSAPP_VERIFY_TOKEN` | Webhook verification token |
 
