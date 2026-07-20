@@ -15,6 +15,7 @@ class Settings(BaseSettings):
     whatsapp_token: str
     whatsapp_verify_token: str
     log_level: str = "INFO"
+    log_format: str = "text"
 
 
 settings = Settings()  # type: ignore[call-arg]

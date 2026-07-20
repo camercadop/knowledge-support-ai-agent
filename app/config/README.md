@@ -14,9 +14,12 @@ This package centralizes all application configuration. Settings are declared as
 | `EMBEDDING_DIMENSIONS` | `int` | `1536` | Embedding vector dimensions |
 | `WHATSAPP_TOKEN` | `str` | — | WhatsApp Cloud API token |
 | `WHATSAPP_VERIFY_TOKEN` | `str` | — | Webhook verification token |
+| `LOG_LEVEL` | `str` | `INFO` | Python log level |
+| `LOG_FORMAT` | `str` | `text` | Output format: `text` for colored console, `json` for structured production logs |
 
 Values are read from the environment or a `.env` file at startup. The `settings` singleton is imported directly by other modules.
 
 ## Modules
 
 - `settings.py` — `Settings` class and the `settings` singleton
+- `logging.py` — `configure_logging()` function; call once at application startup to configure structlog as the logging backend

@@ -4,7 +4,10 @@ This document defines the logging conventions for the project.
 
 ## Setup
 
-Logging is configured globally in `app/main.py` using `logging.basicConfig`. The log level is controlled by the `LOG_LEVEL` environment variable (default: `INFO`).
+Logging is configured globally in `app/main.py` using `structlog` with stdlib integration. Two env vars control the behaviour:
+
+- `LOG_LEVEL` — standard Python log level (default: `INFO`)
+- `LOG_FORMAT` — `text` for colored console output (default), `json` for structured JSON output (production)
 
 Every module that emits log output must declare a module-level logger:
 
