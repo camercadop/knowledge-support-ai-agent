@@ -70,7 +70,7 @@ Dependencies between layers flow inward through abstractions. Inner layers defin
 
 ## Related Documents
 
-- [ADR-001](001-layered-architecture.md)
+- [ADR-001](001-clean-architecture.md)
 - [ADR-002](002-architecture-first-technology-second.md)
 
 ## Future Revisions

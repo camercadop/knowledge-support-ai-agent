@@ -70,7 +70,7 @@ The application layer is organized around use cases. Each use case represents a 
 
 ## Related Documents
 
-- [ADR-001](001-layered-architecture.md)
+- [ADR-001](001-clean-architecture.md)
 - [ADR-003](003-dependency-inversion.md)
 
 ## Future Revisions

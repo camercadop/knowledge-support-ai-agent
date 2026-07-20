@@ -1,6 +1,6 @@
 # Knowledge Support AI Agent
 
-A conversational AI platform built with FastAPI that demonstrates RAG, semantic memory, tool calling, and a layered backend architecture. WhatsApp Cloud API is used as the communication channel.
+A conversational AI platform built with FastAPI that demonstrates RAG, semantic memory, tool calling, and Clean Architecture. WhatsApp Cloud API is used as the communication channel.
 
 ## Stack
 

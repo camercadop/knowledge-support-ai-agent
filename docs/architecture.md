@@ -2,7 +2,7 @@
 
 ## Overview
 
-Knowledge Support AI Agent is a FastAPI backend that implements a conversational AI platform using RAG, semantic memory, tool calling, and a layered architecture. WhatsApp Cloud API is the communication channel.
+Knowledge Support AI Agent is a FastAPI backend that implements a conversational AI platform using RAG, semantic memory, tool calling, and Clean Architecture. WhatsApp Cloud API is the communication channel.
 
 ## C4 Level 0 — System Context
 

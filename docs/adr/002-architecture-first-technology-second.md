@@ -69,7 +69,7 @@ Architectural decisions are made independently of technology choices. The struct
 
 ## Related Documents
 
-- [ADR-001](001-layered-architecture.md)
+- [ADR-001](001-clean-architecture.md)
 
 ## Future Revisions
 
