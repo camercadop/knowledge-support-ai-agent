@@ -10,24 +10,44 @@ This sub-package handles the support use case. `AnswerQuestion` orchestrates a f
 
 ## Flow
 
+### AnswerQuestion
+
 ```mermaid
 sequenceDiagram
-    participant ChatService
-    participant ContactRepository
-    participant ConversationRepository
-    participant MessageRepository
-    participant openai_client
+    participant UC as AnswerQuestion
+    participant UoW as MessagingUnitOfWork
+    participant LLM as ChatModel
 
-    AnswerQuestion->>ContactRepository: get_or_create_by_phone(phone)
-    AnswerQuestion->>ConversationRepository: get_or_create_for_contact(contact_id)
-    AnswerQuestion->>MessageRepository: list_by_conversation(conversation_id)
-    AnswerQuestion->>openai: chat(history + user_message)
-    openai-->>AnswerQuestion: LLMResponse
-    AnswerQuestion->>MessageRepository: create(user turn)
-    AnswerQuestion->>MessageRepository: create(assistant turn)
-    AnswerQuestion->>DB: commit()
+    UC->>UoW: contacts.get_or_create_by_phone(phone)
+    UC->>UoW: conversations.get_or_create_for_contact(contact_id)
+    UC->>UoW: messages.list_by_conversation(conversation_id)
+    UC->>LLM: generate(history + user_message)
+    LLM-->>UC: ChatResponse
+    UC->>UoW: messages.create(user turn)
+    UC->>UoW: messages.create(assistant turn)
+    UC->>UoW: commit()
+```
+
+### IngestDocument
+
+```mermaid
+sequenceDiagram
+    participant UC as IngestDocument
+    participant UoW as KnowledgeUnitOfWork
+    participant Embed as EmbeddingModel
+    participant VS as VectorStore
+
+    UC->>UoW: documents.create(title, source, content)
+    loop for each chunk
+        UC->>Embed: embed(chunk)
+        Embed-->>UC: vector
+        UC->>UoW: document_chunks.create(chunk, vector)
+        UC->>VS: upsert(chunk_id, document_id, chunk, vector)
+    end
+    UC->>UoW: commit()
 ```
 
 ## Modules
 
 - `answer_question.py` — `AnswerQuestion`; handles a full chat turn end-to-end
+- `ingest_document.py` — `IngestDocument`; chunks, embeds, and indexes a document into the knowledge base

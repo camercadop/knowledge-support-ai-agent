@@ -9,4 +9,5 @@ This package contains the SQLAlchemy implementations of the repository ports def
 | `ContactRepository` | `AbstractContactRepository` | `contacts` |
 | `ConversationRepository` | `AbstractConversationRepository` | `conversations` |
 | `MessageRepository` | `AbstractMessageRepository` | `messages` |
+| `DocumentRepository` | `AbstractDocumentRepository` | `documents` |
 | `DocumentChunkRepository` | `AbstractDocumentChunkRepository` | `document_chunks` |

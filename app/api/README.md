@@ -7,21 +7,9 @@ This package is the HTTP entry point of the application. It contains FastAPI rou
 | Method | Path | Description |
 |--------|------|-------------|
 | `POST` | `/chat` | Receive a user message and return the assistant reply |
-
-## Request / Response flow
-
-```mermaid
-sequenceDiagram
-    participant Client
-    participant POST /chat
-    participant ChatService
-
-    Client->>POST /chat: {phone, message}
-    POST /chat->>ChatService: handle(phone, message)
-    ChatService-->>POST /chat: reply: str
-    POST /chat-->>Client: {reply}
-```
+| `POST` | `/documents` | Ingest a document into the knowledge base |
 
 ## Modules
 
-- `chat.py` — `/chat` endpoint; delegates all logic to `ChatService`
+- `chat.py` — `/chat` endpoint; delegates to `AnswerQuestion`
+- `documents.py` — `/documents` endpoint; delegates to `IngestDocument`

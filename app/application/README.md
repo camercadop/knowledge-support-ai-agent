@@ -5,4 +5,4 @@ This package contains the use cases of the system. Each sub-package groups the s
 ## Sub-packages
 
 - `models/` — infrastructure-free dataclasses used as return types by repository ports and consumed by use cases
-- `support/` — handles a full chat turn: contact and conversation resolution, history retrieval, LLM call, and message persistence
+- `support/` — use cases for the support domain: chat turn orchestration and document ingestion
