@@ -13,5 +13,7 @@ jobs:
         with:
           python-version: "3.13"
       - run: uv sync
+      - run: cp .env.test .env
       - run: uv run ruff check .
       - run: uv run mypy app/
+      - run: uv run pytest
