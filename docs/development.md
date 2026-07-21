@@ -78,6 +78,14 @@ uv run lint-imports
 
 `lint-imports` enforces Clean Architecture import boundaries. Contracts are defined in `pyproject.toml` under `[tool.importlinter]`. A violation fails the build.
 
+## Dependency Audit
+
+```bash
+uv audit --preview-features audit-command
+```
+
+Checks all dependencies against the OSV vulnerability database.
+
 ## Conventions
 
 ### Code Style
