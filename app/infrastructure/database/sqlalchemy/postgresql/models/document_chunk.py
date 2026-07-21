@@ -5,10 +5,10 @@ from pgvector.sqlalchemy import Vector
 from sqlalchemy import ForeignKey, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.infrastructure.database.sqlalchemy.base import Base
+from app.infrastructure.database.sqlalchemy.postgresql.base import Base
 
 if TYPE_CHECKING:
-    from app.infrastructure.database.sqlalchemy.models.document import Document
+    from app.infrastructure.database.sqlalchemy.postgresql.models.document import Document
 
 
 class DocumentChunk(Base):

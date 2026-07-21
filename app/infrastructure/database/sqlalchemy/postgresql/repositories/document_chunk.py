@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 
 from app.application.models.document_chunk import DocumentChunk
 from app.application.ports.repositories.document_chunk import AbstractDocumentChunkRepository
-from app.infrastructure.database.sqlalchemy.models.document_chunk import DocumentChunk as DocumentChunkORM
+from app.infrastructure.database.sqlalchemy.postgresql.models.document_chunk import DocumentChunk as DocumentChunkORM
 
 
 class DocumentChunkRepository(AbstractDocumentChunkRepository):

@@ -6,18 +6,19 @@ This sub-package organizes database backends by ORM/driver. Each backend lives i
 
 ```
 database/
-    sqlalchemy/       # PostgreSQL via SQLAlchemy
-        migrations/   # Alembic migrations
-        models/       # ORM model definitions
-        repositories/ # Concrete repository implementations
-        unit_of_work/ # SqlAlchemy-backed UoW implementations
-        base.py       # Declarative base with id, created_at, updated_at
-        engine.py     # PostgreSQL engine, SessionLocal, and get_db dependency
-    sqlite/
-        engine.py     # In-memory SQLite engine and get_db dependency for tests
+    sqlalchemy/
+        migrations/       # Alembic migrations (ORM-specific, shared across backends)
+        postgresql/       # PostgreSQL backend
+            models/
+            repositories/
+            unit_of_work/
+            base.py       # Declarative base with id, created_at, updated_at
+            engine.py     # PostgreSQL engine, SessionLocal, and get_db dependency
+        sqlite/           # SQLite backend
+            engine.py     # In-memory SQLite engine and get_db dependency for tests
 ```
 
-## sqlalchemy
+## sqlalchemy/postgresql
 
 `get_db` is a FastAPI dependency that opens a session, yields it to the handler, and closes it when the request is done regardless of outcome.
 
@@ -28,7 +29,7 @@ flowchart
     Session --> PostgreSQL
 ```
 
-## sqlite
+## sqlalchemy/sqlite
 
 Provides an in-memory SQLite session factory that reuses the same SQLAlchemy models and `Base.metadata`. Intended for tests only — not suitable for production.
 

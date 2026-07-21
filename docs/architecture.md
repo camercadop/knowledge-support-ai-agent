@@ -120,9 +120,7 @@ app/
             chat/       # Chat completion provider implementations
             embeddings/ # Embedding provider implementations
             mock/       # Mock implementations for testing
-        database/
-            sqlalchemy/ # Models, repositories, migrations, and PostgreSQL engine
-            sqlite/     # In-memory SQLite engine for tests
+        database/         # ORM adapters, repositories, and migrations
         vectorstores/
             pgvector/   # PgVectorStore — cosine similarity search via pgvector
     schemas/          # Pydantic schemas

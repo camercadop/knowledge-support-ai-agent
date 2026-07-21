@@ -5,8 +5,8 @@ from sqlalchemy.orm import Session
 
 from app.application.support.ingest_document import IngestDocument
 from app.infrastructure.ai.embeddings.openai import OpenAIEmbeddingModel
-from app.infrastructure.database.sqlalchemy.engine import get_db
-from app.infrastructure.database.sqlalchemy.unit_of_work.knowledge import (
+from app.infrastructure.database.sqlalchemy.postgresql.engine import get_db
+from app.infrastructure.database.sqlalchemy.postgresql.unit_of_work.knowledge import (
     SqlAlchemyKnowledgeUnitOfWork,
 )
 from app.infrastructure.vectorstores.pgvector.store import PgVectorStore

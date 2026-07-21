@@ -3,8 +3,8 @@ from collections.abc import Generator
 from sqlalchemy import create_engine, event
 from sqlalchemy.orm import Session, sessionmaker
 
-import app.infrastructure.database.sqlalchemy.models  # noqa: F401 — registers all models with Base.metadata
-from app.infrastructure.database.sqlalchemy.base import Base
+import app.infrastructure.database.sqlalchemy.postgresql.models  # noqa: F401 — registers all models with Base.metadata
+from app.infrastructure.database.sqlalchemy.postgresql.base import Base
 
 engine = create_engine(
     "sqlite:///:memory:",

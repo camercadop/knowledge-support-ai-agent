@@ -4,10 +4,10 @@ from typing import TYPE_CHECKING
 from sqlalchemy import ForeignKey, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.infrastructure.database.sqlalchemy.base import Base
+from app.infrastructure.database.sqlalchemy.postgresql.base import Base
 
 if TYPE_CHECKING:
-    from app.infrastructure.database.sqlalchemy.models.conversation import Conversation
+    from app.infrastructure.database.sqlalchemy.postgresql.models.conversation import Conversation
 
 
 class Message(Base):

@@ -7,7 +7,7 @@ from fastapi.testclient import TestClient
 import app.api.chat as chat_module
 from app.infrastructure.ai.mock.chat import MockChatModel
 from app.infrastructure.ai.mock.embeddings import MockEmbeddingModel
-from app.infrastructure.database.sqlalchemy.engine import get_db
+from app.infrastructure.database.sqlalchemy.postgresql.engine import get_db
 from app.main import app
 
 

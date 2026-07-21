@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 
 from app.application.models.document import Document
 from app.application.ports.repositories.document import AbstractDocumentRepository
-from app.infrastructure.database.sqlalchemy.models.document import Document as DocumentORM
+from app.infrastructure.database.sqlalchemy.postgresql.models.document import Document as DocumentORM
 
 
 class DocumentRepository(AbstractDocumentRepository):
