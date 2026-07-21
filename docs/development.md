@@ -128,20 +128,29 @@ sequenceDiagram
     participant Client
     participant Router as chat.py (API)
     participant UC as AnswerQuestion
-    participant UoW as SqlAlchemyMessagingUnitOfWork
+    participant Embed as OpenAIEmbeddingModel
+    participant VS as PgVectorStore
     participant DB as PostgreSQL
+    participant UoW as SqlAlchemyMessagingUnitOfWork
     participant LLM as OpenAIChatModel
     participant OpenAI as OpenAI API
 
     Client->>Router: POST /chat {phone, message}
     Router->>UC: handle(phone, message)
+    UC->>Embed: embed(user_message)
+    Embed->>OpenAI: embeddings.create(...)
+    OpenAI-->>Embed: query_vector
+    UC->>VS: search(query_vector)
+    VS->>DB: SELECT chunks ORDER BY cosine_distance
+    DB-->>VS: top-k chunks
+    VS-->>UC: SearchResult list (or empty)
     UC->>UoW: contacts.get_or_create_by_phone(phone)
     UoW->>DB: SELECT / INSERT contact
     UC->>UoW: conversations.get_or_create_for_contact(contact_id)
     UoW->>DB: SELECT / INSERT conversation
     UC->>UoW: messages.list_by_conversation(conversation_id)
     UoW->>DB: SELECT messages
-    UC->>LLM: generate(history + user_message)
+    UC->>LLM: generate(history + user_message, context)
     LLM->>OpenAI: responses.create(model, input)
     OpenAI-->>LLM: output_text, token usage
     LLM-->>UC: ChatResponse

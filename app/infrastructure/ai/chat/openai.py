@@ -23,13 +23,24 @@ _ALLOWED_ROLES = {"user", "assistant", "system", "developer"}
 
 def _to_input(
     messages: list[ChatMessage],
+    context: str | None = None,
 ) -> list[EasyInputMessageParam]:
     """Convert ChatMessage value objects to typed EasyInputMessageParam entries.
 
-    Prepends the system prompt. Skips entries with unrecognised roles.
+    Prepends the system prompt, optionally extended with retrieved context.
+    Skips entries with unrecognised roles.
+
+    Args:
+        messages: Ordered list of ChatMessage value objects.
+        context: Optional retrieved knowledge chunks to append to the system prompt.
     """
+    system_content = (
+        f"{SYSTEM_PROMPT}\n\nUse the following knowledge base excerpts to answer:\n{context}"
+        if context
+        else SYSTEM_PROMPT
+    )
     result: list[EasyInputMessageParam] = [
-        EasyInputMessageParam(role="system", content=SYSTEM_PROMPT)
+        EasyInputMessageParam(role="system", content=system_content)
     ]
     for m in messages:
         if m.role.value in _ALLOWED_ROLES:
@@ -52,13 +63,19 @@ class OpenAIChatModel(ChatModel):
             base_url=settings.chat_base_url,
         )
 
-    def generate(self, messages: list[ChatMessage]) -> ChatResponse:
+    def generate(
+        self, messages: list[ChatMessage], context: str | None = None
+    ) -> ChatResponse:
         """Send messages to the OpenAI Responses API and return the reply.
 
-        Prepends the system prompt automatically. Skips messages with
-        unrecognised roles.
+        Prepends the system prompt, merged with retrieved context when provided.
+        Skips messages with unrecognised roles.
+
+        Args:
+            messages: Ordered list of ChatMessage value objects.
+            context: Optional retrieved knowledge to merge into the system prompt.
         """
-        input_messages = _to_input(messages)
+        input_messages = _to_input(messages, context)
         logger.info("Calling LLM with %s messages", len(messages))
         logger.debug("LLM input messages: %s", input_messages)
         response = self._client.responses.create(

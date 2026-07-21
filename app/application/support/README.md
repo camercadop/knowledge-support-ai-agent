@@ -15,13 +15,19 @@ This sub-package handles the support use case. `AnswerQuestion` orchestrates a f
 ```mermaid
 sequenceDiagram
     participant UC as AnswerQuestion
+    participant Embed as EmbeddingModel
+    participant VS as VectorStore
     participant UoW as MessagingUnitOfWork
     participant LLM as ChatModel
 
+    UC->>Embed: embed(user_message)
+    Embed-->>UC: query_vector
+    UC->>VS: search(query_vector)
+    VS-->>UC: chunks (or empty)
     UC->>UoW: contacts.get_or_create_by_phone(phone)
     UC->>UoW: conversations.get_or_create_for_contact(contact_id)
     UC->>UoW: messages.list_by_conversation(conversation_id)
-    UC->>LLM: generate(history + user_message)
+    UC->>LLM: generate(history + user_message, context)
     LLM-->>UC: ChatResponse
     UC->>UoW: messages.create(user turn)
     UC->>UoW: messages.create(assistant turn)

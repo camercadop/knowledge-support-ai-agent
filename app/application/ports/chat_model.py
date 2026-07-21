@@ -43,11 +43,16 @@ class ChatModel(ABC):
     """
 
     @abstractmethod
-    def generate(self, messages: list[ChatMessage]) -> ChatResponse:
+    def generate(
+        self, messages: list[ChatMessage], context: str | None = None
+    ) -> ChatResponse:
         """Generate a reply for the given message history.
 
         Args:
             messages: Ordered list of ChatMessage value objects.
+            context: Optional retrieved knowledge to inject into the system prompt.
+                When provided, it is merged with the base system prompt so the model
+                grounds its answer in the supplied context.
 
         Returns:
             A ChatResponse with the reply and token usage.
