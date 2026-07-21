@@ -15,7 +15,12 @@ class MockChatModel(ChatModel):
     """
 
     def __init__(self, reply: str = "mock reply", token_total: int = 0) -> None:
-        """Initialize with the reply text and token total to return on every generate call."""
+        """Initialize with the fixed reply and token total for every generate call.
+
+        Args:
+            reply: The fixed reply text to return.
+            token_total: The token total to report in usage.
+        """
         self._reply = reply
         self._token_total = token_total
 
