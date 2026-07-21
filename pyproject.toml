@@ -23,6 +23,7 @@ dev = [
     "mypy>=1.11.0",
     "ruff>=0.6.0",
     "pre-commit>=4.6.0",
+    "import-linter>=2.0",
 ]
 
 [tool.ruff]
@@ -37,6 +38,21 @@ select = ["E", "F", "I", "UP"]
 python_version = "3.13"
 strict = true
 exclude = ["tests/", "sqlalchemy/migrations/"]
+
+[tool.importlinter]
+root_packages = ["app"]
+
+[[tool.importlinter.contracts]]
+name = "Application does not import from infrastructure or api"
+type = "forbidden"
+source_modules = ["app.application"]
+forbidden_modules = ["app.infrastructure", "app.api"]
+
+[[tool.importlinter.contracts]]
+name = "Infrastructure does not import from api"
+type = "forbidden"
+source_modules = ["app.infrastructure"]
+forbidden_modules = ["app.api"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"

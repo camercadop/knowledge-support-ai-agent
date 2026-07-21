@@ -16,4 +16,5 @@ jobs:
       - run: cp .env.test .env
       - run: uv run ruff check .
       - run: uv run mypy app/
+      - run: uv run lint-imports
       - run: uv run pytest

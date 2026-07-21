@@ -8,55 +8,53 @@ The `tests/` directory mirrors the production package structure under `app/`.
 tests/
     api/              # mirrors app/api/
     application/      # mirrors app/application/
-    domain/           # mirrors app/domain/
     infrastructure/   # mirrors app/infrastructure/
     conftest.py       # shared fixtures
-    factories/        # object factories and builders
-    fakes/            # in-memory fake implementations of ports
 ```
 
 Rules:
 - Production code never imports from `tests/`.
 - Tests may import any production module.
-- Shared utilities (fixtures, fakes, factories) live under `tests/` — never alongside production code in `app/`.
+- Shared fixtures live in `tests/conftest.py`.
 
-## Unit Tests (`tests/unit/`)
+## Application Tests (`tests/application/`)
 
-Target: `app/domain/` and `app/application/`.
+Target: `app/application/` — use cases.
 
 - Inject all dependencies as mocks or fakes — never use real adapters.
 - Do not patch internals (`unittest.mock.patch`). Inject through the constructor instead.
-- No database, no HTTP, no filesystem access.
-- Fast enough to run on every keystroke.
+- Use the in-memory SQLite session from `conftest.py` via the `db` fixture.
 
 ```python
-def test_answer_question_returns_reply() -> None:
+def test_answer_question_returns_reply(
+    uow: SqlAlchemyMessagingUnitOfWork, vector_store: FakeVectorStore
+) -> None:
     use_case = AnswerQuestion(
-        uow=FakeMessagingUnitOfWork(),
+        uow=uow,
         chat_model=MockChatModel(reply="hello"),
         embedding_model=MockEmbeddingModel(),
-        vector_store=FakeVectorStore(),
+        vector_store=vector_store,
     )
     reply = use_case.handle("+1234567890", "Hi")
     assert reply == "hello"
 ```
 
-## Integration Tests (`tests/integration/`)
+## Infrastructure Tests (`tests/infrastructure/`)
 
-Target: `app/infrastructure/` — repositories, unit of work, vector store.
+Target: `app/infrastructure/` — adapters, vector stores, pure utility logic.
 
-- Run against a real test database (separate from production).
-- Each test must clean up after itself or run in a rolled-back transaction.
+- Use the in-memory SQLite session from `conftest.py` for DB-backed tests.
+- For pure logic (e.g. `FakeVectorStore`, `_cosine_distance`), no fixtures are needed.
 - Do not test business logic here — only that the adapter correctly reads and writes data.
 
-## E2E Tests (`tests/e2e/`)
+## API Tests (`tests/api/`)
 
 Target: `app/api/` — route handlers.
 
 - Use FastAPI's `TestClient`.
 - Override infrastructure dependencies via `app.dependency_overrides` or by replacing module-level singletons with mocks.
 - Test HTTP contract: status codes, response shape, and error responses.
-- Do not assert on business logic outcomes — that belongs in unit tests.
+- Do not assert on business logic outcomes — that belongs in application tests.
 
 ```python
 @pytest.fixture()
@@ -69,10 +67,10 @@ def client() -> Generator[TestClient]:
     app.dependency_overrides.clear()
 
 
-def test_chat_returns_200(client: TestClient) -> None:
+def test_chat_returns_reply(client: TestClient) -> None:
     response = client.post("/chat", json={"phone": "+1234567890", "message": "Hi"})
     assert response.status_code == 200
-    assert "reply" in response.json()
+    assert response.json() == {"reply": "mock reply"}
 ```
 
 ## Naming
@@ -84,10 +82,9 @@ def test_chat_returns_200(client: TestClient) -> None:
 
 | Layer | What | Where |
 |---|---|---|
-| Domain | Business rules, value objects | `tests/unit/` |
-| Application | Use case orchestration with mock ports | `tests/unit/` |
-| Infrastructure | Adapter reads/writes against test DB | `tests/integration/` |
-| API | HTTP contract, status codes, response shape | `tests/e2e/` |
+| Application | Use case orchestration with mock ports | `tests/application/` |
+| Infrastructure | Adapter reads/writes, pure utility logic | `tests/infrastructure/` |
+| API | HTTP contract, status codes, response shape | `tests/api/` |
 
 ## What Not to Test
 
@@ -98,8 +95,5 @@ def test_chat_returns_200(client: TestClient) -> None:
 ## Running Tests
 
 ```bash
-uv run pytest                        # all tests
-uv run pytest tests/unit/            # unit only
-uv run pytest tests/integration/     # integration only
-uv run pytest tests/e2e/             # e2e only
+uv run pytest
 ```

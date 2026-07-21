@@ -73,7 +73,10 @@ uv run pytest
 ```bash
 uv run ruff check .
 uv run mypy app/
+uv run lint-imports
 ```
+
+`lint-imports` enforces Clean Architecture import boundaries. Contracts are defined in `pyproject.toml` under `[tool.importlinter]`. A violation fails the build.
 
 ## Conventions
 
@@ -121,11 +124,8 @@ app/
 tests/
     api/              # mirrors app/api/
     application/      # mirrors app/application/
-    domain/           # mirrors app/domain/
     infrastructure/   # mirrors app/infrastructure/
     conftest.py       # shared fixtures
-    factories/        # object factories and builders
-    fakes/            # in-memory fake implementations of ports
 
 docs/
     adr/          # Architecture Decision Records
