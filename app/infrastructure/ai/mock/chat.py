@@ -14,9 +14,10 @@ class MockChatModel(ChatModel):
     Pass a custom reply to control the returned content.
     """
 
-    def __init__(self, reply: str = "mock reply") -> None:
-        """Initialize with the reply text to return on every generate call."""
+    def __init__(self, reply: str = "mock reply", token_total: int = 0) -> None:
+        """Initialize with the reply text and token total to return on every generate call."""
         self._reply = reply
+        self._token_total = token_total
 
     def generate(
         self, messages: list[ChatMessage], context: str | None = None
@@ -32,5 +33,5 @@ class MockChatModel(ChatModel):
         """
         return ChatResponse(
             message=ChatMessage(role=Role.ASSISTANT, content=self._reply),
-            usage=TokenUsage(total=0),
+            usage=TokenUsage(total=self._token_total),
         )

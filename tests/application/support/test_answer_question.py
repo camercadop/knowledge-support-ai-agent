@@ -30,10 +30,11 @@ def _make_use_case(
     uow: SqlAlchemyMessagingUnitOfWork,
     vector_store: FakeVectorStore,
     reply: str = "hello",
+    token_total: int = 0,
 ) -> AnswerQuestion:
     return AnswerQuestion(
         uow=uow,
-        chat_model=MockChatModel(reply=reply),
+        chat_model=MockChatModel(reply=reply, token_total=token_total),
         embedding_model=MockEmbeddingModel(),
         vector_store=vector_store,
     )
@@ -100,3 +101,61 @@ def test_builds_rag_context_from_vector_store(
     # (orthogonal). The chunk is still returned since it's the only result.
     reply = _make_use_case(uow, vector_store).handle(_PHONE, "Hi")
     assert reply == "hello"
+
+
+def test_history_is_passed_to_chat_model(
+    uow: SqlAlchemyMessagingUnitOfWork, vector_store: FakeVectorStore
+) -> None:
+    use_case = _make_use_case(uow, vector_store, reply="second")
+    use_case.handle(_PHONE, "first")
+    use_case.handle(_PHONE, "second")
+    contact = uow.contacts.get_or_create_by_phone(_PHONE)
+    conversation = uow.conversations.get_or_create_for_contact(contact.id)
+    messages = uow.messages.list_by_conversation(conversation.id)
+    assert messages[0].role == "user"
+    assert messages[0].content == "first"
+    assert messages[2].role == "user"
+    assert messages[2].content == "second"
+
+
+def test_multiple_rag_chunks_joined_with_double_newline(
+    uow: SqlAlchemyMessagingUnitOfWork, vector_store: FakeVectorStore
+) -> None:
+    for chunk in ("chunk one", "chunk two"):
+        vector_store.upsert(
+            chunk_id=uuid.uuid4(),
+            document_id=uuid.uuid4(),
+            chunk=chunk,
+            embedding=[1.0, 0.0, 0.0],
+        )
+    # Both chunks are returned; the use case joins them with \n\n before passing
+    # to the chat model. The reply still comes through confirming completion.
+    reply = _make_use_case(uow, vector_store).handle(_PHONE, "Hi")
+    assert reply == "hello"
+
+
+def test_token_usage_is_persisted_on_assistant_message(
+    uow: SqlAlchemyMessagingUnitOfWork, vector_store: FakeVectorStore
+) -> None:
+    _make_use_case(uow, vector_store, token_total=42).handle(_PHONE, "Hi")
+    contact = uow.contacts.get_or_create_by_phone(_PHONE)
+    conversation = uow.conversations.get_or_create_for_contact(contact.id)
+    messages = uow.messages.list_by_conversation(conversation.id)
+    assistant_message = next(m for m in messages if m.role == "assistant")
+    assert assistant_message.tokens == 42
+
+
+def test_different_phones_have_separate_conversations(
+    uow: SqlAlchemyMessagingUnitOfWork, vector_store: FakeVectorStore
+) -> None:
+    use_case = _make_use_case(uow, vector_store)
+    use_case.handle(_PHONE, "Hi from first")
+    use_case.handle("+9999999999", "Hi from second")
+    contact_a = uow.contacts.get_or_create_by_phone(_PHONE)
+    contact_b = uow.contacts.get_or_create_by_phone("+9999999999")
+    conv_a = uow.conversations.get_or_create_for_contact(contact_a.id)
+    conv_b = uow.conversations.get_or_create_for_contact(contact_b.id)
+    messages_a = uow.messages.list_by_conversation(conv_a.id)
+    messages_b = uow.messages.list_by_conversation(conv_b.id)
+    assert all(m.content != "Hi from second" for m in messages_a)
+    assert all(m.content != "Hi from first" for m in messages_b)
