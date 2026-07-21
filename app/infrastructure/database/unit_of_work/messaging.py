@@ -14,7 +14,7 @@ from app.infrastructure.database.repositories.message import MessageRepository
 
 
 class SqlAlchemyMessagingUnitOfWork(UnitOfWork):
-    """UnitOfWork implementation for the messaging domain, backed by a SQLAlchemy session."""
+    """UnitOfWork for the messaging domain, backed by a SQLAlchemy session."""
 
     def __init__(self, db: Session) -> None:
         """Initialize with an active database session."""

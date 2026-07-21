@@ -1,6 +1,5 @@
 import logging
 
-from app.application.models.message import Message
 from app.application.ports.chat_model import ChatMessage, ChatModel, Role
 from app.application.ports.unit_of_work import UnitOfWork
 

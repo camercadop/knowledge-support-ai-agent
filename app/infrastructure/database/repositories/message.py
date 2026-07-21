@@ -22,7 +22,16 @@ class MessageRepository(AbstractMessageRepository):
             .order_by(MessageORM.created_at.asc())
             .all()
         )
-        return [Message(id=r.id, conversation_id=r.conversation_id, role=r.role, content=r.content, tokens=r.tokens) for r in rows]
+        return [
+            Message(
+                id=r.id,
+                conversation_id=r.conversation_id,
+                role=r.role,
+                content=r.content,
+                tokens=r.tokens,
+            )
+            for r in rows
+        ]
 
     def create(
         self,
@@ -37,4 +46,10 @@ class MessageRepository(AbstractMessageRepository):
         )
         self._db.add(orm)
         self._db.flush()
-        return Message(id=orm.id, conversation_id=orm.conversation_id, role=orm.role, content=orm.content, tokens=orm.tokens)
+        return Message(
+            id=orm.id,
+            conversation_id=orm.conversation_id,
+            role=orm.role,
+            content=orm.content,
+            tokens=orm.tokens,
+        )
