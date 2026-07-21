@@ -9,5 +9,5 @@ This package contains one abstract repository per aggregate root. Each class def
 | `AbstractContactRepository` | Contact | `get_or_create_by_phone` |
 | `AbstractConversationRepository` | Conversation | `get_or_create_for_contact` |
 | `AbstractMessageRepository` | Message | `list_by_conversation`, `create` |
-| `AbstractDocumentRepository` | Document | not yet implemented |
-| `AbstractDocumentChunkRepository` | DocumentChunk | not yet implemented |
+| `AbstractDocumentRepository` | Document | `create`, `get_by_id` |
+| `AbstractDocumentChunkRepository` | DocumentChunk | `create` |

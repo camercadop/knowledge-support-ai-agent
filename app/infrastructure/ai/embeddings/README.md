@@ -4,4 +4,4 @@ This sub-package implements the `EmbeddingModel` port using the OpenAI Embedding
 
 ## Modules
 
-- `openai.py` — module-level `embed(text)` function; calls `client.embeddings.create` with the model and dimensions from settings and returns a flat list of floats suitable for storage in a pgvector column
+- `openai.py` — `OpenAIEmbeddingModel`; calls `client.embeddings.create` with the model and dimensions from settings and returns a flat list of floats suitable for storage in a pgvector column

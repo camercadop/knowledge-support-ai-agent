@@ -7,11 +7,11 @@ from app.application.ports.repositories.conversation import (
 from app.application.ports.repositories.message import AbstractMessageRepository
 
 
-class UnitOfWork(ABC):
-    """Port that defines the transactional boundary for a use case.
+class MessagingUnitOfWork(ABC):
+    """Port that defines the transactional boundary for the messaging domain.
 
-    Exposes the repositories needed within a single transaction and provides
-    an explicit commit(). Implementations live in infrastructure/database/.
+    Exposes contact, conversation, and message repositories within a single
+    transaction. Implementations live in infrastructure/database/unit_of_work/.
     """
 
     @property

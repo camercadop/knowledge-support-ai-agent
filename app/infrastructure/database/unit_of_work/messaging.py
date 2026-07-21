@@ -5,16 +5,14 @@ from app.application.ports.repositories.conversation import (
     AbstractConversationRepository,
 )
 from app.application.ports.repositories.message import AbstractMessageRepository
-from app.application.ports.unit_of_work import UnitOfWork
+from app.application.ports.unit_of_work.messaging import MessagingUnitOfWork
 from app.infrastructure.database.repositories.contact import ContactRepository
-from app.infrastructure.database.repositories.conversation import (
-    ConversationRepository,
-)
+from app.infrastructure.database.repositories.conversation import ConversationRepository
 from app.infrastructure.database.repositories.message import MessageRepository
 
 
-class SqlAlchemyMessagingUnitOfWork(UnitOfWork):
-    """UnitOfWork for the messaging domain, backed by a SQLAlchemy session."""
+class SqlAlchemyMessagingUnitOfWork(MessagingUnitOfWork):
+    """MessagingUnitOfWork backed by a SQLAlchemy session."""
 
     def __init__(self, db: Session) -> None:
         """Initialize with an active database session."""

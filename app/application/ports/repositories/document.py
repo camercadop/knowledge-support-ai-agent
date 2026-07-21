@@ -1,9 +1,16 @@
-from abc import ABC
+import uuid
+from abc import ABC, abstractmethod
+
+from app.application.models.document import Document
 
 
 class AbstractDocumentRepository(ABC):
-    """Port that defines the contract for document persistence.
+    """Port that defines the contract for document persistence."""
 
-    Not yet implemented. Tracked as a pending task in docs/_SCRATCH_DECISIONS.md.
-    Implementations will live in infrastructure/database/repositories/.
-    """
+    @abstractmethod
+    def create(self, title: str, source: str | None, content: str) -> Document:
+        """Persist a new document and return it."""
+
+    @abstractmethod
+    def get_by_id(self, document_id: uuid.UUID) -> Document | None:
+        """Return the document with the given id, or None if not found."""
