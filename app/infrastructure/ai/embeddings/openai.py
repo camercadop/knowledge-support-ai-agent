@@ -3,8 +3,8 @@ from openai import OpenAI
 from app.config.settings import settings
 
 _client = OpenAI(
-    api_key=settings.openai_api_key,
-    base_url=settings.openai_base_url,
+    api_key=settings.embedding_api_key,
+    base_url=settings.embedding_base_url,
 )
 
 
@@ -15,7 +15,7 @@ def embed(text: str) -> list[float]:
     of floats suitable for storage in a pgvector column.
     """
     response = _client.embeddings.create(
-        model=settings.openai_embedding_model,
+        model=settings.embedding_model,
         input=text,
         dimensions=settings.embedding_dimensions,
     )

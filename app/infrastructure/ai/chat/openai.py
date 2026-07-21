@@ -51,8 +51,8 @@ class OpenAIChatModel(ChatModel):
     def __init__(self) -> None:
         """Initialize the OpenAI client from application settings."""
         self._client = OpenAI(
-            api_key=settings.openai_api_key,
-            base_url=settings.openai_base_url,
+            api_key=settings.chat_api_key,
+            base_url=settings.chat_base_url,
         )
 
     def generate(self, messages: list[ChatMessage]) -> ChatResponse:
@@ -63,7 +63,7 @@ class OpenAIChatModel(ChatModel):
         """
         logger.info("Calling LLM with %s messages", len(messages))
         response = self._client.responses.create(
-            model=settings.openai_model,
+            model=settings.chat_model,
             input=_to_input(messages),  # type: ignore[arg-type]
         )
         total_tokens = response.usage.total_tokens if response.usage else None
