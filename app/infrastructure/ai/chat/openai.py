@@ -35,7 +35,7 @@ def _to_input(
         if m.role.value in _ALLOWED_ROLES:
             result.append(
                 EasyInputMessageParam(
-                    role=m.role,  # type: ignore[typeddict-item]
+                    role=m.role.value,
                     content=m.content,
                 )
             )
@@ -64,6 +64,7 @@ class OpenAIChatModel(ChatModel):
         response = self._client.responses.create(
             model=settings.chat_model,
             input=input_messages,  # type: ignore[arg-type]
+            max_output_tokens=settings.chat_max_tokens,
         )
         total_tokens = response.usage.total_tokens if response.usage else None
         logger.info("LLM response received, total_tokens=%s", total_tokens)

@@ -8,6 +8,31 @@ The goal is to show that AI-powered applications don't have to be prototype spag
 
 WhatsApp Cloud API is the intended communication channel, with a REST API available for direct integration and local development.
 
+## Architecture
+
+```mermaid
+flowchart TB
+    user["User"]
+    whatsapp["WhatsApp\n[External]"]
+    openai["OpenAI\n[External]"]
+
+    subgraph agent["Knowledge Support AI Agent"]
+        api["API Layer\nFastAPI"]
+        app["Application Layer\nUse cases & ports"]
+        infra["Infrastructure\nDB · LLM · Vector store"]
+        db["PostgreSQL + pgvector"]
+    end
+
+    user -->|"POST /chat"| api
+    whatsapp -->|"Webhook"| api
+    api --> app
+    app --> infra
+    infra -->|"Chat & Embeddings"| openai
+    infra -->|"Reads / writes"| db
+```
+
+> See [Architecture](docs/architecture.md) for C4 Level 0–2 diagrams.
+
 ## Stack
 
 - Python 3.13+, FastAPI, SQLAlchemy, Alembic

@@ -26,7 +26,8 @@ def ingest_document(
 
     Chunks the content, generates embeddings, and indexes them for similarity search.
     """
-    logger.info("Received ingest request for document '%s'", request.title)
+    safe_title = request.title.replace("\n", " ").replace("\r", " ")
+    logger.info("Received ingest request for document '%s'", safe_title)
     use_case = IngestDocument(
         uow=SqlAlchemyKnowledgeUnitOfWork(db),
         embedding_model=_embedding_model,

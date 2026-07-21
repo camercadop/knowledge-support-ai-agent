@@ -18,11 +18,12 @@ _chat_model = OpenAIChatModel()
 @router.post("/chat", response_model=ChatResponse)
 def chat(request: ChatRequest, db: Session = Depends(get_db)) -> ChatResponse:
     """Receive a user message and return the assistant reply."""
-    logger.info("Received chat request from %s", request.phone)
+    safe_phone = request.phone.replace("\n", " ").replace("\r", " ")
+    logger.info("Received chat request from %s", safe_phone)
     use_case = AnswerQuestion(
         uow=SqlAlchemyMessagingUnitOfWork(db),
         chat_model=_chat_model,
     )
     reply = use_case.handle(request.phone, request.message)
-    logger.info("Replied to %s", request.phone)
+    logger.info("Replied to %s", safe_phone)
     return ChatResponse(reply=reply)
