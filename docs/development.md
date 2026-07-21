@@ -35,6 +35,14 @@ curl -X POST http://localhost:8000/chat \
   -d '{"phone": "+1234567890", "message": "Hello, what can you help me with?"}'
 ```
 
+Ingest a document:
+
+```bash
+curl -X POST http://localhost:8000/documents \
+  -H "Content-Type: application/json" \
+  -d '{"title": "My Doc", "source": "manual", "content": "Your document text here..."}'
+```
+
 Or use the interactive docs at `http://localhost:8000/docs`.
 
 ## Environment Variables
@@ -94,27 +102,33 @@ uv run mypy app/
 app/
     api/          # Route handlers
     application/  # Use cases and ports
+        models/   # Application-layer value objects
         ports/    # Interfaces for infrastructure dependencies
+            repositories/  # One abstract repo per aggregate root
+            unit_of_work/  # Domain-scoped transactional boundaries
     config/       # Settings and environment configuration
     domain/       # Domain models and business logic
     infrastructure/
-        ai/       # Chat and embedding provider implementations
-        database/ # Models, repositories, and migrations
-        whatsapp/ # WhatsApp Cloud API integration
+        ai/           # Chat and embedding provider implementations
+        database/     # Models, repositories, and migrations
+        vectorstores/ # Vector store implementations (pgvector)
+        whatsapp/     # WhatsApp Cloud API integration
     schemas/      # Pydantic schemas
 
 docs/
     adr/          # Architecture Decision Records
 ```
 
-## Request Flow
+## Request Flows
+
+### POST /chat
 
 ```mermaid
 sequenceDiagram
     participant Client
     participant Router as chat.py (API)
     participant UC as AnswerQuestion
-    participant UoW as SqlAlchemyUnitOfWork
+    participant UoW as SqlAlchemyMessagingUnitOfWork
     participant DB as PostgreSQL
     participant LLM as OpenAIChatModel
     participant OpenAI as OpenAI API
@@ -139,11 +153,39 @@ sequenceDiagram
     Router-->>Client: {reply}
 ```
 
+### POST /documents
+
+```mermaid
+sequenceDiagram
+    participant Client
+    participant Router as documents.py (API)
+    participant UC as IngestDocument
+    participant UoW as SqlAlchemyKnowledgeUnitOfWork
+    participant DB as PostgreSQL
+    participant Embed as OpenAIEmbeddingModel
+    participant VS as PgVectorStore
+    participant OpenAI as OpenAI API
+
+    Client->>Router: POST /documents {title, source, content}
+    Router->>UC: handle(title, source, content)
+    UC->>UoW: documents.create(...)
+    UoW->>DB: INSERT document
+    loop for each chunk
+        UC->>Embed: embed(chunk)
+        Embed->>OpenAI: embeddings.create(...)
+        OpenAI-->>Embed: vector
+        UC->>UoW: document_chunks.create(...)
+        UoW->>DB: INSERT document_chunk
+        UC->>VS: upsert(chunk_id, ...)
+    end
+    UC->>UoW: commit()
+    UoW->>DB: COMMIT
+    UC-->>Router: Document
+    Router-->>Client: {id, title, source}
+```
+
 ## Decision Tracking
 
-Architectural decisions are tracked in two places:
+Architectural decisions are tracked in `docs/adr/` — formal, accepted, and binding decisions.
 
-- `docs/adr/` - formal, accepted, and binding decisions
-
-
-Always consult both before implementing a new feature.
+Always consult before implementing a new feature.

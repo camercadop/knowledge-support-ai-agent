@@ -45,18 +45,22 @@ flowchart TB
 flowchart TB
     subgraph api["API Layer"]
         chat_router["chat.py\nFastAPI router"]
+        docs_router["documents.py\nFastAPI router"]
     end
 
     subgraph app["Application Layer"]
-        use_case["AnswerQuestion\nUse case"]
-        port_uow["UnitOfWork\n[port]"]
+        uc_answer["AnswerQuestion\nUse case"]
+        uc_ingest["IngestDocument\nUse case"]
+        port_msg_uow["MessagingUnitOfWork\n[port]"]
+        port_know_uow["KnowledgeUnitOfWork\n[port]"]
         port_chat["ChatModel\n[port]"]
         port_embed["EmbeddingModel\n[port]"]
         port_vs["VectorStore\n[port]"]
     end
 
     subgraph infra["Infrastructure Layer"]
-        sql_uow["SqlAlchemyMessagingUnitOfWork"]
+        sql_msg_uow["SqlAlchemyMessagingUnitOfWork"]
+        sql_know_uow["SqlAlchemyKnowledgeUnitOfWork"]
         contact_repo["ContactRepository"]
         conv_repo["ConversationRepository"]
         msg_repo["MessageRepository"]
@@ -72,20 +76,23 @@ flowchart TB
         openai["OpenAI API"]
     end
 
-    chat_router --> use_case
-    use_case --> port_uow
-    use_case --> port_chat
-    use_case --> port_embed
-    use_case --> port_vs
-    port_uow -.->|implements| sql_uow
+    chat_router --> uc_answer
+    docs_router --> uc_ingest
+    uc_answer --> port_msg_uow
+    uc_answer --> port_chat
+    uc_ingest --> port_know_uow
+    uc_ingest --> port_embed
+    uc_ingest --> port_vs
+    port_msg_uow -.->|implements| sql_msg_uow
+    port_know_uow -.->|implements| sql_know_uow
     port_chat -.->|implements| openai_chat
     port_embed -.->|implements| openai_embed
     port_vs -.->|implements| pgvector
-    sql_uow --> contact_repo
-    sql_uow --> conv_repo
-    sql_uow --> msg_repo
-    sql_uow --> doc_repo
-    sql_uow --> chunk_repo
+    sql_msg_uow --> contact_repo
+    sql_msg_uow --> conv_repo
+    sql_msg_uow --> msg_repo
+    sql_know_uow --> doc_repo
+    sql_know_uow --> chunk_repo
     contact_repo --> postgres
     conv_repo --> postgres
     msg_repo --> postgres
@@ -104,7 +111,10 @@ app/
     config/           # Settings and environment configuration
     domain/           # Domain models and business logic
     application/      # Use cases and orchestration
+        models/       # Application-layer value objects
         ports/        # Interfaces for infrastructure dependencies
+            repositories/   # One abstract repo per aggregate root
+            unit_of_work/   # Domain-scoped transactional boundaries
     infrastructure/   # External integrations (DB, LLM, WhatsApp)
         ai/
             chat/       # Chat completion provider implementations
