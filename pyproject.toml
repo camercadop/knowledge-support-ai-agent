@@ -36,7 +36,7 @@ select = ["E", "F", "I", "UP"]
 [tool.mypy]
 python_version = "3.13"
 strict = true
-exclude = ["tests/", "**/sqlalchemy/migrations/"]
+exclude = ["tests/", "sqlalchemy/migrations/"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
