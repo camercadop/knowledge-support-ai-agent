@@ -3,12 +3,8 @@ import uuid
 from sqlalchemy.orm import Session
 
 from app.application.models.conversation import Conversation
-from app.application.ports.repositories.conversation import (
-    AbstractConversationRepository,
-)
-from app.infrastructure.database.models.conversation import (
-    Conversation as ConversationORM,
-)
+from app.application.ports.repositories.conversation import AbstractConversationRepository
+from app.infrastructure.database.sqlalchemy.models.conversation import Conversation as ConversationORM
 
 
 class ConversationRepository(AbstractConversationRepository):

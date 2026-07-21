@@ -25,5 +25,5 @@ All models inherit from a shared base class that provides:
 
 ## Migrations
 
-- All schema changes are managed through Alembic migrations in `migrations/versions/`.
+- All schema changes are managed through Alembic migrations in `infrastructure/database/sqlalchemy/migrations/versions/`.
 - Never modify the database schema directly — always generate a migration.

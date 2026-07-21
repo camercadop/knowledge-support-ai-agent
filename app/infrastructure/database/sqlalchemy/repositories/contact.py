@@ -2,7 +2,7 @@ from sqlalchemy.orm import Session
 
 from app.application.models.contact import Contact
 from app.application.ports.repositories.contact import AbstractContactRepository
-from app.infrastructure.database.models.contact import Contact as ContactORM
+from app.infrastructure.database.sqlalchemy.models.contact import Contact as ContactORM
 
 
 class ContactRepository(AbstractContactRepository):

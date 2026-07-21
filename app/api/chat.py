@@ -6,8 +6,8 @@ from sqlalchemy.orm import Session
 from app.application.support.answer_question import AnswerQuestion
 from app.infrastructure.ai.chat.openai import OpenAIChatModel
 from app.infrastructure.ai.embeddings.openai import OpenAIEmbeddingModel
-from app.infrastructure.database.engine import get_db
-from app.infrastructure.database.unit_of_work.messaging import (
+from app.infrastructure.database.sqlalchemy.engine import get_db
+from app.infrastructure.database.sqlalchemy.unit_of_work.messaging import (
     SqlAlchemyMessagingUnitOfWork,
 )
 from app.infrastructure.vectorstores.pgvector.store import PgVectorStore

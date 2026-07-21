@@ -95,6 +95,7 @@ uv run mypy app/
 
 - All models define their own UUID primary key explicitly.
 - Each model field must have a comment explaining its purpose.
+- All schema changes are managed through Alembic migrations in `infrastructure/database/sqlalchemy/migrations/versions/`.
 
 ## Project Structure
 
@@ -110,7 +111,9 @@ app/
     domain/       # Domain models and business logic
     infrastructure/
         ai/           # Chat and embedding provider implementations
-        database/     # Models, repositories, and migrations
+        database/
+            sqlalchemy/ # Models, repositories, migrations, and PostgreSQL engine
+            sqlite/     # In-memory SQLite engine for tests
         vectorstores/ # Vector store implementations (pgvector)
         whatsapp/     # WhatsApp Cloud API integration
     schemas/      # Pydantic schemas
