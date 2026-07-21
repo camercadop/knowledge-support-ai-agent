@@ -1,5 +1,4 @@
 import logging
-from typing import get_args
 
 from openai import OpenAI
 from openai.types.responses import EasyInputMessageParam
@@ -19,9 +18,7 @@ SYSTEM_PROMPT = (
     "You are a helpful support assistant. Answer questions clearly and concisely."
 )
 
-_ALLOWED_ROLES = set(
-    get_args(EasyInputMessageParam.__annotations__["role"])
-)
+_ALLOWED_ROLES = {"user", "assistant", "system", "developer"}
 
 
 def _to_input(
@@ -35,7 +32,7 @@ def _to_input(
         EasyInputMessageParam(role="system", content=SYSTEM_PROMPT)
     ]
     for m in messages:
-        if m.role in _ALLOWED_ROLES:
+        if m.role.value in _ALLOWED_ROLES:
             result.append(
                 EasyInputMessageParam(
                     role=m.role,  # type: ignore[typeddict-item]
@@ -61,13 +58,16 @@ class OpenAIChatModel(ChatModel):
         Prepends the system prompt automatically. Skips messages with
         unrecognised roles.
         """
+        input_messages = _to_input(messages)
         logger.info("Calling LLM with %s messages", len(messages))
+        logger.debug("LLM input messages: %s", input_messages)
         response = self._client.responses.create(
             model=settings.chat_model,
-            input=_to_input(messages),  # type: ignore[arg-type]
+            input=input_messages,  # type: ignore[arg-type]
         )
         total_tokens = response.usage.total_tokens if response.usage else None
         logger.info("LLM response received, total_tokens=%s", total_tokens)
+        logger.debug("LLM output: %s", response.output_text)
         return ChatResponse(
             message=ChatMessage(role=Role.ASSISTANT, content=response.output_text),
             usage=TokenUsage(total=total_tokens),
