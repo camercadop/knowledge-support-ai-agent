@@ -30,7 +30,13 @@ def _chunk_text(text: str) -> list[str]:
 
 
 class IngestDocument:
-    """Handles document ingestion: persistence, chunking, embedding, and indexing."""
+    """Handles document ingestion: persistence, chunking, embedding, and indexing.
+
+    Args:
+        uow: Transactional boundary for documents and document chunks.
+        embedding_model: Provider used to embed each text chunk.
+        vector_store: Store used to index chunk embeddings for similarity search.
+    """
 
     def __init__(
         self,
@@ -38,7 +44,6 @@ class IngestDocument:
         embedding_model: EmbeddingModel,
         vector_store: VectorStore,
     ) -> None:
-        """Initialize with a unit of work, embedding model, and vector store."""
         self._uow = uow
         self._embedding_model = embedding_model
         self._vector_store = vector_store

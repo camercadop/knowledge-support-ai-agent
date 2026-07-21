@@ -1,12 +1,20 @@
 from sqlalchemy.orm import Session
 
 from app.application.ports.repositories.contact import AbstractContactRepository
-from app.application.ports.repositories.conversation import AbstractConversationRepository
+from app.application.ports.repositories.conversation import (
+    AbstractConversationRepository,
+)
 from app.application.ports.repositories.message import AbstractMessageRepository
 from app.application.ports.unit_of_work.messaging import MessagingUnitOfWork
-from app.infrastructure.database.sqlalchemy.postgresql.repositories.contact import ContactRepository
-from app.infrastructure.database.sqlalchemy.postgresql.repositories.conversation import ConversationRepository
-from app.infrastructure.database.sqlalchemy.postgresql.repositories.message import MessageRepository
+from app.infrastructure.database.sqlalchemy.postgresql.repositories.contact import (
+    ContactRepository,
+)
+from app.infrastructure.database.sqlalchemy.postgresql.repositories.conversation import (  # noqa: E501
+    ConversationRepository,
+)
+from app.infrastructure.database.sqlalchemy.postgresql.repositories.message import (
+    MessageRepository,
+)
 
 
 class SqlAlchemyMessagingUnitOfWork(MessagingUnitOfWork):

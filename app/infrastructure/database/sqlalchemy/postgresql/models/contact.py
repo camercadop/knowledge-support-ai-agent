@@ -5,7 +5,9 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.infrastructure.database.sqlalchemy.postgresql.base import Base
 
 if TYPE_CHECKING:
-    from app.infrastructure.database.sqlalchemy.postgresql.models.conversation import Conversation
+    from app.infrastructure.database.sqlalchemy.postgresql.models.conversation import (
+        Conversation,
+    )
 
 
 class Contact(Base):

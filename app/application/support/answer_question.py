@@ -9,7 +9,14 @@ logger = logging.getLogger(__name__)
 
 
 class AnswerQuestion:
-    """Orchestrates a full chat turn: retrieval, persistence, history, and LLM call."""
+    """Orchestrates a full chat turn: retrieval, persistence, history, and LLM call.
+
+    Args:
+        uow: Transactional boundary for contacts, conversations, and messages.
+        chat_model: LLM provider used to generate the assistant reply.
+        embedding_model: Provider used to embed the user query for retrieval.
+        vector_store: Store used to retrieve relevant knowledge chunks.
+    """
 
     def __init__(
         self,
@@ -18,7 +25,6 @@ class AnswerQuestion:
         embedding_model: EmbeddingModel,
         vector_store: VectorStore,
     ) -> None:
-        """Initialize with a unit of work, chat model, embedding model, and vector store."""
         self._uow = uow
         self._chat_model = chat_model
         self._embedding_model = embedding_model
@@ -30,6 +36,13 @@ class AnswerQuestion:
         Embeds the user query, retrieves relevant knowledge chunks, finds or
         creates the contact and conversation, builds the full message history,
         calls the LLM with context, persists both turns, and returns the reply.
+
+        Args:
+            phone: The user's phone number, used to identify the contact.
+            user_message: The raw message text sent by the user.
+
+        Returns:
+            The assistant's reply text.
         """
         query_embedding = self._embedding_model.embed(user_message)
         results = self._vector_store.search(query_embedding)

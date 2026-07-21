@@ -2,7 +2,9 @@ from sqlalchemy.orm import Session
 
 from app.application.models.contact import Contact
 from app.application.ports.repositories.contact import AbstractContactRepository
-from app.infrastructure.database.sqlalchemy.postgresql.models.contact import Contact as ContactORM
+from app.infrastructure.database.sqlalchemy.postgresql.models.contact import (
+    Contact as ContactORM,
+)
 
 
 class ContactRepository(AbstractContactRepository):
@@ -16,6 +18,12 @@ class ContactRepository(AbstractContactRepository):
         """Return the contact with the given phone, creating one if it does not exist.
 
         Flushes the session so the new contact gets an id before commit.
+
+        Args:
+            phone: The user's phone number in E.164 format.
+
+        Returns:
+            The existing or newly created Contact.
         """
         orm = self._db.query(ContactORM).filter(ContactORM.phone == phone).first()
         if orm is None:

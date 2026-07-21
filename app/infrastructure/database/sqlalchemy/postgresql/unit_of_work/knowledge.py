@@ -1,10 +1,16 @@
 from sqlalchemy.orm import Session
 
 from app.application.ports.repositories.document import AbstractDocumentRepository
-from app.application.ports.repositories.document_chunk import AbstractDocumentChunkRepository
+from app.application.ports.repositories.document_chunk import (
+    AbstractDocumentChunkRepository,
+)
 from app.application.ports.unit_of_work.knowledge import KnowledgeUnitOfWork
-from app.infrastructure.database.sqlalchemy.postgresql.repositories.document import DocumentRepository
-from app.infrastructure.database.sqlalchemy.postgresql.repositories.document_chunk import DocumentChunkRepository
+from app.infrastructure.database.sqlalchemy.postgresql.repositories.document import (
+    DocumentRepository,
+)
+from app.infrastructure.database.sqlalchemy.postgresql.repositories.document_chunk import (  # noqa: E501
+    DocumentChunkRepository,
+)
 
 
 class SqlAlchemyKnowledgeUnitOfWork(KnowledgeUnitOfWork):

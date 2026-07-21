@@ -33,9 +33,13 @@ def _to_input(
     Args:
         messages: Ordered list of ChatMessage value objects.
         context: Optional retrieved knowledge chunks to append to the system prompt.
+
+    Returns:
+        List of EasyInputMessageParam entries starting with the system prompt.
     """
     system_content = (
-        f"{SYSTEM_PROMPT}\n\nUse the following knowledge base excerpts to answer:\n{context}"
+        f"{SYSTEM_PROMPT}\n\n"
+        f"Use the following knowledge base excerpts to answer:\n{context}"
         if context
         else SYSTEM_PROMPT
     )
@@ -74,6 +78,9 @@ class OpenAIChatModel(ChatModel):
         Args:
             messages: Ordered list of ChatMessage value objects.
             context: Optional retrieved knowledge to merge into the system prompt.
+
+        Returns:
+            A ChatResponse with the assistant reply and token usage.
         """
         input_messages = _to_input(messages, context)
         logger.info("Calling LLM with %s messages", len(messages))

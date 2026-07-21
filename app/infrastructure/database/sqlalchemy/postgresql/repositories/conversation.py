@@ -3,8 +3,12 @@ import uuid
 from sqlalchemy.orm import Session
 
 from app.application.models.conversation import Conversation
-from app.application.ports.repositories.conversation import AbstractConversationRepository
-from app.infrastructure.database.sqlalchemy.postgresql.models.conversation import Conversation as ConversationORM
+from app.application.ports.repositories.conversation import (
+    AbstractConversationRepository,
+)
+from app.infrastructure.database.sqlalchemy.postgresql.models.conversation import (
+    Conversation as ConversationORM,
+)
 
 
 class ConversationRepository(AbstractConversationRepository):
@@ -18,6 +22,12 @@ class ConversationRepository(AbstractConversationRepository):
         """Return the most recent conversation for a contact, or create one.
 
         Flushes the session so the new conversation gets an id before commit.
+
+        Args:
+            contact_id: UUID of the contact to look up or create a conversation for.
+
+        Returns:
+            The most recent existing or newly created Conversation.
         """
         orm = (
             self._db.query(ConversationORM)

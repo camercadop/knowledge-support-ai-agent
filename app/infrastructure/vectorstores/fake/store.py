@@ -5,7 +5,15 @@ from app.application.ports.vector_store import SearchResult, VectorStore
 
 
 def _cosine_distance(a: list[float], b: list[float]) -> float:
-    """Return cosine distance between two vectors (0 = identical, 2 = opposite)."""
+    """Return cosine distance between two vectors (0 = identical, 2 = opposite).
+
+    Args:
+        a: First vector.
+        b: Second vector.
+
+    Returns:
+        Cosine distance as a float between 0.0 and 2.0.
+    """
     dot = sum(x * y for x, y in zip(a, b))
     norm_a = math.sqrt(sum(x * x for x in a))
     norm_b = math.sqrt(sum(x * x for x in b))

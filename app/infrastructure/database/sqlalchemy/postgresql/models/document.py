@@ -6,8 +6,9 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.infrastructure.database.sqlalchemy.postgresql.base import Base
 
 if TYPE_CHECKING:
-    from app.infrastructure.database.sqlalchemy.postgresql.models.document_chunk import DocumentChunk
-
+    from app.infrastructure.database.sqlalchemy.postgresql.models.document_chunk import (  # noqa: E501
+        DocumentChunk,
+    )
 
 class Document(Base):
     """Represents a knowledge base document that can be chunked and indexed."""

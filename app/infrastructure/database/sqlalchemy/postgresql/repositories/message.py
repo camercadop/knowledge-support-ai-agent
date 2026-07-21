@@ -4,7 +4,9 @@ from sqlalchemy.orm import Session
 
 from app.application.models.message import Message
 from app.application.ports.repositories.message import AbstractMessageRepository
-from app.infrastructure.database.sqlalchemy.postgresql.models.message import Message as MessageORM
+from app.infrastructure.database.sqlalchemy.postgresql.models.message import (
+    Message as MessageORM,
+)
 
 
 class MessageRepository(AbstractMessageRepository):
@@ -15,7 +17,14 @@ class MessageRepository(AbstractMessageRepository):
         self._db = db
 
     def list_by_conversation(self, conversation_id: uuid.UUID) -> list[Message]:
-        """Return all messages for a conversation ordered by creation time."""
+        """Return all messages for a conversation ordered by creation time.
+
+        Args:
+            conversation_id: UUID of the conversation to fetch messages for.
+
+        Returns:
+            List of Message objects ordered by creation time ascending.
+        """
         rows = (
             self._db.query(MessageORM)
             .filter(MessageORM.conversation_id == conversation_id)
@@ -40,7 +49,17 @@ class MessageRepository(AbstractMessageRepository):
         content: str,
         tokens: int | None = None,
     ) -> Message:
-        """Persist a new message and return it."""
+        """Persist a new message and return it.
+
+        Args:
+            conversation_id: UUID of the conversation this message belongs to.
+            role: Speaker role — one of 'user' or 'assistant'.
+            content: The message text.
+            tokens: Optional token count reported by the LLM.
+
+        Returns:
+            The persisted Message.
+        """
         orm = MessageORM(
             conversation_id=conversation_id, role=role, content=content, tokens=tokens
         )
