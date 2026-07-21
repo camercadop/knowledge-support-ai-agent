@@ -118,6 +118,15 @@ app/
         whatsapp/     # WhatsApp Cloud API integration
     schemas/      # Pydantic schemas
 
+tests/
+    api/              # mirrors app/api/
+    application/      # mirrors app/application/
+    domain/           # mirrors app/domain/
+    infrastructure/   # mirrors app/infrastructure/
+    conftest.py       # shared fixtures
+    factories/        # object factories and builders
+    fakes/            # in-memory fake implementations of ports
+
 docs/
     adr/          # Architecture Decision Records
 ```

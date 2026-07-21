@@ -49,3 +49,4 @@ Ordered from foundational to specific — read top to bottom when onboarding.
 | [Writing Infrastructure Clients](writing-infrastructure-clients.md) | How to wrap an external SDK or service |
 | [Writing Settings](writing-settings.md) | How to add and access application settings |
 | [Writing Logs](writing-logs.md) | Logging conventions and formatting rules |
+| [Writing Tests](writing-tests.md) | Test structure, layer rules, and naming conventions |
