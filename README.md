@@ -1,5 +1,7 @@
 # Knowledge Support AI Agent
 
+[![CI](https://github.com/camercadop/knowledge-support-ai-agent/actions/workflows/ci.yml/badge.svg)](https://github.com/camercadop/knowledge-support-ai-agent/actions/workflows/ci.yml)
+
 A production-grade reference implementation of a conversational AI support agent. Built to demonstrate how to structure a real-world AI backend using Clean Architecture — with RAG, semantic memory, persistent chat history, and provider independence baked in from the start.
 
 The goal is to show that AI-powered applications don't have to be prototype spaghetti: business logic stays isolated from LLM providers, databases, and messaging platforms, making every layer independently testable and replaceable.
