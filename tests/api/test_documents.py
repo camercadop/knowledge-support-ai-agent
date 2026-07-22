@@ -1,13 +1,11 @@
 import uuid
 from collections.abc import Generator
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 from fastapi.testclient import TestClient
 
-import app.api.documents as documents_module
 from app.application.models.document import Document
-from app.infrastructure.ai.mock.embeddings import MockEmbeddingModel
 from app.infrastructure.database.sqlalchemy.postgresql.engine import get_db
 from app.main import app
 
@@ -15,16 +13,18 @@ _DOCUMENT_ID = uuid.uuid4()
 _MOCK_DOCUMENT = Document(
     id=_DOCUMENT_ID, title="My Doc", source="manual", content="..."
 )
+_MOCK_USE_CASE = MagicMock()
+_MOCK_USE_CASE.handle.return_value = _MOCK_DOCUMENT
 
 
 @pytest.fixture()
 def client() -> Generator[TestClient]:
-    """Return a TestClient with AI models replaced by mocks and DB bypassed."""
-    documents_module._embedding_model = MockEmbeddingModel()
-
     app.dependency_overrides[get_db] = lambda: None
 
-    with patch("app.api.documents.IngestDocument.handle", return_value=_MOCK_DOCUMENT):
+    with patch(
+        "app.container.support.SupportContainer.ingest_document",
+        return_value=_MOCK_USE_CASE,
+    ):
         yield TestClient(app)
 
     app.dependency_overrides.clear()

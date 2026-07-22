@@ -4,25 +4,22 @@ from unittest.mock import MagicMock, patch
 import pytest
 from fastapi.testclient import TestClient
 
-import app.api.chat as chat_module
-from app.infrastructure.ai.mock.chat import MockChatModel
-from app.infrastructure.ai.mock.embeddings import MockEmbeddingModel
-from app.infrastructure.ai.mock.tool_registry import MockToolRegistry
 from app.infrastructure.database.sqlalchemy.postgresql.engine import get_db
 from app.main import app
 
 _MOCK_DB = MagicMock()
+_MOCK_USE_CASE = MagicMock()
+_MOCK_USE_CASE.handle.return_value = "mock reply"
 
 
 @pytest.fixture()
 def client() -> Generator[TestClient]:
-    """Return a TestClient with AI models replaced by mocks and DB bypassed."""
-    chat_module._chat_model = MockChatModel(reply="mock reply")
-    chat_module._embedding_model = MockEmbeddingModel()
-
     app.dependency_overrides[get_db] = lambda: _MOCK_DB
 
-    with patch("app.api.chat.AnswerQuestion.handle", return_value="mock reply"):
+    with patch(
+        "app.container.support.SupportContainer.answer_question",
+        return_value=_MOCK_USE_CASE,
+    ):
         yield TestClient(app)
 
     app.dependency_overrides.clear()
@@ -42,25 +39,6 @@ def test_chat_missing_fields(client: TestClient) -> None:
 
 
 def test_chat_empty_message(client: TestClient) -> None:
-    """POST /chat with an empty message still returns a reply."""
+    """POST /chat with an empty message returns 422."""
     response = client.post("/chat", json={"phone": "+1234567890", "message": ""})
-    assert response.status_code == 200
-    assert "reply" in response.json()
-
-
-def test_chat_passes_tool_registry_to_use_case(client: TestClient) -> None:
-    """POST /chat calls build_tool_registry once per request."""
-    with patch(
-        "app.api.chat.build_tool_registry", return_value=MockToolRegistry()
-    ) as mock_build:
-        client.post("/chat", json={"phone": "+1234567890", "message": "Hi"})
-    mock_build.assert_called_once()
-
-
-def test_chat_tool_registry_receives_db_session(client: TestClient) -> None:
-    """POST /chat passes the injected DB session to build_tool_registry."""
-    with patch(
-        "app.api.chat.build_tool_registry", return_value=MockToolRegistry()
-    ) as mock_build:
-        client.post("/chat", json={"phone": "+1234567890", "message": "Hi"})
-    mock_build.assert_called_once_with(_MOCK_DB)
+    assert response.status_code == 422
