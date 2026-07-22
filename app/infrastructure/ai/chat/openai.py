@@ -21,6 +21,17 @@ SYSTEM_PROMPT = (
     "You are a helpful support assistant. Answer questions clearly and concisely."
 )
 
+_GROUNDED_INSTRUCTIONS = (
+    "Answer using only the knowledge base excerpts provided below. "
+    "If the excerpts do not contain enough information to answer, say you don't know."
+)
+
+_NO_CONTEXT_INSTRUCTIONS = (
+    "You have no knowledge base context available for this query. "
+    "Do not fabricate information. "
+    "Tell the user you don't have enough information to answer."
+)
+
 _ALLOWED_ROLES = {"user", "assistant", "system", "developer"}
 
 
@@ -40,12 +51,13 @@ def _to_input(
     Returns:
         List of EasyInputMessageParam entries starting with the system prompt.
     """
-    system_content = (
-        f"{SYSTEM_PROMPT}\n\n"
-        f"Use the following knowledge base excerpts to answer:\n{context}"
-        if context
-        else SYSTEM_PROMPT
-    )
+    if context:
+        system_content = (
+            f"{SYSTEM_PROMPT}\n\n{_GROUNDED_INSTRUCTIONS}"
+            f"\n\nKnowledge base excerpts:\n{context}"
+        )
+    else:
+        system_content = f"{SYSTEM_PROMPT}\n\n{_NO_CONTEXT_INSTRUCTIONS}"
     result: list[EasyInputMessageParam] = [
         EasyInputMessageParam(role="system", content=system_content)
     ]
@@ -143,9 +155,7 @@ class OpenAIChatModel(ChatModel):
                 total_tokens += response.usage.total_tokens or 0
 
             tool_calls = [
-                item
-                for item in response.output
-                if item.type == "function_call"
+                item for item in response.output if item.type == "function_call"
             ]
 
             if not tool_calls:
