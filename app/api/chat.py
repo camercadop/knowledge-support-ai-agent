@@ -31,8 +31,7 @@ def chat(
     db: Session = Depends(get_db),
 ) -> ChatResponse:
     """Receive a user message and return the assistant reply."""
-    safe_phone = request.phone.replace("\n", " ").replace("\r", " ")
-    logger.info("Received chat request from %s", safe_phone)
+    logger.info("Received chat request from %s", request.phone)
     reply = container.answer_question(db).handle(request.phone, request.message)
-    logger.info("Replied to %s", safe_phone)
+    logger.info("Replied to %s", request.phone)
     return ChatResponse(reply=reply)

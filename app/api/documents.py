@@ -34,8 +34,7 @@ def ingest_document(
 
     Chunks the content, generates embeddings, and indexes them for similarity search.
     """
-    safe_title = request.title.replace("\n", " ").replace("\r", " ")
-    logger.info("Received ingest request for document '%s'", safe_title)
+    logger.info("Received ingest request for document '%s'", request.title)
     document = container.ingest_document(db).handle(
         title=request.title,
         source=request.source,
