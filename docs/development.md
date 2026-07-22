@@ -122,6 +122,7 @@ app/
     domain/       # Domain models and business logic
     infrastructure/
         ai/           # Chat and embedding provider implementations
+            tools/    # Tool registry, @tool decorator, and tool implementations
         database/
             sqlalchemy/ # Models, repositories, migrations, and PostgreSQL engine
             sqlite/     # In-memory SQLite engine for tests

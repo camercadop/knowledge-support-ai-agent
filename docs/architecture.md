@@ -28,7 +28,7 @@ flowchart TB
     subgraph agent["Knowledge Support AI Agent"]
         api["API Layer\n[FastAPI]\nExposes HTTP endpoints"]
         app["Application Layer\n[Python]\nOrchestrates use cases"]
-        infra["Infrastructure\n[Python]\nDB engine, LLM client, vector store"]
+        infra["Infrastructure\n[Python]\nDB engine, LLM client, vector store, tools"]
         db["PostgreSQL + pgvector\n[Database]\nStores contacts, conversations,\nmessages, documents and embeddings"]
     end
 
@@ -56,6 +56,7 @@ flowchart TB
         port_chat["ChatModel\n[port]"]
         port_embed["EmbeddingModel\n[port]"]
         port_vs["VectorStore\n[port]"]
+        port_tools["ToolRegistry\n[port]"]
     end
 
     subgraph infra["Infrastructure Layer"]
@@ -69,6 +70,8 @@ flowchart TB
         openai_chat["OpenAIChatModel"]
         openai_embed["OpenAIEmbeddingModel"]
         pgvector["PgVectorStore"]
+        tool_registry["ConcreteToolRegistry"]
+        tools["Tools\nget_current_date · search_documents"]
     end
 
     subgraph external["External"]
@@ -80,6 +83,7 @@ flowchart TB
     docs_router --> uc_ingest
     uc_answer --> port_msg_uow
     uc_answer --> port_chat
+    uc_answer --> port_tools
     uc_ingest --> port_know_uow
     uc_ingest --> port_embed
     uc_ingest --> port_vs
@@ -88,6 +92,8 @@ flowchart TB
     port_chat -.->|implements| openai_chat
     port_embed -.->|implements| openai_embed
     port_vs -.->|implements| pgvector
+    port_tools -.->|implements| tool_registry
+    tool_registry --> tools
     sql_msg_uow --> contact_repo
     sql_msg_uow --> conv_repo
     sql_msg_uow --> msg_repo
@@ -120,6 +126,7 @@ app/
             chat/       # Chat completion provider implementations
             embeddings/ # Embedding provider implementations
             mock/       # Mock implementations for testing
+            tools/      # Tool registry, @tool decorator, and tool implementations
         database/         # ORM adapters, repositories, and migrations
         vectorstores/
             pgvector/   # PgVectorStore — cosine similarity search via pgvector

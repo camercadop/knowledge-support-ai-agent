@@ -19,7 +19,7 @@ flowchart TB
     subgraph agent["Knowledge Support AI Agent"]
         api["API Layer\nFastAPI"]
         app["Application Layer\nUse cases & ports"]
-        infra["Infrastructure\nDB · LLM · Vector store"]
+        infra["Infrastructure\nDB · LLM · Vector store · Tools"]
         db["PostgreSQL + pgvector"]
     end
 
@@ -121,8 +121,9 @@ app/
             unit_of_work/  # Domain-scoped transactional boundaries
     config/           # Settings and logging configuration
     domain/           # Domain models and business logic
-    infrastructure/   # Concrete implementations of all ports
+    infrastructure/
         ai/           # Chat and embedding provider clients
+            tools/    # Tool registry, @tool decorator, and tool implementations
         database/     # ORM models, repositories, migrations
         vectorstores/ # Vector store implementations (pgvector)
     schemas/          # Pydantic request/response schemas
