@@ -29,4 +29,4 @@ class Document(Base):
         nullable=False,
     )
 
-    chunks: Mapped[list["DocumentChunk"]] = relationship(back_populates="document")
+    chunks: Mapped[list[DocumentChunk]] = relationship(back_populates="document")

@@ -25,4 +25,4 @@ class Contact(Base):
         nullable=True,
     )
 
-    conversations: Mapped[list["Conversation"]] = relationship(back_populates="contact")  # noqa: F821
+    conversations: Mapped[list[Conversation]] = relationship(back_populates="contact")  # noqa: F821

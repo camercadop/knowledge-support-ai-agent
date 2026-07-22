@@ -36,4 +36,4 @@ class Message(Base):
         nullable=True,
     )
 
-    conversation: Mapped["Conversation"] = relationship(back_populates="messages")  # noqa: F821
+    conversation: Mapped[Conversation] = relationship(back_populates="messages")  # noqa: F821

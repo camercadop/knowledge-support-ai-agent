@@ -27,7 +27,7 @@ from app.infrastructure.vectorstores.pgvector.store import PgVectorStore
 )
 def search_documents_factory(
     db: Session, embedding_model: EmbeddingModel
-) -> "SearchDocumentsTool":
+) -> SearchDocumentsTool:
     """Construct a SearchDocumentsTool for the given database session
     and embedding model.
 

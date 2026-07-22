@@ -22,5 +22,5 @@ class Conversation(Base):
         nullable=False,
     )
 
-    contact: Mapped["Contact"] = relationship(back_populates="conversations")  # noqa: F821
-    messages: Mapped[list["Message"]] = relationship(back_populates="conversation")  # noqa: F821
+    contact: Mapped[Contact] = relationship(back_populates="conversations")  # noqa: F821
+    messages: Mapped[list[Message]] = relationship(back_populates="conversation")  # noqa: F821

@@ -34,4 +34,4 @@ class DocumentChunk(Base):
         nullable=False,
     )
 
-    document: Mapped["Document"] = relationship(back_populates="chunks")
+    document: Mapped[Document] = relationship(back_populates="chunks")
