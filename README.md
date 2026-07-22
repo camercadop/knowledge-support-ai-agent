@@ -39,7 +39,7 @@ flowchart TB
 - PostgreSQL, pgvector
 - OpenAI Responses API
 - Docker, Docker Compose
-- uv, Pytest, Ruff, MyPy
+- uv, Pytest, Ruff, MyPy, import-linter
 
 ## Prerequisites
 
@@ -139,6 +139,8 @@ uv run pytest
 ```bash
 uv run ruff check .
 uv run mypy app/
+uv run lint-imports
+uv audit --preview-features audit-command
 ```
 
 ## Documentation

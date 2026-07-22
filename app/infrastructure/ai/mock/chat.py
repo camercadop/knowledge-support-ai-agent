@@ -1,3 +1,7 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from app.application.ports.chat_model import (
     ChatMessage,
     ChatModel,
@@ -5,6 +9,9 @@ from app.application.ports.chat_model import (
     Role,
     TokenUsage,
 )
+
+if TYPE_CHECKING:
+    from app.application.ports.tool_registry import ToolRegistry
 
 
 class MockChatModel(ChatModel):
@@ -25,13 +32,17 @@ class MockChatModel(ChatModel):
         self._token_total = token_total
 
     def generate(
-        self, messages: list[ChatMessage], context: str | None = None
+        self,
+        messages: list[ChatMessage],
+        context: str | None = None,
+        tool_registry: ToolRegistry | None = None,
     ) -> ChatResponse:
         """Return a fixed assistant reply regardless of input.
 
         Args:
             messages: Ignored.
             context: Ignored.
+            tool_registry: Ignored.
 
         Returns:
             A ChatResponse with the configured reply and zero token usage.

@@ -1,7 +1,9 @@
+import json
 import logging
+from typing import Any
 
 from openai import OpenAI
-from openai.types.responses import EasyInputMessageParam
+from openai.types.responses import EasyInputMessageParam, FunctionToolParam
 
 from app.application.ports.chat_model import (
     ChatMessage,
@@ -10,6 +12,7 @@ from app.application.ports.chat_model import (
     Role,
     TokenUsage,
 )
+from app.application.ports.tool_registry import ToolDefinition, ToolRegistry
 from app.config.settings import settings
 
 logger = logging.getLogger(__name__)
@@ -57,6 +60,33 @@ def _to_input(
     return result
 
 
+def _to_function_tool(definition: ToolDefinition) -> FunctionToolParam:
+    """Convert a ToolDefinition to an OpenAI FunctionToolParam.
+
+    Args:
+        definition: The tool definition to convert.
+
+    Returns:
+        A FunctionToolParam suitable for the OpenAI Responses API.
+    """
+    required = [p.name for p in definition.parameters if p.required]
+    properties: dict[str, Any] = {
+        p.name: {"type": p.type, "description": p.description}
+        for p in definition.parameters
+    }
+    return FunctionToolParam(
+        type="function",
+        name=definition.name,
+        description=definition.description,
+        strict=False,
+        parameters={
+            "type": "object",
+            "properties": properties,
+            "required": required,
+        },
+    )
+
+
 class OpenAIChatModel(ChatModel):
     """ChatModel implementation backed by the OpenAI Responses API."""
 
@@ -68,32 +98,77 @@ class OpenAIChatModel(ChatModel):
         )
 
     def generate(
-        self, messages: list[ChatMessage], context: str | None = None
+        self,
+        messages: list[ChatMessage],
+        context: str | None = None,
+        tool_registry: ToolRegistry | None = None,
     ) -> ChatResponse:
-        """Send messages to the OpenAI Responses API and return the reply.
-
-        Prepends the system prompt, merged with retrieved context when provided.
-        Skips messages with unrecognised roles.
+        """Send messages to the OpenAI Responses API and return the assistant reply.
 
         Args:
             messages: Ordered list of ChatMessage value objects.
             context: Optional retrieved knowledge to merge into the system prompt.
+            tool_registry: Optional registry of tools the model may invoke in a
+                loop until it produces a final text reply.
 
         Returns:
             A ChatResponse with the assistant reply and token usage.
         """
-        input_messages = _to_input(messages, context)
+        input_messages: list[Any] = list(_to_input(messages, context))
+        tools = (
+            [_to_function_tool(d) for d in tool_registry.list_definitions()]
+            if tool_registry
+            else []
+        )
+
         logger.info("Calling LLM with %s messages", len(messages))
-        logger.debug("LLM input messages: %s", input_messages)
-        response = self._client.responses.create(
-            model=settings.chat_model,
-            input=input_messages,  # type: ignore[arg-type]
-            max_output_tokens=settings.chat_max_tokens,
-        )
-        total_tokens = response.usage.total_tokens if response.usage else None
-        logger.info("LLM response received, total_tokens=%s", total_tokens)
-        logger.debug("LLM output: %s", response.output_text)
-        return ChatResponse(
-            message=ChatMessage(role=Role.ASSISTANT, content=response.output_text),
-            usage=TokenUsage(total=total_tokens),
-        )
+        total_tokens = 0
+        previous_response_id: str | None = None
+
+        while True:
+            kwargs: dict[str, Any] = {
+                "model": settings.chat_model,
+                "max_output_tokens": settings.chat_max_tokens,
+            }
+            if previous_response_id:
+                kwargs["previous_response_id"] = previous_response_id
+            else:
+                kwargs["input"] = input_messages
+            if tools:
+                kwargs["tools"] = tools
+
+            response = self._client.responses.create(**kwargs)
+
+            if response.usage:
+                total_tokens += response.usage.total_tokens or 0
+
+            tool_calls = [
+                item
+                for item in response.output
+                if item.type == "function_call"
+            ]
+
+            if not tool_calls:
+                logger.info("LLM response received, total_tokens=%s", total_tokens)
+                logger.debug("LLM output: %s", response.output_text)
+                return ChatResponse(
+                    message=ChatMessage(
+                        role=Role.ASSISTANT,
+                        content=response.output_text,
+                    ),
+                    usage=TokenUsage(total=total_tokens or None),
+                )
+
+            previous_response_id = response.id
+            for call in tool_calls:
+                arguments = json.loads(call.arguments)
+                logger.info("Tool call: %s args=%s", call.name, arguments)
+                result = tool_registry.execute(call.name, arguments)  # type: ignore[union-attr]
+                logger.info("Tool result for %s: %s", call.name, result)
+                input_messages.append(
+                    {
+                        "type": "function_call_output",
+                        "call_id": call.call_id,
+                        "output": result,
+                    }
+                )

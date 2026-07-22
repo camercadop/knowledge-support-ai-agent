@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from app.application.support.answer_question import AnswerQuestion
 from app.infrastructure.ai.chat.openai import OpenAIChatModel
 from app.infrastructure.ai.embeddings.openai import OpenAIEmbeddingModel
+from app.infrastructure.ai.tools.registry import build_tool_registry
 from app.infrastructure.database.sqlalchemy.postgresql.engine import get_db
 from app.infrastructure.database.sqlalchemy.postgresql.unit_of_work.messaging import (
     SqlAlchemyMessagingUnitOfWork,
@@ -30,6 +31,7 @@ def chat(request: ChatRequest, db: Session = Depends(get_db)) -> ChatResponse:
         chat_model=_chat_model,
         embedding_model=_embedding_model,
         vector_store=PgVectorStore(db),
+        tool_registry=build_tool_registry(db),
     )
     reply = use_case.handle(request.phone, request.message)
     logger.info("Replied to %s", safe_phone)
