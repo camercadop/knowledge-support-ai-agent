@@ -9,8 +9,6 @@ from app.infrastructure.ai.embeddings.openai import OpenAIEmbeddingModel
 from app.infrastructure.ai.tools.decorators import tool
 from app.infrastructure.vectorstores.pgvector.store import PgVectorStore
 
-_embedding_model = OpenAIEmbeddingModel()
-
 
 @tool(
     name="search_documents",
@@ -22,19 +20,25 @@ _embedding_model = OpenAIEmbeddingModel()
             description="The search query to look up in the knowledge base.",
         )
     ],
-    requires_db=True,
+    dependencies={
+        "db": None,
+        "embedding_model": OpenAIEmbeddingModel,
+    },
 )
-def search_documents_factory(db: Session) -> "SearchDocumentsTool":
-    """Construct a SearchDocumentsTool for the given database session.
+def search_documents_factory(
+    db: Session, embedding_model: EmbeddingModel
+) -> "SearchDocumentsTool":
+    """Construct a SearchDocumentsTool for the given database session and embedding model.
 
     Args:
         db: The active database session used to back the vector store.
+        embedding_model: The embedding model used to embed search queries.
 
     Returns:
         A SearchDocumentsTool ready to handle tool call arguments.
     """
     return SearchDocumentsTool(
-        embedding_model=_embedding_model,
+        embedding_model=embedding_model,
         vector_store=PgVectorStore(db),
     )
 

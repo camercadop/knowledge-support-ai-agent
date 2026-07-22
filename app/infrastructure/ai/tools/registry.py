@@ -8,8 +8,9 @@ from sqlalchemy.orm import Session
 
 from app.application.ports.tool_registry import ToolDefinition, ToolRegistry
 from app.infrastructure.ai.tools.decorators import (
+    DB_DEPENDENCY_KEY,
+    TOOL_DEPENDENCIES_ATTR,
     TOOL_METADATA_ATTR,
-    TOOL_REQUIRES_DB_ATTR,
 )
 
 logger = logging.getLogger(__name__)
@@ -71,18 +72,42 @@ class ConcreteToolRegistry(ToolRegistry):
         return self._tools[name](arguments)
 
 
+def _validate_dependencies(tool_name: str, deps: dict[str, Any]) -> None:
+    """Validate that the reserved 'db' key is not given a non-None factory.
+
+    Args:
+        tool_name: Name of the tool being validated, used in the error message.
+        deps: The dependencies dict attached to the tool.
+
+    Raises:
+        ValueError: If 'db' is declared with a non-None factory.
+    """
+    if DB_DEPENDENCY_KEY in deps and deps[DB_DEPENDENCY_KEY] is not None:
+        raise ValueError(
+            f"Tool '{tool_name}' declares '{DB_DEPENDENCY_KEY}' with a "
+            f"non-None factory. The '{DB_DEPENDENCY_KEY}' key is reserved and "
+            "always resolved by the registry from the active Session."
+        )
+
+
 def build_tool_registry(db: Session) -> ConcreteToolRegistry:
     """Discover and register all @tool-decorated callables in the tools package.
 
     Scans every module in app.infrastructure.ai.tools for callables decorated
-    with @tool. Callables with requires_db=True are treated as factories and
-    called with db to produce the handler.
+    with @tool. If a tool declares dependencies, it is treated as a factory
+    called with the resolved dependencies as kwargs. The reserved "db" key is
+    always resolved from the active Session — declaring it with a non-None
+    factory raises a ValueError at build time.
 
     Args:
-        db: The active database session, forwarded to db-scoped tool factories.
+        db: The active database session, injected for tools that declare "db"
+            in their dependencies.
 
     Returns:
         A ConcreteToolRegistry with all discovered tools registered.
+
+    Raises:
+        ValueError: If a tool declares "db" with a non-None factory.
     """
     registry = ConcreteToolRegistry()
     package = importlib.import_module(_TOOLS_PACKAGE)
@@ -94,8 +119,19 @@ def build_tool_registry(db: Session) -> ConcreteToolRegistry:
             if not callable(obj) or not hasattr(obj, TOOL_METADATA_ATTR):
                 continue
             definition: ToolDefinition = getattr(obj, TOOL_METADATA_ATTR)
-            requires_db: bool = getattr(obj, TOOL_REQUIRES_DB_ATTR, False)
-            handler = obj(db) if requires_db else obj
-            registry.register(definition, handler)
+            deps: dict[str, Callable[[], Any] | None] = getattr(obj, TOOL_DEPENDENCIES_ATTR, {})
+
+            _validate_dependencies(definition.name, deps)
+
+            if not deps:
+                registry.register(definition, obj)
+                continue
+
+            resolved = {
+                key: db if key == DB_DEPENDENCY_KEY else factory()  # type: ignore[misc]
+                for key, factory in deps.items()
+                if factory is not None or key == DB_DEPENDENCY_KEY
+            }
+            registry.register(definition, obj(**resolved))
 
     return registry
