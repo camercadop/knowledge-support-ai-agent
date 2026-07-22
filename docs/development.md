@@ -118,7 +118,11 @@ app/
         ports/    # Interfaces for infrastructure dependencies
             repositories/  # One abstract repo per aggregate root
             unit_of_work/  # Domain-scoped transactional boundaries
+    cli/          # Typer CLI entry point
+        commands/   # One module per command group
+        context.py  # Request context manager (container + session lifecycle)
     config/       # Settings and environment configuration
+    container/    # Composition Root — ApplicationContainer composes domain-scoped containers
     domain/       # Domain models and business logic
     infrastructure/
         ai/           # Chat and embedding provider implementations

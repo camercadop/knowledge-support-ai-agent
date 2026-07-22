@@ -152,13 +152,14 @@ uv run agent clear-history --phone "+1234567890"
 ```
 app/
     api/              # Route handlers
-    cli/              # Typer CLI entry point and manual DI wiring
+    cli/              # Typer CLI entry point
     application/      # Use cases and orchestration
         models/       # Application-layer value objects
         ports/        # Abstract interfaces (ports)
             repositories/  # One abstract repo per aggregate root
             unit_of_work/  # Domain-scoped transactional boundaries
     config/           # Settings and logging configuration
+    container/        # Composition Root — ApplicationContainer composes domain-scoped containers
     domain/           # Domain models and business logic
     infrastructure/
         ai/           # Chat and embedding provider clients

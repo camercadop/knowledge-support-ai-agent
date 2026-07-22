@@ -123,14 +123,15 @@ flowchart TB
 ```
 app/
     api/              # Route handlers and webhook endpoints
-    cli/              # Typer CLI entry point and manual DI wiring
-    config/           # Settings and environment configuration
-    domain/           # Domain models and business logic
     application/      # Use cases and orchestration
         models/       # Application-layer value objects
         ports/        # Interfaces for infrastructure dependencies
             repositories/   # One abstract repo per aggregate root
             unit_of_work/   # Domain-scoped transactional boundaries
+    cli/              # Typer CLI entry point
+    config/           # Settings and environment configuration
+    container/        # Composition Root — ApplicationContainer composes domain-scoped containers
+    domain/           # Domain models and business logic
     infrastructure/   # External integrations (DB, LLM, WhatsApp)
         ai/
             chat/       # Chat completion provider implementations
