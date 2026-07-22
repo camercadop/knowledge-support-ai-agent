@@ -2,7 +2,7 @@
 
 ## Requirements
 
-- Python 3.13+
+- Python 3.14+
 - Docker & Docker Compose
 - uv
 

@@ -1,7 +1,7 @@
 [project]
 name = "knowledge-support-ai-agent"
 version = "0.1.0"
-requires-python = ">=3.13"
+requires-python = ">=3.14"
 dependencies = [
     "fastapi>=0.115.0",
     "uvicorn[standard]>=0.30.0",
@@ -31,7 +31,7 @@ dev = [
 ]
 
 [tool.ruff]
-target-version = "py313"
+target-version = "py314"
 line-length = 88
 exclude = ["**/sqlalchemy/migrations/", "tests/"]
 
@@ -39,7 +39,7 @@ exclude = ["**/sqlalchemy/migrations/", "tests/"]
 select = ["E", "F", "I", "UP"]
 
 [tool.mypy]
-python_version = "3.13"
+python_version = "3.14"
 strict = true
 exclude = ["tests/", "sqlalchemy/migrations/"]
 
