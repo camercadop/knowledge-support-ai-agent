@@ -119,7 +119,9 @@ def build_tool_registry(db: Session) -> ConcreteToolRegistry:
             if not callable(obj) or not hasattr(obj, TOOL_METADATA_ATTR):
                 continue
             definition: ToolDefinition = getattr(obj, TOOL_METADATA_ATTR)
-            deps: dict[str, Callable[[], Any] | None] = getattr(obj, TOOL_DEPENDENCIES_ATTR, {})
+            deps: dict[str, Callable[[], Any] | None] = getattr(
+                obj, TOOL_DEPENDENCIES_ATTR, {}
+            )
 
             _validate_dependencies(definition.name, deps)
 

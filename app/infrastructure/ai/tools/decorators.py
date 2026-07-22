@@ -50,7 +50,11 @@ def tool(
             @tool(
                 name="search_documents",
                 description="Search the knowledge base.",
-                parameters=[ToolParameter(name="query", type="string", description="...")],
+                parameters=[
+                    ToolParameter(
+                        name="query", type="string", description="..."
+                    )
+                ],
                 dependencies={
                     "db": None,
                     "embedding_model": OpenAIEmbeddingModel,
@@ -59,7 +63,10 @@ def tool(
             def search_documents_factory(
                 db: Session, embedding_model: EmbeddingModel
             ) -> SearchDocumentsTool:
-                return SearchDocumentsTool(embedding_model=embedding_model, vector_store=PgVectorStore(db))
+                return SearchDocumentsTool(
+                    embedding_model=embedding_model,
+                    vector_store=PgVectorStore(db),
+                )
     """
 
     def decorator(fn: F) -> F:
