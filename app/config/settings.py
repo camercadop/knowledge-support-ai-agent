@@ -17,6 +17,9 @@ class Settings(BaseSettings):
     embedding_api_key: str
     embedding_base_url: str | None = None
     embedding_dimensions: int = 1536
+    chunk_strategy: str = "fixed"
+    chunk_size: int = 500
+    chunk_overlap: int = 50
     whatsapp_token: str
     whatsapp_verify_token: str
     log_level: str = "INFO"

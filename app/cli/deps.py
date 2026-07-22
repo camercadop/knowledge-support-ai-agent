@@ -4,6 +4,7 @@ from app.application.support.answer_question import AnswerQuestion
 from app.application.support.clear_history import ClearHistory
 from app.application.support.ingest_document import IngestDocument
 from app.infrastructure.ai.chat.openai import OpenAIChatModel
+from app.infrastructure.ai.chunking.factory import build_chunk_strategy
 from app.infrastructure.ai.embeddings.openai import OpenAIEmbeddingModel
 from app.infrastructure.ai.tools.registry import build_tool_registry
 from app.infrastructure.database.sqlalchemy.postgresql.engine import SessionLocal
@@ -73,4 +74,5 @@ def build_ingest_document(db: Session) -> IngestDocument:
         uow=SqlAlchemyKnowledgeUnitOfWork(db),
         embedding_model=_embedding_model,
         vector_store=PgVectorStore(db),
+        chunk_strategy=build_chunk_strategy(),
     )

@@ -1,32 +1,12 @@
 import logging
 
 from app.application.models.document import Document
+from app.application.ports.chunk_strategy import ChunkStrategy
 from app.application.ports.embedding_model import EmbeddingModel
 from app.application.ports.unit_of_work.knowledge import KnowledgeUnitOfWork
 from app.application.ports.vector_store import VectorStore
 
 logger = logging.getLogger(__name__)
-
-_CHUNK_SIZE = 500
-_CHUNK_OVERLAP = 50
-
-
-def _chunk_text(text: str) -> list[str]:
-    """Split text into overlapping chunks of fixed character size.
-
-    Args:
-        text: The full document text to split.
-
-    Returns:
-        List of text chunks.
-    """
-    chunks = []
-    start = 0
-    while start < len(text):
-        end = start + _CHUNK_SIZE
-        chunks.append(text[start:end])
-        start += _CHUNK_SIZE - _CHUNK_OVERLAP
-    return chunks
 
 
 class IngestDocument:
@@ -36,6 +16,7 @@ class IngestDocument:
         uow: Transactional boundary for documents and document chunks.
         embedding_model: Provider used to embed each text chunk.
         vector_store: Store used to index chunk embeddings for similarity search.
+        chunk_strategy: Strategy used to split document content into chunks.
     """
 
     def __init__(
@@ -43,10 +24,12 @@ class IngestDocument:
         uow: KnowledgeUnitOfWork,
         embedding_model: EmbeddingModel,
         vector_store: VectorStore,
+        chunk_strategy: ChunkStrategy,
     ) -> None:
         self._uow = uow
         self._embedding_model = embedding_model
         self._vector_store = vector_store
+        self._chunk_strategy = chunk_strategy
 
     def handle(self, title: str, source: str | None, content: str) -> Document:
         """Ingest a document by persisting it, chunking the content, and indexing
@@ -66,13 +49,9 @@ class IngestDocument:
         document = self._uow.documents.create(
             title=title, source=source, content=content
         )
-        logger.info(
-            "Persisted document %s (%s chunks expected)",
-            document.id,
-            len(content) // _CHUNK_SIZE,
-        )
+        logger.info("Persisted document %s", document.id)
 
-        chunks = _chunk_text(content)
+        chunks = self._chunk_strategy.chunk(content)
         for chunk_text in chunks:
             embedding = self._embedding_model.embed(chunk_text)
             chunk = self._uow.document_chunks.create(

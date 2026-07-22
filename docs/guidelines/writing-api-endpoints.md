@@ -46,6 +46,7 @@ app.include_router(my_domain_router)
 
 - One file per domain, named after the domain (e.g. `chat.py`, `documents.py`).
 - The handler must only parse the request, wire the use case, and return the response — no business logic.
+- API files must not contain factory functions, infrastructure wiring helpers, or any logic beyond request parsing and response mapping. Move any such logic to `app/infrastructure/`.
 - Always declare `response_model` on the route decorator.
 - Infrastructure clients that are stateless and thread-safe (e.g. `OpenAIChatModel`) are instantiated once at module level.
 - The database session is always injected via `Depends(get_db)` — never instantiated directly.

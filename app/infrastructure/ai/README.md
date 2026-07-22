@@ -5,6 +5,7 @@ This package contains adapters for AI providers. Each sub-package implements one
 ## Sub-packages
 
 - `chat/` — `ChatModel` implementation backed by the OpenAI Responses API
+- `chunking/` — `ChunkStrategy` implementations: fixed-size, recursive, and markdown-aware
 - `embeddings/` — `EmbeddingModel` implementation backed by the OpenAI Embeddings API
 - `mock/` — in-memory stubs used in tests to avoid real API calls
 - `tools/` — tool registry, `@tool` decorator, and all tool implementations available to the LLM

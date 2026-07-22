@@ -58,6 +58,11 @@ use_case = DoSomething(
 )
 ```
 
+## Factories
+
+When constructing a dependency requires non-trivial logic (e.g. selecting an implementation based on a setting), extract it into a factory function in `app/infrastructure/`. Import and call it from the route handler or `app/cli/deps.py` — never define it inline in an API file.
+
+
 ## Adding a New Infrastructure Dependency
 
 1. Define the port (abstract class) in `app/application/ports/`.

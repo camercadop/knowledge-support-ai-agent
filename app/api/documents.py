@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
 from app.application.support.ingest_document import IngestDocument
+from app.infrastructure.ai.chunking.factory import build_chunk_strategy
 from app.infrastructure.ai.embeddings.openai import OpenAIEmbeddingModel
 from app.infrastructure.database.sqlalchemy.postgresql.engine import get_db
 from app.infrastructure.database.sqlalchemy.postgresql.unit_of_work.knowledge import (
@@ -32,6 +33,7 @@ def ingest_document(
         uow=SqlAlchemyKnowledgeUnitOfWork(db),
         embedding_model=_embedding_model,
         vector_store=PgVectorStore(db),
+        chunk_strategy=build_chunk_strategy(),
     )
     document = use_case.handle(
         title=request.title,
