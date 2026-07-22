@@ -13,6 +13,16 @@ The goal is to show that AI-powered applications don't have to be prototype spag
 
 WhatsApp Cloud API is the intended communication channel, with a REST API available for direct integration and local development.
 
+## Features
+
+- Conversational chat with persistent history per contact
+- RAG — knowledge chunks retrieved via semantic search on every turn
+- Document ingestion — chunking, embedding, and pgvector indexing
+- Tool calling — `search_documents` and `get_current_date` built in
+- Provider independence — chat and embedding providers are swappable at config time
+- WhatsApp Cloud API webhook integration
+- REST API and CLI interfaces
+
 ## Architecture
 
 ```mermaid
@@ -152,21 +162,33 @@ uv run agent clear-history --phone "+1234567890"
 ```
 app/
     api/              # Route handlers
-    cli/              # Typer CLI entry point
     application/      # Use cases and orchestration
         models/       # Application-layer value objects
         ports/        # Abstract interfaces (ports)
             repositories/  # One abstract repo per aggregate root
             unit_of_work/  # Domain-scoped transactional boundaries
+    cli/              # Typer CLI entry point
+        commands/     # One module per command group
+        context.py    # Request context manager (container + session lifecycle)
     config/           # Settings and logging configuration
     container/        # Composition Root — ApplicationContainer composes domain-scoped containers
     domain/           # Domain models and business logic
     infrastructure/
-        ai/           # Chat and embedding provider clients
+        ai/           # Chat and embedding provider implementations
+            prompt_builder/ # PromptBuilder implementations
             tools/    # Tool registry, @tool decorator, and tool implementations
-        database/     # ORM models, repositories, migrations
+        database/
+            sqlalchemy/ # Models, repositories, migrations, and PostgreSQL engine
+            sqlite/     # In-memory SQLite engine for tests
         vectorstores/ # Vector store implementations (pgvector)
-    schemas/          # Pydantic request/response schemas
+        whatsapp/     # WhatsApp Cloud API integration
+    schemas/          # Pydantic schemas
+
+tests/
+    api/              # mirrors app/api/
+    application/      # mirrors app/application/
+    infrastructure/   # mirrors app/infrastructure/
+    conftest.py       # shared fixtures
 ```
 
 ## Testing
@@ -181,6 +203,11 @@ uv run pytest
 uv run ruff check .
 uv run mypy app/
 uv run lint-imports
+```
+
+## Dependency Audit
+
+```bash
 uv audit --preview-features audit-command
 ```
 
