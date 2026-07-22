@@ -126,6 +126,7 @@ app/
     domain/       # Domain models and business logic
     infrastructure/
         ai/           # Chat and embedding provider implementations
+            prompt_builder/ # PromptBuilder implementations
             tools/    # Tool registry, @tool decorator, and tool implementations
         database/
             sqlalchemy/ # Models, repositories, migrations, and PostgreSQL engine
@@ -175,7 +176,8 @@ sequenceDiagram
     UoW->>DB: SELECT / INSERT conversation
     UC->>UoW: messages.list_by_conversation(conversation_id)
     UoW->>DB: SELECT messages
-    UC->>LLM: generate(history + user_message, context)
+    UC->>UC: prompt_builder.build(history + user_message, context)
+    UC->>LLM: generate(prompt)
     LLM->>OpenAI: responses.create(model, input)
     OpenAI-->>LLM: output_text, token usage
     LLM-->>UC: ChatResponse

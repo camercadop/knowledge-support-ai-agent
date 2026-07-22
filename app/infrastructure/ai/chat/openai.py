@@ -12,64 +12,31 @@ from app.application.ports.chat_model import (
     Role,
     TokenUsage,
 )
+from app.application.ports.prompt_builder import PromptBuilder
 from app.application.ports.tool_registry import ToolDefinition, ToolRegistry
 from app.config.settings import settings
 
 logger = logging.getLogger(__name__)
 
-SYSTEM_PROMPT = (
-    "You are a helpful support assistant. Answer questions clearly and concisely."
-)
-
-_GROUNDED_INSTRUCTIONS = (
-    "Answer using only the knowledge base excerpts provided below. "
-    "If the excerpts do not contain enough information to answer, say you don't know."
-)
-
-_NO_CONTEXT_INSTRUCTIONS = (
-    "You have no knowledge base context available for this query. "
-    "Do not fabricate information. "
-    "Tell the user you don't have enough information to answer."
-)
-
 _ALLOWED_ROLES = {"user", "assistant", "system", "developer"}
 
 
-def _to_input(
-    messages: list[ChatMessage],
-    context: str | None = None,
-) -> list[EasyInputMessageParam]:
+def _to_input(messages: list[ChatMessage]) -> list[EasyInputMessageParam]:
     """Convert ChatMessage value objects to typed EasyInputMessageParam entries.
 
-    Prepends the system prompt, optionally extended with retrieved context.
     Skips entries with unrecognised roles.
 
     Args:
         messages: Ordered list of ChatMessage value objects.
-        context: Optional retrieved knowledge chunks to append to the system prompt.
 
     Returns:
-        List of EasyInputMessageParam entries starting with the system prompt.
+        List of EasyInputMessageParam entries.
     """
-    if context:
-        system_content = (
-            f"{SYSTEM_PROMPT}\n\n{_GROUNDED_INSTRUCTIONS}"
-            f"\n\nKnowledge base excerpts:\n{context}"
-        )
-    else:
-        system_content = f"{SYSTEM_PROMPT}\n\n{_NO_CONTEXT_INSTRUCTIONS}"
-    result: list[EasyInputMessageParam] = [
-        EasyInputMessageParam(role="system", content=system_content)
+    return [
+        EasyInputMessageParam(role=m.role.value, content=m.content)
+        for m in messages
+        if m.role.value in _ALLOWED_ROLES
     ]
-    for m in messages:
-        if m.role.value in _ALLOWED_ROLES:
-            result.append(
-                EasyInputMessageParam(
-                    role=m.role.value,
-                    content=m.content,
-                )
-            )
-    return result
 
 
 def _to_function_tool(definition: ToolDefinition) -> FunctionToolParam:
@@ -102,31 +69,35 @@ def _to_function_tool(definition: ToolDefinition) -> FunctionToolParam:
 class OpenAIChatModel(ChatModel):
     """ChatModel implementation backed by the OpenAI Responses API."""
 
-    def __init__(self) -> None:
-        """Initialize the OpenAI client from application settings."""
+    def __init__(self, prompt_builder: PromptBuilder) -> None:
+        """Initialize the OpenAI client and prompt builder from application settings.
+
+        Args:
+            prompt_builder: Assembles the full message list before each API call.
+        """
         self._client = OpenAI(
             api_key=settings.chat_api_key,
             base_url=settings.chat_base_url,
         )
+        self._prompt_builder = prompt_builder
 
     def generate(
         self,
         messages: list[ChatMessage],
-        context: str | None = None,
         tool_registry: ToolRegistry | None = None,
     ) -> ChatResponse:
         """Send messages to the OpenAI Responses API and return the assistant reply.
 
         Args:
-            messages: Ordered list of ChatMessage value objects.
-            context: Optional retrieved knowledge to merge into the system prompt.
+            messages: Ordered list of ChatMessage value objects. Must already include
+                the system message assembled by the injected PromptBuilder.
             tool_registry: Optional registry of tools the model may invoke in a
                 loop until it produces a final text reply.
 
         Returns:
             A ChatResponse with the assistant reply and token usage.
         """
-        input_messages: list[Any] = list(_to_input(messages, context))
+        input_messages: list[Any] = list(_to_input(messages))
         tools = (
             [_to_function_tool(d) for d in tool_registry.list_definitions()]
             if tool_registry

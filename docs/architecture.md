@@ -64,6 +64,7 @@ flowchart TB
         port_embed["EmbeddingModel\n[port]"]
         port_vs["VectorStore\n[port]"]
         port_tools["ToolRegistry\n[port]"]
+        port_prompt["PromptBuilder\n[port]"]
     end
 
     subgraph infra["Infrastructure Layer"]
@@ -79,6 +80,7 @@ flowchart TB
         pgvector["PgVectorStore"]
         tool_registry["ConcreteToolRegistry"]
         tools["Tools\nget_current_date · search_documents"]
+        default_prompt["DefaultPromptBuilder"]
     end
 
     subgraph external["External"]
@@ -93,6 +95,7 @@ flowchart TB
     uc_answer --> port_msg_uow
     uc_answer --> port_chat
     uc_answer --> port_tools
+    uc_answer --> port_prompt
     uc_ingest --> port_know_uow
     uc_ingest --> port_embed
     uc_ingest --> port_vs
@@ -102,6 +105,7 @@ flowchart TB
     port_embed -.->|implements| openai_embed
     port_vs -.->|implements| pgvector
     port_tools -.->|implements| tool_registry
+    port_prompt -.->|implements| default_prompt
     tool_registry --> tools
     sql_msg_uow --> contact_repo
     sql_msg_uow --> conv_repo
@@ -134,10 +138,12 @@ app/
     domain/           # Domain models and business logic
     infrastructure/   # External integrations (DB, LLM, WhatsApp)
         ai/
-            chat/       # Chat completion provider implementations
-            embeddings/ # Embedding provider implementations
-            mock/       # Mock implementations for testing
-            tools/      # Tool registry, @tool decorator, and tool implementations
+            chat/         # Chat completion provider implementations
+            chunking/     # ChunkStrategy implementations
+            embeddings/   # Embedding provider implementations
+            mock/         # Mock implementations for testing
+            prompt_builder/ # PromptBuilder implementations
+            tools/        # Tool registry, @tool decorator, and tool implementations
         database/         # ORM adapters, repositories, and migrations
         vectorstores/
             pgvector/   # PgVectorStore — cosine similarity search via pgvector

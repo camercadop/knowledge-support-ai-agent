@@ -4,6 +4,7 @@ import pytest
 from sqlalchemy.orm import Session
 
 from app.application.support.answer_question import AnswerQuestion
+from app.infrastructure.ai.prompt_builder.default import DefaultPromptBuilder
 from app.infrastructure.ai.mock.chat import MockChatModel
 from app.infrastructure.ai.mock.embeddings import MockEmbeddingModel
 from app.infrastructure.database.sqlalchemy.postgresql.unit_of_work.messaging import (
@@ -37,6 +38,7 @@ def _make_use_case(
         chat_model=MockChatModel(reply=reply, token_total=token_total),
         embedding_model=MockEmbeddingModel(),
         vector_store=vector_store,
+        prompt_builder=DefaultPromptBuilder(),
     )
 
 

@@ -2,6 +2,7 @@ import logging
 
 from app.application.ports.chat_model import ChatMessage, ChatModel, Role
 from app.application.ports.embedding_model import EmbeddingModel
+from app.application.ports.prompt_builder import PromptBuilder
 from app.application.ports.tool_registry import ToolRegistry
 from app.application.ports.unit_of_work.messaging import MessagingUnitOfWork
 from app.application.ports.vector_store import VectorStore
@@ -17,6 +18,8 @@ class AnswerQuestion:
         chat_model: LLM provider used to generate the assistant reply.
         embedding_model: Provider used to embed the user query for retrieval.
         vector_store: Store used to retrieve relevant knowledge chunks.
+        prompt_builder: Assembles the full message list including the system prompt
+            and retrieved context before passing it to the chat model.
         tool_registry: Optional registry of tools the model may invoke
             during generation.
     """
@@ -27,12 +30,14 @@ class AnswerQuestion:
         chat_model: ChatModel,
         embedding_model: EmbeddingModel,
         vector_store: VectorStore,
+        prompt_builder: PromptBuilder,
         tool_registry: ToolRegistry | None = None,
     ) -> None:
         self._uow = uow
         self._chat_model = chat_model
         self._embedding_model = embedding_model
         self._vector_store = vector_store
+        self._prompt_builder = prompt_builder
         self._tool_registry = tool_registry
 
     def handle(self, phone: str, user_message: str) -> str:
@@ -64,9 +69,8 @@ class AnswerQuestion:
         messages = [ChatMessage(role=Role(m.role), content=m.content) for m in history]
         messages.append(ChatMessage(role=Role.USER, content=user_message))
 
-        response = self._chat_model.generate(
-            messages, context=context, tool_registry=self._tool_registry
-        )
+        prompt = self._prompt_builder.build(messages, context)
+        response = self._chat_model.generate(prompt, tool_registry=self._tool_registry)
 
         self._uow.messages.create(conversation.id, "user", user_message)
         self._uow.messages.create(

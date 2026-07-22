@@ -6,6 +6,7 @@ This package defines the abstract interfaces (ports) that the application layer 
 
 - `chat_model.py` — `ChatModel`; contract for chat completion providers. Also defines `ChatMessage`, `ChatResponse`, `TokenUsage`, and `Role`
 - `embedding_model.py` — `EmbeddingModel`; contract for text embedding providers
+- `prompt_builder.py` — `PromptBuilder`; contract for assembling the provider-agnostic message list, including the system prompt and retrieved context, before passing it to the chat model
 - `vector_store.py` — `VectorStore`; contract for vector store providers. Also defines `SearchResult`
 
 ## Sub-packages

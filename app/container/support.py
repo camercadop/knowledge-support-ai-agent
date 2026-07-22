@@ -6,6 +6,7 @@ from app.application.support.ingest_document import IngestDocument
 from app.infrastructure.ai.chat.openai import OpenAIChatModel
 from app.infrastructure.ai.chunking.factory import build_chunk_strategy
 from app.infrastructure.ai.embeddings.openai import OpenAIEmbeddingModel
+from app.infrastructure.ai.prompt_builder.default import DefaultPromptBuilder
 from app.infrastructure.ai.tools.registry import build_tool_registry
 from app.infrastructure.database.sqlalchemy.postgresql.unit_of_work.knowledge import (
     SqlAlchemyKnowledgeUnitOfWork,
@@ -24,7 +25,8 @@ class SupportContainer:
     """
 
     def __init__(self) -> None:
-        self._chat_model = OpenAIChatModel()
+        self._prompt_builder = DefaultPromptBuilder()
+        self._chat_model = OpenAIChatModel(prompt_builder=self._prompt_builder)
         self._embedding_model = OpenAIEmbeddingModel()
         self._chunk_strategy = build_chunk_strategy()
 
@@ -42,6 +44,7 @@ class SupportContainer:
             chat_model=self._chat_model,
             embedding_model=self._embedding_model,
             vector_store=PgVectorStore(db),
+            prompt_builder=self._prompt_builder,
             tool_registry=build_tool_registry(db),
         )
 

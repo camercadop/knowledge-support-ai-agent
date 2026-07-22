@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from enum import StrEnum
@@ -52,16 +50,14 @@ class ChatModel(ABC):
     def generate(
         self,
         messages: list[ChatMessage],
-        context: str | None = None,
         tool_registry: ToolRegistry | None = None,
     ) -> ChatResponse:
         """Generate a reply for the given message history.
 
         Args:
-            messages: Ordered list of ChatMessage value objects.
-            context: Optional retrieved knowledge to inject into the system prompt.
-                When provided, it is merged with the base system prompt so the model
-                grounds its answer in the supplied context.
+            messages: Ordered list of ChatMessage value objects. The caller is
+                responsible for prepending any system message via a PromptBuilder
+                before passing the list here.
             tool_registry: Optional registry of tools the model may invoke.
                 When provided, the model may call tools and receive their results
                 before producing the final reply.

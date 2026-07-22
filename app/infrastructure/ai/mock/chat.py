@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from typing import TYPE_CHECKING
 
 from app.application.ports.chat_model import (
@@ -34,14 +32,12 @@ class MockChatModel(ChatModel):
     def generate(
         self,
         messages: list[ChatMessage],
-        context: str | None = None,
         tool_registry: ToolRegistry | None = None,
     ) -> ChatResponse:
         """Return a fixed assistant reply regardless of input.
 
         Args:
             messages: Ignored.
-            context: Ignored.
             tool_registry: Ignored.
 
         Returns:

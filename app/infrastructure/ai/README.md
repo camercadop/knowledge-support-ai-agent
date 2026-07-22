@@ -8,4 +8,5 @@ This package contains adapters for AI providers. Each sub-package implements one
 - `chunking/` — `ChunkStrategy` implementations: fixed-size, recursive, and markdown-aware
 - `embeddings/` — `EmbeddingModel` implementation backed by the OpenAI Embeddings API
 - `mock/` — in-memory stubs used in tests to avoid real API calls
+- `prompt_builder/` — `PromptBuilder` implementations: assembles the provider-agnostic message list including system prompt and retrieved context
 - `tools/` — tool registry, `@tool` decorator, and all tool implementations available to the LLM
