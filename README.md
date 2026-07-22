@@ -180,10 +180,12 @@ uv audit --preview-features audit-command
 
 ## Documentation
 
-- [Architecture](docs/architecture.md)
-- [Development Guide](docs/development.md)
-- [Data Model](docs/data-model.md)
-- [Architecture Decision Records](docs/adr/)
+- [Architecture](docs/architecture.md) — C4 diagrams (context, container, component) and request flow sequences
+- [Development Guide](docs/development.md) — conventions, local setup, testing, linting, and code style rules
+- [Data Model](docs/data-model.md) — database conventions, base model fields, and migration rules
+- [Architecture Decision Records](docs/adr/) — formal, binding decisions that shaped the system design
+- [Guidelines](docs/guidelines/) — how-to references for implementing common patterns correctly
+- [Contributing](CONTRIBUTING.md) — branching, commit conventions, and PR process
 
 ## License
 
