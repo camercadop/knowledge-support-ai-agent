@@ -18,14 +18,17 @@ flowchart TB
 
     subgraph agent["Knowledge Support AI Agent"]
         api["API Layer\nFastAPI"]
+        cli["CLI\nTyper"]
         app["Application Layer\nUse cases & ports"]
         infra["Infrastructure\nDB · LLM · Vector store · Tools"]
         db["PostgreSQL + pgvector"]
     end
 
     user -->|"POST /chat"| api
+    user -->|"agent chat / ingest"| cli
     whatsapp -->|"Webhook"| api
     api --> app
+    cli --> app
     app --> infra
     infra -->|"Chat & Embeddings"| openai
     infra -->|"Reads / writes"| db
@@ -35,7 +38,7 @@ flowchart TB
 
 ## Stack
 
-- Python 3.13+, FastAPI, SQLAlchemy, Alembic
+- Python 3.13+, FastAPI, Typer, SQLAlchemy, Alembic
 - PostgreSQL, pgvector
 - OpenAI Responses API
 - Docker, Docker Compose
@@ -83,13 +86,23 @@ uv run alembic upgrade head
 
 ## Running
 
+### API
+
 ```bash
 uv run uvicorn app.main:app --reload
 ```
 
 API docs available at `http://localhost:8000/docs`.
 
+### CLI
+
+```bash
+uv run agent --help
+```
+
 ## Trying it out
+
+### Via API
 
 Send a chat message:
 
@@ -109,11 +122,32 @@ curl -X POST http://localhost:8000/documents \
 
 Or use the interactive docs at `http://localhost:8000/docs`.
 
+### Via CLI
+
+Start an interactive chat session:
+
+```bash
+uv run agent chat --phone "+1234567890"
+```
+
+Ingest a document from a file:
+
+```bash
+uv run agent ingest --file ./doc.txt --title "My Doc"
+```
+
+Clear a contact's chat history:
+
+```bash
+uv run agent clear-history --phone "+1234567890"
+```
+
 ## Project Structure
 
 ```
 app/
     api/              # Route handlers
+    cli/              # Typer CLI entry point and manual DI wiring
     application/      # Use cases and orchestration
         models/       # Application-layer value objects
         ports/        # Abstract interfaces (ports)

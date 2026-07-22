@@ -15,6 +15,10 @@ class AbstractMessageRepository(ABC):
         """Return all messages for a conversation ordered by creation time."""
 
     @abstractmethod
+    def delete_by_conversation(self, conversation_id: uuid.UUID) -> None:
+        """Delete all messages belonging to a conversation."""
+
+    @abstractmethod
     def create(
         self,
         conversation_id: uuid.UUID,

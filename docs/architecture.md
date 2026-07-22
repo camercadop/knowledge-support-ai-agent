@@ -2,18 +2,18 @@
 
 ## Overview
 
-Knowledge Support AI Agent is a FastAPI backend that implements a conversational AI platform using RAG, semantic memory, tool calling, and Clean Architecture. WhatsApp Cloud API is the communication channel.
+Knowledge Support AI Agent is a conversational AI platform using RAG, semantic memory, tool calling, and Clean Architecture. It exposes two entry points: a FastAPI HTTP API and a Typer CLI. WhatsApp Cloud API is the intended external communication channel.
 
 ## C4 Level 0 — System Context
 
 ```mermaid
 flowchart TB
-    user["User\n[Person]\nSends chat messages via HTTP"]
+    user["User\n[Person]\nSends chat messages via HTTP or CLI"]
     agent["Knowledge Support AI Agent\n[System]\nConversational AI platform with\nRAG and persistent chat history"]
     openai["OpenAI\n[External System]\nLLM and embedding provider"]
     postgres["PostgreSQL + pgvector\n[External System]\nPersistent storage and vector search"]
 
-    user -->|"POST /chat"| agent
+    user -->|"POST /chat or CLI"| agent
     agent -->|"Chat & Embeddings API"| openai
     agent -->|"Reads/writes data"| postgres
 ```
@@ -27,13 +27,16 @@ flowchart TB
 
     subgraph agent["Knowledge Support AI Agent"]
         api["API Layer\n[FastAPI]\nExposes HTTP endpoints"]
+        cli["CLI\n[Typer]\nExposes terminal commands"]
         app["Application Layer\n[Python]\nOrchestrates use cases"]
         infra["Infrastructure\n[Python]\nDB engine, LLM client, vector store, tools"]
         db["PostgreSQL + pgvector\n[Database]\nStores contacts, conversations,\nmessages, documents and embeddings"]
     end
 
     user -->|"POST /chat"| api
+    user -->|"agent chat / ingest"| cli
     api --> app
+    cli --> app
     app --> infra
     infra -->|"Chat & Embeddings API"| openai
     infra -->|"Reads/writes"| db
@@ -46,6 +49,10 @@ flowchart TB
     subgraph api["API Layer"]
         chat_router["chat.py\nFastAPI router"]
         docs_router["documents.py\nFastAPI router"]
+    end
+
+    subgraph cli["CLI Layer"]
+        cli_main["main.py\nTyper app"]
     end
 
     subgraph app["Application Layer"]
@@ -81,6 +88,8 @@ flowchart TB
 
     chat_router --> uc_answer
     docs_router --> uc_ingest
+    cli_main --> uc_answer
+    cli_main --> uc_ingest
     uc_answer --> port_msg_uow
     uc_answer --> port_chat
     uc_answer --> port_tools
@@ -114,6 +123,7 @@ flowchart TB
 ```
 app/
     api/              # Route handlers and webhook endpoints
+    cli/              # Typer CLI entry point and manual DI wiring
     config/           # Settings and environment configuration
     domain/           # Domain models and business logic
     application/      # Use cases and orchestration

@@ -16,6 +16,16 @@ class MessageRepository(AbstractMessageRepository):
         """Initialize with an active database session."""
         self._db = db
 
+    def delete_by_conversation(self, conversation_id: uuid.UUID) -> None:
+        """Delete all messages belonging to a conversation.
+
+        Args:
+            conversation_id: UUID of the conversation whose messages will be deleted.
+        """
+        self._db.query(MessageORM).filter(
+            MessageORM.conversation_id == conversation_id
+        ).delete()
+
     def list_by_conversation(self, conversation_id: uuid.UUID) -> list[Message]:
         """Return all messages for a conversation ordered by creation time.
 
