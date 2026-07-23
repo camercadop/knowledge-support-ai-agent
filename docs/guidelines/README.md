@@ -50,3 +50,5 @@ Ordered from foundational to specific — read top to bottom when onboarding.
 | [Writing Settings](writing-settings.md) | How to add and access application settings |
 | [Writing Logs](writing-logs.md) | Logging conventions and formatting rules |
 | [Writing Tests](writing-tests.md) | Test structure, layer rules, and naming conventions |
+| [Writing Agent Tools](writing-agent-tools.md) | How to implement a tool exposed to the LLM via the tool registry |
+| [Writing CLI Commands](writing-cli-commands.md) | How to implement a CLI command and register a new command group |

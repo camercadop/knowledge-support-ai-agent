@@ -85,3 +85,37 @@ def test_upsert_overwrites_existing_chunk() -> None:
     results = store.search([1.0, 0.0])
     assert len(results) == 1
     assert results[0].chunk == "updated"
+
+
+def test_search_excludes_results_above_min_score() -> None:
+    store = FakeVectorStore()
+    store.upsert(
+        chunk_id=_chunk_id(), document_id=_doc_id(), chunk="near", embedding=[1.0, 0.0]
+    )
+    store.upsert(
+        chunk_id=_chunk_id(), document_id=_doc_id(), chunk="far", embedding=[0.0, 1.0]
+    )
+    results = store.search([1.0, 0.0], min_score=0.1)
+    assert len(results) == 1
+    assert results[0].chunk == "near"
+
+
+def test_search_filters_by_metadata() -> None:
+    store = FakeVectorStore()
+    store.upsert(
+        chunk_id=_chunk_id(),
+        document_id=_doc_id(),
+        chunk="match",
+        embedding=[1.0, 0.0],
+        metadata={"lang": "en"},
+    )
+    store.upsert(
+        chunk_id=_chunk_id(),
+        document_id=_doc_id(),
+        chunk="no-match",
+        embedding=[1.0, 0.0],
+        metadata={"lang": "es"},
+    )
+    results = store.search([1.0, 0.0], metadata_filters={"lang": "en"})
+    assert len(results) == 1
+    assert results[0].chunk == "match"

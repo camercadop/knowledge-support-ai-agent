@@ -42,7 +42,12 @@ class ConcreteToolRegistry(ToolRegistry):
             definition: Metadata describing the tool to the LLM.
             handler: Callable that receives the LLM-supplied arguments
                 and returns a string result.
+
+        Raises:
+            ValueError: If a tool with the same name is already registered.
         """
+        if definition.name in self._definitions:
+            raise ValueError(f"Tool '{definition.name}' is already registered.")
         self._tools[definition.name] = handler
         self._definitions[definition.name] = definition
         logger.info("Registered tool: %s", definition.name)
@@ -108,6 +113,7 @@ def build_tool_registry(db: Session) -> ConcreteToolRegistry:
 
     Raises:
         ValueError: If a tool declares "db" with a non-None factory.
+        ValueError: If two tools share the same name.
     """
     registry = ConcreteToolRegistry()
     package = importlib.import_module(_TOOLS_PACKAGE)

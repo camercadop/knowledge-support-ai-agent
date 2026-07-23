@@ -11,12 +11,12 @@ if TYPE_CHECKING:
 
 
 class Contact(Base):
-    """Represents a user who interacts with the agent via WhatsApp."""
+    """Represents a user who interacts with the agent."""
 
     __tablename__ = "contacts"
 
     phone: Mapped[str] = mapped_column(
-        # WhatsApp phone number, used as the unique identifier for the contact
+        # Phone number, used as the unique identifier for the contact
         unique=True,
         nullable=False,
     )
