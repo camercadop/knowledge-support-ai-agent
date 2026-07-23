@@ -46,46 +46,45 @@ flowchart TB
 
 ```mermaid
 flowchart TB
-    subgraph api["API Layer"]
+    subgraph entry["Entry Points"]
         chat_router["chat.py\nFastAPI router"]
         docs_router["documents.py\nFastAPI router"]
-    end
-
-    subgraph cli["CLI Layer"]
         cli_main["main.py\nTyper app"]
     end
 
     subgraph app["Application Layer"]
-        uc_answer["AnswerQuestion\nUse case"]
-        uc_ingest["IngestDocument\nUse case"]
-        retrieval_svc["RetrievalService\nPost-retrieval controls"]
-        port_msg_uow["MessagingUnitOfWork\n[port]"]
-        port_know_uow["KnowledgeUnitOfWork\n[port]"]
-        port_chat["ChatModel\n[port]"]
-        port_embed["EmbeddingModel\n[port]"]
-        port_vs["VectorStore\n[port]"]
-        port_tools["ToolRegistry\n[port]"]
-        port_prompt["PromptBuilder\n[port]"]
+        subgraph use_cases["Use Cases"]
+            uc_answer["AnswerQuestion"]
+            uc_ingest["IngestDocument"]
+            retrieval_svc["RetrievalService"]
+        end
+        subgraph ports["Ports"]
+            port_msg_uow["MessagingUnitOfWork"]
+            port_know_uow["KnowledgeUnitOfWork"]
+            port_chat["ChatModel"]
+            port_embed["EmbeddingModel"]
+            port_vs["VectorStore"]
+            port_tools["ToolRegistry"]
+            port_prompt["PromptBuilder"]
+        end
     end
 
     subgraph infra["Infrastructure Layer"]
-        sql_msg_uow["SqlAlchemyMessagingUnitOfWork"]
-        sql_know_uow["SqlAlchemyKnowledgeUnitOfWork"]
-        contact_repo["ContactRepository"]
-        conv_repo["ConversationRepository"]
-        msg_repo["MessageRepository"]
-        doc_repo["DocumentRepository"]
-        chunk_repo["DocumentChunkRepository"]
-        openai_chat["OpenAIChatModel"]
-        openai_embed["OpenAIEmbeddingModel"]
-        pgvector["PgVectorStore"]
-        tool_registry["ConcreteToolRegistry"]
-        tools["Tools\nget_current_date · search_documents"]
-        default_prompt["DefaultPromptBuilder"]
+        subgraph db_impl["Database"]
+            sql_msg_uow["SqlAlchemyMessagingUoW\nContactRepo · ConvRepo · MsgRepo"]
+            sql_know_uow["SqlAlchemyKnowledgeUoW\nDocRepo · ChunkRepo"]
+            pgvector["PgVectorStore"]
+        end
+        subgraph ai_impl["AI"]
+            openai_chat["OpenAIChatModel"]
+            openai_embed["OpenAIEmbeddingModel"]
+            default_prompt["DefaultPromptBuilder"]
+            tool_registry["ConcreteToolRegistry\nget_current_date · search_documents"]
+        end
     end
 
     subgraph external["External"]
-        postgres["PostgreSQL + pgvector"]
+        postgres[("PostgreSQL + pgvector")]
         openai["OpenAI API"]
     end
 
@@ -93,36 +92,21 @@ flowchart TB
     docs_router --> uc_ingest
     cli_main --> uc_answer
     cli_main --> uc_ingest
-    uc_answer --> port_msg_uow
-    uc_answer --> port_chat
-    uc_answer --> port_tools
-    uc_answer --> port_prompt
-    uc_answer --> retrieval_svc
+
+    uc_answer --> port_msg_uow & port_chat & port_tools & port_prompt & retrieval_svc
     retrieval_svc --> port_vs
-    uc_ingest --> port_know_uow
-    uc_ingest --> port_embed
-    uc_ingest --> port_vs
-    port_msg_uow -.->|implements| sql_msg_uow
-    port_know_uow -.->|implements| sql_know_uow
-    port_chat -.->|implements| openai_chat
-    port_embed -.->|implements| openai_embed
-    port_vs -.->|implements| pgvector
-    port_tools -.->|implements| tool_registry
-    port_prompt -.->|implements| default_prompt
-    tool_registry --> tools
-    sql_msg_uow --> contact_repo
-    sql_msg_uow --> conv_repo
-    sql_msg_uow --> msg_repo
-    sql_know_uow --> doc_repo
-    sql_know_uow --> chunk_repo
-    contact_repo --> postgres
-    conv_repo --> postgres
-    msg_repo --> postgres
-    doc_repo --> postgres
-    chunk_repo --> postgres
-    pgvector --> postgres
-    openai_chat --> openai
-    openai_embed --> openai
+    uc_ingest --> port_know_uow & port_embed & port_vs
+
+    port_msg_uow -.->|impl| sql_msg_uow
+    port_know_uow -.->|impl| sql_know_uow
+    port_chat -.->|impl| openai_chat
+    port_embed -.->|impl| openai_embed
+    port_vs -.->|impl| pgvector
+    port_tools -.->|impl| tool_registry
+    port_prompt -.->|impl| default_prompt
+
+    sql_msg_uow & sql_know_uow & pgvector --> postgres
+    openai_chat & openai_embed --> openai
 ```
 
 ## Code Structure

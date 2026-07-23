@@ -21,7 +21,7 @@ This sub-package handles the support use case. `AnswerQuestion` orchestrates a f
 7. Call the LLM, optionally invoking tools during generation
 8. Persist the user turn and the assistant reply
 9. Commit the transaction
-10. Return the reply text to the caller
+10. Return an `AnswerResult` with the reply text and the list of retrieved chunks to the caller
 
 ```mermaid
 sequenceDiagram
@@ -40,7 +40,7 @@ sequenceDiagram
     RS->>RS: deduplicate by chunk text
     RS->>RS: cap at max_chunks
     RS->>RS: truncate to max_context_tokens
-    RS-->>UC: context string (or None)
+    RS-->>UC: RetrievalResult (context string + SearchResult list)
     UC->>UoW: contacts.get_or_create_by_phone(phone)
     UC->>UoW: conversations.get_or_create_for_contact(contact_id)
     UC->>UoW: messages.list_by_conversation(conversation_id)
@@ -49,6 +49,7 @@ sequenceDiagram
     UC->>UoW: messages.create(user turn)
     UC->>UoW: messages.create(assistant turn)
     UC->>UoW: commit()
+    UC-->>Caller: AnswerResult (reply + chunks)
 ```
 
 ### IngestDocument
@@ -81,6 +82,6 @@ sequenceDiagram
 
 ## Modules
 
-- `answer_question.py` — `AnswerQuestion`; handles a full chat turn end-to-end
+- `answer_question.py` — `AnswerQuestion` and `AnswerResult`; handles a full chat turn end-to-end and returns the reply alongside retrieved chunk metadata
 - `ingest_document.py` — `IngestDocument`; chunks, embeds, and indexes a document into the knowledge base
-- `retrieval_service.py` — `RetrievalService`; wraps `VectorStore.search()` with post-retrieval quality controls: deduplication by chunk text, max-chunks cap, and token-based context truncation via tiktoken
+- `retrieval_service.py` — `RetrievalService` and `RetrievalResult`; wraps `VectorStore.search()` with post-retrieval quality controls (deduplication, max-chunks cap, token-based truncation) and returns both the assembled context string and the included `SearchResult` list

@@ -1,13 +1,29 @@
 import logging
+from dataclasses import dataclass
 
 from app.application.ports.chat_model import ChatMessage, ChatModel, Role
 from app.application.ports.embedding_model import EmbeddingModel
 from app.application.ports.prompt_builder import PromptBuilder
 from app.application.ports.tool_registry import ToolRegistry
 from app.application.ports.unit_of_work.messaging import MessagingUnitOfWork
+from app.application.ports.vector_store import SearchResult
 from app.application.support.retrieval_service import RetrievalService
 
 logger = logging.getLogger(__name__)
+
+
+@dataclass(frozen=True)
+class AnswerResult:
+    """Outcome of a single chat turn.
+
+    Attributes:
+        reply: The assistant's reply text.
+        chunks: Search results included in the RAG context, or None when no
+            relevant chunks were retrieved.
+    """
+
+    reply: str
+    chunks: list[SearchResult] | None
 
 
 class AnswerQuestion:
@@ -40,22 +56,23 @@ class AnswerQuestion:
         self._prompt_builder = prompt_builder
         self._tool_registry = tool_registry
 
-    def handle(self, phone: str, user_message: str) -> str:
-        """Process a user message and return the assistant reply.
+    def handle(self, phone: str, user_message: str) -> AnswerResult:
+        """Process a user message and return the assistant reply with chunk metadata.
 
         Embeds the user query, retrieves relevant knowledge chunks, finds or
         creates the contact and conversation, builds the full message history,
-        calls the LLM with context, persists both turns, and returns the reply.
+        calls the LLM with context, persists both turns, and returns the reply
+        alongside the search results included in the RAG context.
 
         Args:
             phone: The user's phone number, used to identify the contact.
             user_message: The raw message text sent by the user.
 
         Returns:
-            The assistant's reply text.
+            AnswerResult with the assistant reply and retrieved chunk metadata.
         """
         query_embedding = self._embedding_model.embed(user_message)
-        context = self._retrieval_service.retrieve(query_embedding)
+        retrieval = self._retrieval_service.retrieve(query_embedding)
 
         contact = self._uow.contacts.get_or_create_by_phone(phone)
         conversation = self._uow.conversations.get_or_create_for_contact(contact.id)
@@ -65,7 +82,7 @@ class AnswerQuestion:
         messages = [ChatMessage(role=Role(m.role), content=m.content) for m in history]
         messages.append(ChatMessage(role=Role.USER, content=user_message))
 
-        prompt = self._prompt_builder.build(messages, context)
+        prompt = self._prompt_builder.build(messages, retrieval.context)
         response = self._chat_model.generate(prompt, tool_registry=self._tool_registry)
 
         self._uow.messages.create(conversation.id, "user", user_message)
@@ -78,4 +95,7 @@ class AnswerQuestion:
         self._uow.commit()
         logger.info("Chat turn complete for conversation %s", conversation.id)
 
-        return response.message.content
+        return AnswerResult(
+            reply=response.message.content,
+            chunks=retrieval.chunks or None,
+        )

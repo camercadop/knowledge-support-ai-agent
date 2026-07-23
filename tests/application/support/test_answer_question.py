@@ -61,8 +61,8 @@ def _make_use_case(
 def test_returns_reply_from_chat_model(
     uow: SqlAlchemyMessagingUnitOfWork, vector_store: FakeVectorStore
 ) -> None:
-    reply = _make_use_case(uow, vector_store, reply="hello").handle(_PHONE, "Hi")
-    assert reply == "hello"
+    result = _make_use_case(uow, vector_store, reply="hello").handle(_PHONE, "Hi")
+    assert result.reply == "hello"
 
 
 def test_creates_contact_on_first_message(
@@ -102,8 +102,8 @@ def test_passes_no_context_when_vector_store_empty(
 ) -> None:
     # With an empty vector store and a zero embedding, no context is built.
     # The reply still comes through, confirming the use case completes without context.
-    reply = _make_use_case(uow, vector_store).handle(_PHONE, "Hi")
-    assert reply == "hello"
+    result = _make_use_case(uow, vector_store).handle(_PHONE, "Hi")
+    assert result.reply == "hello"
 
 
 def test_builds_rag_context_from_vector_store(
@@ -117,8 +117,8 @@ def test_builds_rag_context_from_vector_store(
     )
     # MockEmbeddingModel returns a zero vector, so cosine distance will be 1.0
     # (orthogonal). The chunk is still returned since it's the only result.
-    reply = _make_use_case(uow, vector_store).handle(_PHONE, "Hi")
-    assert reply == "hello"
+    result = _make_use_case(uow, vector_store).handle(_PHONE, "Hi")
+    assert result.reply == "hello"
 
 
 def test_history_is_passed_to_chat_model(
@@ -148,8 +148,8 @@ def test_multiple_rag_chunks_joined_with_double_newline(
         )
     # Both chunks are returned; the use case joins them with \n\n before passing
     # to the chat model. The reply still comes through confirming completion.
-    reply = _make_use_case(uow, vector_store).handle(_PHONE, "Hi")
-    assert reply == "hello"
+    result = _make_use_case(uow, vector_store).handle(_PHONE, "Hi")
+    assert result.reply == "hello"
 
 
 def test_token_usage_is_persisted_on_assistant_message(

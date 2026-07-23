@@ -1,3 +1,5 @@
+import uuid
+
 from pydantic import BaseModel, Field, field_validator
 
 
@@ -13,7 +15,16 @@ class ChatRequest(BaseModel):
         return v.replace("\n", " ").replace("\r", " ")
 
 
+class ChunkReference(BaseModel):
+    """Metadata for a single knowledge chunk included in the RAG context."""
+
+    chunk_id: uuid.UUID
+    document_id: uuid.UUID
+    score: float
+
+
 class ChatResponse(BaseModel):
     """Response returned after processing a chat message."""
 
     reply: str
+    chunks: list[ChunkReference] | None = None

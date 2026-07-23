@@ -6,7 +6,7 @@ This package is the HTTP entry point of the application. It contains FastAPI rou
 
 | Method | Path | Description |
 |--------|------|-------------|
-| `POST` | `/chat` | Receive a user message and return the assistant reply |
+| `POST` | `/chat` | Receive a user message and return the assistant reply with retrieved chunk metadata |
 | `POST` | `/documents` | Ingest a document into the knowledge base |
 
 ## Modules

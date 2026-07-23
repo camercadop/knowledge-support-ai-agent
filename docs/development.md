@@ -178,7 +178,7 @@ sequenceDiagram
     DB-->>VS: top-k chunks
     VS-->>RS: SearchResult list
     RS->>RS: deduplicate · cap · truncate to token budget
-    RS-->>UC: context string (or None)
+    RS-->>UC: RetrievalResult (context string + SearchResult list)
     UC->>UoW: contacts.get_or_create_by_phone(phone)
     UoW->>DB: SELECT / INSERT contact
     UC->>UoW: conversations.get_or_create_for_contact(contact_id)
@@ -194,8 +194,8 @@ sequenceDiagram
     UC->>UoW: messages.create(conversation_id, "assistant", ...)
     UC->>UoW: commit()
     UoW->>DB: COMMIT
-    UC-->>Router: reply text
-    Router-->>Client: {reply}
+    UC-->>Router: AnswerResult (reply + chunks)
+    Router-->>Client: {reply, chunks}
 ```
 
 ### POST /documents
