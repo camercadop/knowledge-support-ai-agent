@@ -38,25 +38,25 @@ def test_execute_raises_key_error_for_unknown_tool() -> None:
         registry.execute("unknown", {})
 
 
-def test_register_overwrites_existing_tool() -> None:
+def test_register_raises_on_duplicate_tool_name() -> None:
     registry = ConcreteToolRegistry()
     definition = ToolDefinition(name="my_tool", description="", parameters=[])
     registry.register(definition, lambda _: "first")
-    registry.register(definition, lambda _: "second")
-    assert registry.execute("my_tool", {}) == "second"
+    with pytest.raises(ValueError, match="my_tool"):
+        registry.register(definition, lambda _: "second")
 
 
 # --- build_tool_registry ---
 
 
-def test_build_tool_registry_discovers_get_current_date(db: Session) -> None:
-    registry = build_tool_registry(db)
+def test_build_tool_registry_discovers_get_current_date(pg_db: Session) -> None:
+    registry = build_tool_registry(pg_db)
     names = {d.name for d in registry.list_definitions()}
     assert "get_current_date" in names
 
 
-def test_build_tool_registry_discovers_search_documents(db: Session) -> None:
-    registry = build_tool_registry(db)
+def test_build_tool_registry_discovers_search_documents(pg_db: Session) -> None:
+    registry = build_tool_registry(pg_db)
     names = {d.name for d in registry.list_definitions()}
     assert "search_documents" in names
 
@@ -76,9 +76,9 @@ def test_validate_dependencies_passes_when_no_db_key() -> None:
     )  # should not raise
 
 
-def test_build_tool_registry_get_current_date_returns_date_string(db: Session) -> None:
+def test_build_tool_registry_get_current_date_returns_date_string(pg_db: Session) -> None:
     import re
 
-    registry = build_tool_registry(db)
+    registry = build_tool_registry(pg_db)
     result = registry.execute("get_current_date", {})
     assert re.match(r"\d{4}-\d{2}-\d{2}", result)

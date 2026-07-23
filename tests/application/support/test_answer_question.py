@@ -4,6 +4,7 @@ import pytest
 from sqlalchemy.orm import Session
 
 from app.application.support.answer_question import AnswerQuestion
+from app.application.support.retrieval_service import RetrievalService
 from app.infrastructure.ai.prompt_builder.default import DefaultPromptBuilder
 from app.infrastructure.ai.mock.chat import MockChatModel
 from app.infrastructure.ai.mock.embeddings import MockEmbeddingModel
@@ -16,9 +17,9 @@ _PHONE = "+1234567890"
 
 
 @pytest.fixture()
-def uow(db: Session) -> SqlAlchemyMessagingUnitOfWork:
-    """Return a MessagingUnitOfWork backed by the in-memory SQLite session."""
-    return SqlAlchemyMessagingUnitOfWork(db)
+def uow(pg_db: Session) -> SqlAlchemyMessagingUnitOfWork:
+    """Return a MessagingUnitOfWork backed by the PostgreSQL session."""
+    return SqlAlchemyMessagingUnitOfWork(pg_db)
 
 
 @pytest.fixture()
@@ -33,11 +34,19 @@ def _make_use_case(
     reply: str = "hello",
     token_total: int = 0,
 ) -> AnswerQuestion:
+    retrieval_service = RetrievalService(
+        vector_store=vector_store,
+        top_k=5,
+        min_score=None,
+        max_chunks=5,
+        max_context_tokens=2000,
+        encoding_name="cl100k_base",
+    )
     return AnswerQuestion(
         uow=uow,
         chat_model=MockChatModel(reply=reply, token_total=token_total),
         embedding_model=MockEmbeddingModel(),
-        vector_store=vector_store,
+        retrieval_service=retrieval_service,
         prompt_builder=DefaultPromptBuilder(),
     )
 

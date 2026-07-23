@@ -11,9 +11,9 @@ from app.infrastructure.vectorstores.fake.store import FakeVectorStore
 
 
 @pytest.fixture()
-def uow(db: Session) -> SqlAlchemyKnowledgeUnitOfWork:
-    """Return a KnowledgeUnitOfWork backed by the in-memory SQLite session."""
-    return SqlAlchemyKnowledgeUnitOfWork(db)
+def uow(pg_db: Session) -> SqlAlchemyKnowledgeUnitOfWork:
+    """Return a KnowledgeUnitOfWork backed by the PostgreSQL session."""
+    return SqlAlchemyKnowledgeUnitOfWork(pg_db)
 
 
 @pytest.fixture()
