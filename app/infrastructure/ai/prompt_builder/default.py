@@ -1,20 +1,19 @@
+from typing import TypedDict
+
 from app.application.ports.chat_model import ChatMessage, Role
 from app.application.ports.prompt_builder import PromptBuilder
 
-_SYSTEM_PROMPT = (
-    "You are a helpful support assistant. Answer questions clearly and concisely."
-)
 
-_GROUNDED_INSTRUCTIONS = (
-    "Answer using only the knowledge base excerpts provided below. "
-    "If the excerpts do not contain enough information to answer, say you don't know."
-)
+class PromptConfig(TypedDict):
+    """Typed configuration bag for DefaultPromptBuilder.
 
-_NO_CONTEXT_INSTRUCTIONS = (
-    "You have no knowledge base context available for this query. "
-    "Do not fabricate information. "
-    "Tell the user you don't have enough information to answer."
-)
+    All keys are required. Source the values from env vars, a database,
+    or any other mechanism — the builder does not care about the origin.
+    """
+
+    system_instructions: str
+    grounded_instructions: str
+    no_context_instructions: str
 
 
 class DefaultPromptBuilder(PromptBuilder):
@@ -22,7 +21,18 @@ class DefaultPromptBuilder(PromptBuilder):
 
     Prepends a system message that combines the base instructions with either
     the retrieved knowledge excerpts or a no-context fallback instruction.
+    The prompt strings are injected via a PromptConfig dict, allowing callers to
+    source them from env vars, a database, or any other configuration mechanism.
     """
+
+    def __init__(self, config: PromptConfig) -> None:
+        """Initialise the builder with the prompt configuration.
+
+        Args:
+            config: Typed dict containing system_instructions, grounded_instructions,
+                and no_context_instructions.
+        """
+        self._config = config
 
     def build(
         self,
@@ -42,10 +52,13 @@ class DefaultPromptBuilder(PromptBuilder):
         """
         if context:
             system_content = (
-                f"{_SYSTEM_PROMPT}\n\n{_GROUNDED_INSTRUCTIONS}"
+                f"{self._config['system_instructions']}\n\n{self._config['grounded_instructions']}"
                 f"\n\nKnowledge base excerpts:\n{context}"
             )
         else:
-            system_content = f"{_SYSTEM_PROMPT}\n\n{_NO_CONTEXT_INSTRUCTIONS}"
+            system_content = (
+                f"{self._config['system_instructions']}\n\n"
+                f"{self._config['no_context_instructions']}"
+            )
 
         return [ChatMessage(role=Role.SYSTEM, content=system_content), *messages]

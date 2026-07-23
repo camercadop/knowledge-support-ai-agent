@@ -1,5 +1,7 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+from app.config.ini import apply_ini_defaults
+
 
 class Settings(BaseSettings):
     """Application settings loaded from environment variables."""
@@ -29,6 +31,26 @@ class Settings(BaseSettings):
     whatsapp_verify_token: str
     log_level: str = "INFO"
     log_format: str = "text"
+    prompts_system_instructions: str = ""
+    prompts_grounded_instructions: str = ""
+    prompts_no_context_instructions: str = ""
 
 
 settings = Settings()  # type: ignore[call-arg]
+apply_ini_defaults(
+    settings,
+    {
+        "prompts_system_instructions": (
+            "prompts.ini",
+            "prompts.system_instructions",
+        ),
+        "prompts_grounded_instructions": (
+            "prompts.ini",
+            "prompts.grounded_instructions",
+        ),
+        "prompts_no_context_instructions": (
+            "prompts.ini",
+            "prompts.no_context_instructions",
+        ),
+    },
+)

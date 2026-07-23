@@ -5,8 +5,9 @@ from sqlalchemy.orm import Session
 
 from app.application.support.answer_question import AnswerQuestion
 from app.application.support.retrieval_service import RetrievalService
-from app.infrastructure.ai.prompt_builder.default import DefaultPromptBuilder
+from app.config.settings import settings
 from app.infrastructure.ai.mock.chat import MockChatModel
+from app.infrastructure.ai.prompt_builder.default import DefaultPromptBuilder, PromptConfig
 from app.infrastructure.ai.mock.embeddings import MockEmbeddingModel
 from app.infrastructure.database.sqlalchemy.postgresql.unit_of_work.messaging import (
     SqlAlchemyMessagingUnitOfWork,
@@ -47,7 +48,13 @@ def _make_use_case(
         chat_model=MockChatModel(reply=reply, token_total=token_total),
         embedding_model=MockEmbeddingModel(),
         retrieval_service=retrieval_service,
-        prompt_builder=DefaultPromptBuilder(),
+        prompt_builder=DefaultPromptBuilder(
+            config=PromptConfig(
+                system_instructions=settings.prompts_system_instructions,
+                grounded_instructions=settings.prompts_grounded_instructions,
+                no_context_instructions=settings.prompts_no_context_instructions,
+            )
+        ),
     )
 
 

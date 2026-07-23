@@ -8,7 +8,10 @@ from app.config.settings import settings
 from app.infrastructure.ai.chat.openai import OpenAIChatModel
 from app.infrastructure.ai.chunking.factory import build_chunk_strategy
 from app.infrastructure.ai.embeddings.openai import OpenAIEmbeddingModel
-from app.infrastructure.ai.prompt_builder.default import DefaultPromptBuilder
+from app.infrastructure.ai.prompt_builder.default import (
+    DefaultPromptBuilder,
+    PromptConfig,
+)
 from app.infrastructure.ai.tools.registry import build_tool_registry
 from app.infrastructure.database.sqlalchemy.postgresql.unit_of_work.knowledge import (
     SqlAlchemyKnowledgeUnitOfWork,
@@ -27,7 +30,13 @@ class SupportContainer:
     """
 
     def __init__(self) -> None:
-        self._prompt_builder = DefaultPromptBuilder()
+        self._prompt_builder = DefaultPromptBuilder(
+            config=PromptConfig(
+                system_instructions=settings.prompts_system_instructions,
+                grounded_instructions=settings.prompts_grounded_instructions,
+                no_context_instructions=settings.prompts_no_context_instructions,
+            )
+        )
         self._chat_model = OpenAIChatModel(prompt_builder=self._prompt_builder)
         self._embedding_model = OpenAIEmbeddingModel()
         self._chunk_strategy = build_chunk_strategy()
