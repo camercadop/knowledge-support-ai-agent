@@ -1,8 +1,10 @@
 from app.application.ports.chunk_strategy import ChunkStrategy
+from app.infrastructure.ai.chunking.factory import chunk_strategy
 
 _SEPARATORS = ["\n## ", "\n### ", "\n#### ", "\n\n", "\n", ". ", " ", ""]
 
 
+@chunk_strategy("markdown")
 class MarkdownAwareChunkStrategy(ChunkStrategy):
     """ChunkStrategy that splits Markdown documents at heading boundaries first.
 

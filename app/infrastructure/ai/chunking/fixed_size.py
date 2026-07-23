@@ -1,6 +1,8 @@
 from app.application.ports.chunk_strategy import ChunkStrategy
+from app.infrastructure.ai.chunking.factory import chunk_strategy
 
 
+@chunk_strategy("fixed")
 class FixedSizeChunkStrategy(ChunkStrategy):
     """ChunkStrategy that splits text into overlapping fixed-character-size chunks.
 

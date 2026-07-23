@@ -1,8 +1,10 @@
 from app.application.ports.chunk_strategy import ChunkStrategy
+from app.infrastructure.ai.chunking.factory import chunk_strategy
 
 _SEPARATORS = ["\n\n", "\n", ". ", " ", ""]
 
 
+@chunk_strategy("recursive")
 class RecursiveChunkStrategy(ChunkStrategy):
     """ChunkStrategy that splits text recursively using a hierarchy of separators.
 

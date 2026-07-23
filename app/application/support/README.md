@@ -12,6 +12,17 @@ This sub-package handles the support use case. `AnswerQuestion` orchestrates a f
 
 ### AnswerQuestion
 
+1. Embed the user message into a query vector
+2. Retrieve relevant knowledge chunks via semantic search, applying deduplication, max-chunks cap, and token budget
+3. Resolve the contact by phone, creating one if it doesn't exist
+4. Resolve the active conversation for that contact, creating one if needed
+5. Load the conversation's message history
+6. Build the full prompt: system prompt + retrieved context + history + user message
+7. Call the LLM, optionally invoking tools during generation
+8. Persist the user turn and the assistant reply
+9. Commit the transaction
+10. Return the reply text to the caller
+
 ```mermaid
 sequenceDiagram
     participant UC as AnswerQuestion
@@ -41,6 +52,15 @@ sequenceDiagram
 ```
 
 ### IngestDocument
+
+1. Persist the document (title, source, raw content) via the UoW
+2. Split the content into chunks using the configured chunk strategy
+3. For each chunk:
+   - Embed the chunk text into a vector
+   - Persist the chunk and its embedding via the UoW
+   - Upsert the chunk into the vector store for similarity search
+4. Commit the transaction
+5. Return the persisted Document to the caller
 
 ```mermaid
 sequenceDiagram
