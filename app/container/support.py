@@ -3,6 +3,8 @@ from sqlalchemy.orm import Session
 from app.application.support.answer_question import AnswerQuestion
 from app.application.support.clear_history import ClearHistory
 from app.application.support.ingest_document import IngestDocument
+from app.application.support.retrieval_service import RetrievalService
+from app.config.settings import settings
 from app.infrastructure.ai.chat.openai import OpenAIChatModel
 from app.infrastructure.ai.chunking.factory import build_chunk_strategy
 from app.infrastructure.ai.embeddings.openai import OpenAIEmbeddingModel
@@ -39,11 +41,19 @@ class SupportContainer:
         Returns:
             A fully wired AnswerQuestion instance.
         """
+        retrieval_service = RetrievalService(
+            vector_store=PgVectorStore(db),
+            top_k=settings.retrieval_top_k,
+            min_score=settings.retrieval_min_score,
+            max_chunks=settings.retrieval_max_chunks,
+            max_context_tokens=settings.retrieval_max_context_tokens,
+            encoding_name=settings.retrieval_encoding,
+        )
         return AnswerQuestion(
             uow=SqlAlchemyMessagingUnitOfWork(db),
             chat_model=self._chat_model,
             embedding_model=self._embedding_model,
-            vector_store=PgVectorStore(db),
+            retrieval_service=retrieval_service,
             prompt_builder=self._prompt_builder,
             tool_registry=build_tool_registry(db),
         )

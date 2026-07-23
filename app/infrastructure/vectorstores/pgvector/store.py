@@ -1,4 +1,5 @@
 import uuid
+from typing import Any
 
 from sqlalchemy.orm import Session
 
@@ -37,20 +38,34 @@ class PgVectorStore(VectorStore):
             orm.chunk = chunk
             orm.embedding = embedding
 
-    def search(self, embedding: list[float], top_k: int = 5) -> list[SearchResult]:
+    def search(
+        self,
+        embedding: list[float],
+        top_k: int = 5,
+        min_score: float | None = None,
+        metadata_filters: dict[str, str] | None = None,
+    ) -> list[SearchResult]:
         """Return the top-k chunks closest to the given embedding by cosine distance.
 
-        Results are ordered from most to least similar.
+        Applies an optional maximum distance filter (min_score) and optional
+        JSONB containment filter on metadata. Results are ordered from most to
+        least similar.
         """
         distance = DocumentChunkORM.embedding.cosine_distance(embedding).label(
             "distance"
         )
-        rows = (
-            self._db.query(DocumentChunkORM, distance)
-            .order_by(distance)
-            .limit(top_k)
-            .all()
-        )
+        query = self._db.query(DocumentChunkORM, distance).order_by(distance)
+
+        if min_score is not None:
+            query = query.filter(distance <= min_score)
+
+        if metadata_filters is not None:
+            filters: dict[str, Any] = metadata_filters
+            query = query.filter(
+                DocumentChunkORM.metadata_.cast(type_=None).op("@>")(filters)
+            )
+
+        rows = query.limit(top_k).all()
         return [
             SearchResult(
                 chunk_id=row.id,

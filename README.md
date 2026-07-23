@@ -94,6 +94,11 @@ uv run alembic upgrade head
 | `EMBEDDING_MODEL` | Embedding model name (default: `text-embedding-3-small`) |
 | `EMBEDDING_DIMENSIONS` | Embedding vector dimensions (default: `1536`) |
 | `EMBEDDING_BASE_URL` | Optional base URL override for the embedding provider |
+| `RETRIEVAL_TOP_K` | Number of chunks to request from the vector store (default: `5`) |
+| `RETRIEVAL_MIN_SCORE` | Maximum cosine distance to accept — lower is stricter (default: unset) |
+| `RETRIEVAL_MAX_CHUNKS` | Maximum deduplicated chunks included in context (default: `5`) |
+| `RETRIEVAL_MAX_CONTEXT_TOKENS` | Token budget for assembled context (default: `2000`) |
+| `RETRIEVAL_ENCODING` | tiktoken encoding for token counting (default: `cl100k_base`) |
 | `WHATSAPP_TOKEN` | WhatsApp Cloud API token |
 | `WHATSAPP_VERIFY_TOKEN` | Webhook verification token |
 | `LOG_LEVEL` | Log level: `DEBUG`, `INFO`, `WARNING` (default: `INFO`) |

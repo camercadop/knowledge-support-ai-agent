@@ -218,3 +218,4 @@ session*
 
 .amazonq/*
 .ai-devrules/*
+.*_cache/

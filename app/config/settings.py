@@ -20,6 +20,11 @@ class Settings(BaseSettings):
     chunk_strategy: str = "fixed"
     chunk_size: int = 500
     chunk_overlap: int = 50
+    retrieval_top_k: int = 5
+    retrieval_min_score: float | None = None
+    retrieval_max_chunks: int = 5
+    retrieval_max_context_tokens: int = 2000
+    retrieval_encoding: str = "cl100k_base"
     whatsapp_token: str
     whatsapp_verify_token: str
     log_level: str = "INFO"

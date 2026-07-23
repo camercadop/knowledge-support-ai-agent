@@ -16,14 +16,20 @@ This sub-package handles the support use case. `AnswerQuestion` orchestrates a f
 sequenceDiagram
     participant UC as AnswerQuestion
     participant Embed as EmbeddingModel
+    participant RS as RetrievalService
     participant VS as VectorStore
     participant UoW as MessagingUnitOfWork
     participant LLM as ChatModel
 
     UC->>Embed: embed(user_message)
     Embed-->>UC: query_vector
-    UC->>VS: search(query_vector)
-    VS-->>UC: chunks (or empty)
+    UC->>RS: retrieve(query_vector)
+    RS->>VS: search(query_vector, top_k, min_score, metadata_filters)
+    VS-->>RS: SearchResult list
+    RS->>RS: deduplicate by chunk text
+    RS->>RS: cap at max_chunks
+    RS->>RS: truncate to max_context_tokens
+    RS-->>UC: context string (or None)
     UC->>UoW: contacts.get_or_create_by_phone(phone)
     UC->>UoW: conversations.get_or_create_for_contact(contact_id)
     UC->>UoW: messages.list_by_conversation(conversation_id)
@@ -57,3 +63,4 @@ sequenceDiagram
 
 - `answer_question.py` — `AnswerQuestion`; handles a full chat turn end-to-end
 - `ingest_document.py` — `IngestDocument`; chunks, embeds, and indexes a document into the knowledge base
+- `retrieval_service.py` — `RetrievalService`; wraps `VectorStore.search()` with post-retrieval quality controls: deduplication by chunk text, max-chunks cap, and token-based context truncation via tiktoken

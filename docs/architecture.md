@@ -58,6 +58,7 @@ flowchart TB
     subgraph app["Application Layer"]
         uc_answer["AnswerQuestion\nUse case"]
         uc_ingest["IngestDocument\nUse case"]
+        retrieval_svc["RetrievalService\nPost-retrieval controls"]
         port_msg_uow["MessagingUnitOfWork\n[port]"]
         port_know_uow["KnowledgeUnitOfWork\n[port]"]
         port_chat["ChatModel\n[port]"]
@@ -96,6 +97,8 @@ flowchart TB
     uc_answer --> port_chat
     uc_answer --> port_tools
     uc_answer --> port_prompt
+    uc_answer --> retrieval_svc
+    retrieval_svc --> port_vs
     uc_ingest --> port_know_uow
     uc_ingest --> port_embed
     uc_ingest --> port_vs

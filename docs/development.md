@@ -59,6 +59,11 @@ Or use the interactive docs at `http://localhost:8000/docs`.
 | `EMBEDDING_MODEL` | Embedding model name (default: `text-embedding-3-small`) |
 | `EMBEDDING_DIMENSIONS` | Embedding vector dimensions (default: `1536`) |
 | `EMBEDDING_BASE_URL` | Optional base URL override for the embedding provider |
+| `RETRIEVAL_TOP_K` | Number of chunks to request from the vector store (default: `5`) |
+| `RETRIEVAL_MIN_SCORE` | Maximum cosine distance to accept — lower is stricter (default: unset) |
+| `RETRIEVAL_MAX_CHUNKS` | Maximum deduplicated chunks included in context (default: `5`) |
+| `RETRIEVAL_MAX_CONTEXT_TOKENS` | Token budget for assembled context (default: `2000`) |
+| `RETRIEVAL_ENCODING` | tiktoken encoding for token counting (default: `cl100k_base`) |
 | `WHATSAPP_TOKEN` | WhatsApp Cloud API token |
 | `WHATSAPP_VERIFY_TOKEN` | Webhook verification token |
 
@@ -155,6 +160,7 @@ sequenceDiagram
     participant Router as chat.py (API)
     participant UC as AnswerQuestion
     participant Embed as OpenAIEmbeddingModel
+    participant RS as RetrievalService
     participant VS as PgVectorStore
     participant DB as PostgreSQL
     participant UoW as SqlAlchemyMessagingUnitOfWork
@@ -166,10 +172,13 @@ sequenceDiagram
     UC->>Embed: embed(user_message)
     Embed->>OpenAI: embeddings.create(...)
     OpenAI-->>Embed: query_vector
-    UC->>VS: search(query_vector)
+    UC->>RS: retrieve(query_vector)
+    RS->>VS: search(query_vector, top_k, min_score, metadata_filters)
     VS->>DB: SELECT chunks ORDER BY cosine_distance
     DB-->>VS: top-k chunks
-    VS-->>UC: SearchResult list (or empty)
+    VS-->>RS: SearchResult list
+    RS->>RS: deduplicate · cap · truncate to token budget
+    RS-->>UC: context string (or None)
     UC->>UoW: contacts.get_or_create_by_phone(phone)
     UoW->>DB: SELECT / INSERT contact
     UC->>UoW: conversations.get_or_create_for_contact(contact_id)
