@@ -4,7 +4,7 @@ from collections.abc import Generator
 import pytest
 from sqlalchemy import create_engine, text
 from sqlalchemy.engine import Engine
-from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy.orm import Session
 
 from app.infrastructure.database.sqlalchemy.postgresql.base import Base
 from app.infrastructure.database.sqlalchemy.sqlite.engine import (

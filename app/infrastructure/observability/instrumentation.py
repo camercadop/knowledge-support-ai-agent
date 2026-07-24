@@ -54,11 +54,18 @@ class OtelDefaultInstrumentation(BaseInstrumentation):
     beyond basic tracing.
     """
 
-    def __init__(self, config: InstrumentationConfig | None = None) -> None:
+    def __init__(
+        self,
+        config: InstrumentationConfig | None = None,
+        *,
+        meter: Any | None = None,
+        tracer: Any | None = None,
+    ) -> None:
         self._config = config or InstrumentationConfig()
         module = self.__class__.__module__
-        self._tracer = trace.get_tracer(module)
-        self._meter = metrics.get_meter(module)
+        # Allow dependency injection of meter and tracer for testing.
+        self._tracer = tracer if tracer is not None else trace.get_tracer(module)
+        self._meter = meter if meter is not None else metrics.get_meter(module)
         self._build_instruments()
 
     def _build_instruments(self) -> None:
@@ -138,3 +145,27 @@ class OtelDefaultInstrumentation(BaseInstrumentation):
                 instrument.add(value)
             else:
                 instrument.record(value)
+
+
+class SpyInstrumentation(BaseInstrumentation):
+    """Test spy that records span names and metrics passed to it."""
+
+    def __init__(self) -> None:
+        self.spans: list[str] = []
+        self.recorded: dict[str, Any] = {}
+
+    @contextmanager
+    def root_span(self, name: str) -> Generator[None]:
+        """Record the root span name and yield."""
+        self.spans.append(name)
+        yield
+
+    @contextmanager
+    def span(self, name: str) -> Generator[None]:
+        """Record the span name and yield."""
+        self.spans.append(name)
+        yield
+
+    def record_metrics(self, data: dict[str, Any]) -> None:
+        """Merge recorded metrics into the internal dict."""
+        self.recorded.update(data)

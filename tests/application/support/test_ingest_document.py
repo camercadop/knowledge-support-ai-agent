@@ -1,6 +1,7 @@
 import pytest
 from sqlalchemy.orm import Session
 
+from app.application.ports.observability import BaseInstrumentation
 from app.application.support.ingest_document import IngestDocument
 from app.infrastructure.ai.chunking.fixed_size import FixedSizeChunkStrategy
 from app.infrastructure.ai.mock.embeddings import MockEmbeddingModel
@@ -9,8 +10,7 @@ from app.infrastructure.database.sqlalchemy.postgresql.unit_of_work.knowledge im
 )
 from app.infrastructure.vectorstores.fake.store import FakeVectorStore
 
-
-from app.infrastructure.observability.instrumentation import NullInstrumentation
+from app.infrastructure.observability.instrumentation import NullInstrumentation, SpyInstrumentation
 
 
 @pytest.fixture()
@@ -28,13 +28,14 @@ def vector_store() -> FakeVectorStore:
 def _make_use_case(
     uow: SqlAlchemyKnowledgeUnitOfWork,
     vector_store: FakeVectorStore,
+    instrumentation: BaseInstrumentation | None = None,
 ) -> IngestDocument:
     return IngestDocument(
         uow=uow,
         embedding_model=MockEmbeddingModel(),
         vector_store=vector_store,
         chunk_strategy=FixedSizeChunkStrategy(chunk_size=500, chunk_overlap=50),
-        instrumentation=NullInstrumentation(),
+        instrumentation=instrumentation or NullInstrumentation(),
     )
 
 
@@ -81,3 +82,25 @@ def test_single_chunk_for_short_content(
     results = vector_store.search([0.0, 0.0, 0.0])
     assert len(results) == 1
     assert results[0].chunk == "short content"
+
+
+# --- instrumentation ---
+
+
+def test_embed_span_called_once_per_chunk(
+    uow: SqlAlchemyKnowledgeUnitOfWork, vector_store: FakeVectorStore
+) -> None:
+    spy = SpyInstrumentation()
+    content = "a" * 600  # produces 2 chunks
+    _make_use_case(uow, vector_store, instrumentation=spy).handle("Doc", None, content)
+    assert spy.spans.count("ingest.embedding.embed") == 2
+
+
+def test_record_metrics_includes_chunk_count(
+    uow: SqlAlchemyKnowledgeUnitOfWork, vector_store: FakeVectorStore
+) -> None:
+    spy = SpyInstrumentation()
+    content = "a" * 600  # produces 2 chunks
+    _make_use_case(uow, vector_store, instrumentation=spy).handle("Doc", None, content)
+    assert spy.recorded["ingest.chunk_count"] == 2
+    assert spy.recorded["ingest.total_chunks_embedded"] == 2

@@ -3,6 +3,7 @@ import uuid
 import pytest
 from sqlalchemy.orm import Session
 
+from app.application.ports.observability import BaseInstrumentation
 from app.application.support.answer_question import AnswerQuestion
 from app.application.services.chunk_retriever import ChunkRetriever
 from app.config.settings import settings
@@ -14,7 +15,7 @@ from app.infrastructure.database.sqlalchemy.postgresql.unit_of_work.messaging im
 )
 from app.infrastructure.vectorstores.fake.store import FakeVectorStore
 
-from app.infrastructure.observability.instrumentation import NullInstrumentation
+from app.infrastructure.observability.instrumentation import NullInstrumentation, SpyInstrumentation
 
 _PHONE = "+1234567890"
 
@@ -36,6 +37,7 @@ def _make_use_case(
     vector_store: FakeVectorStore,
     reply: str = "hello",
     token_total: int = 0,
+    instrumentation: BaseInstrumentation | None = None,
 ) -> AnswerQuestion:
     retrieval_service = ChunkRetriever(
         vector_store=vector_store,
@@ -57,8 +59,45 @@ def _make_use_case(
                 no_context_instructions=settings.prompts_no_context_instructions,
             )
         ),
-        instrumentation=NullInstrumentation(),
+        instrumentation=instrumentation or NullInstrumentation(),
     )
+
+
+# --- instrumentation ---
+
+
+def test_record_metrics_includes_rag_and_token_keys(
+    uow: SqlAlchemyMessagingUnitOfWork, vector_store: FakeVectorStore
+) -> None:
+    spy = SpyInstrumentation()
+    _make_use_case(uow, vector_store, token_total=10, instrumentation=spy).handle(
+        _PHONE, "Hi"
+    )
+    assert "rag.chunk_count" in spy.recorded
+    assert "rag.avg_similarity_score" in spy.recorded
+    assert "llm.input_tokens" in spy.recorded
+    assert "llm.output_tokens" in spy.recorded
+    assert "llm.total_tokens" in spy.recorded
+
+
+def test_spans_include_embed_retrieve_generate(
+    uow: SqlAlchemyMessagingUnitOfWork, vector_store: FakeVectorStore
+) -> None:
+    spy = SpyInstrumentation()
+    _make_use_case(uow, vector_store, instrumentation=spy).handle(_PHONE, "Hi")
+    assert "embedding.embed" in spy.spans
+    assert "retrieval.retrieve" in spy.spans
+    assert "llm.generate" in spy.spans
+
+
+def test_token_total_recorded_in_metrics(
+    uow: SqlAlchemyMessagingUnitOfWork, vector_store: FakeVectorStore
+) -> None:
+    spy = SpyInstrumentation()
+    _make_use_case(uow, vector_store, token_total=42, instrumentation=spy).handle(
+        _PHONE, "Hi"
+    )
+    assert spy.recorded["llm.total_tokens"] == 42
 
 
 def test_returns_reply_from_chat_model(
