@@ -17,7 +17,7 @@ cd knowledge-support-ai-agent
 cp .env.example .env
 # Fill in your values
 
-uv sync
+uv sync --extra otel
 docker compose up -d
 uv run alembic upgrade head
 ```
