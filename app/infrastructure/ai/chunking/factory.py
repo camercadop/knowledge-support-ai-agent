@@ -1,7 +1,7 @@
 from collections.abc import Callable
 from typing import TypeVar
 
-from app.application.ports.chunk_strategy import ChunkStrategy
+from app.application.support.ports.chunk_strategy import ChunkStrategy
 from app.config.settings import settings
 
 _CHUNK_STRATEGIES: dict[str, Callable[[int, int], ChunkStrategy]] = {}

@@ -1,4 +1,4 @@
-from app.application.ports.embedding_model import EmbeddingModel
+from app.application.support.ports.embedding_model import EmbeddingModel
 
 
 class MockEmbeddingModel(EmbeddingModel):

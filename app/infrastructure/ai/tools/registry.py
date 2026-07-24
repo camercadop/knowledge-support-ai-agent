@@ -6,7 +6,7 @@ from typing import Any
 
 from sqlalchemy.orm import Session
 
-from app.application.ports.tool_registry import ToolDefinition, ToolRegistry
+from app.application.support.ports.tool_registry import ToolDefinition, ToolRegistry
 from app.infrastructure.ai.tools.decorators import (
     DB_DEPENDENCY_KEY,
     TOOL_DEPENDENCIES_ATTR,

@@ -1,7 +1,7 @@
 import pytest
 from sqlalchemy.orm import Session
 
-from app.application.ports.tool_registry import ToolDefinition
+from app.application.support.ports.tool_registry import ToolDefinition
 from app.infrastructure.ai.tools.registry import (
     ConcreteToolRegistry,
     _validate_dependencies,

@@ -5,15 +5,15 @@ from typing import Any
 from openai import OpenAI
 from openai.types.responses import EasyInputMessageParam, FunctionToolParam
 
-from app.application.ports.chat_model import (
+from app.application.support.ports.chat_model import (
     ChatMessage,
     ChatModel,
     ChatResponse,
     Role,
     TokenUsage,
 )
-from app.application.ports.prompt_builder import PromptBuilder
-from app.application.ports.tool_registry import ToolDefinition, ToolRegistry
+from app.application.support.ports.prompt_builder import PromptBuilder
+from app.application.support.ports.tool_registry import ToolDefinition, ToolRegistry
 from app.config.settings import settings
 
 logger = logging.getLogger(__name__)
@@ -146,6 +146,7 @@ class OpenAIChatModel(ChatModel):
                         input_tokens=input_tokens or None,
                         output_tokens=output_tokens or None,
                     ),
+                    model_used=settings.chat_model,
                 )
 
             previous_response_id = response.id

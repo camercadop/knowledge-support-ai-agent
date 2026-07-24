@@ -7,7 +7,7 @@ from typing import Any
 
 from opentelemetry import metrics, trace
 
-from app.application.ports.observability import BaseInstrumentation
+from app.application.support.ports.observability import BaseInstrumentation
 
 
 @dataclass(frozen=True)

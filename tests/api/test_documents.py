@@ -5,7 +5,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 from fastapi.testclient import TestClient
 
-from app.application.models.document import Document
+from app.application.support.models.document import Document
 from app.infrastructure.database.sqlalchemy.postgresql.engine import get_db
 from app.main import app
 

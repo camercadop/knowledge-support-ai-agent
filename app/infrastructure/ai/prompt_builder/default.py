@@ -1,7 +1,7 @@
 from typing import TypedDict
 
-from app.application.ports.chat_model import ChatMessage, Role
-from app.application.ports.prompt_builder import PromptBuilder
+from app.application.support.ports.chat_model import ChatMessage, Role
+from app.application.support.ports.prompt_builder import PromptBuilder
 
 
 class PromptConfig(TypedDict):

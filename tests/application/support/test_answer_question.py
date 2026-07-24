@@ -3,9 +3,9 @@ import uuid
 import pytest
 from sqlalchemy.orm import Session
 
-from app.application.ports.observability import BaseInstrumentation
-from app.application.support.answer_question import AnswerQuestion
-from app.application.services.chunk_retriever import ChunkRetriever
+from app.application.support.ports.observability import BaseInstrumentation
+from app.application.support.use_cases.answer_question import AnswerQuestion
+from app.application.support.services.chunk_retriever import ChunkRetriever
 from app.config.settings import settings
 from app.infrastructure.ai.mock.chat import MockChatModel
 from app.infrastructure.ai.prompt_builder.default import DefaultPromptBuilder, PromptConfig
@@ -13,9 +13,9 @@ from app.infrastructure.ai.mock.embeddings import MockEmbeddingModel
 from app.infrastructure.database.sqlalchemy.postgresql.unit_of_work.messaging import (
     SqlAlchemyMessagingUnitOfWork,
 )
-from app.infrastructure.vectorstores.fake.store import FakeVectorStore
-
+from app.infrastructure.events.in_memory_event_bus import InMemoryEventBus
 from app.infrastructure.observability.instrumentation import NullInstrumentation, SpyInstrumentation
+from app.infrastructure.vectorstores.fake.store import FakeVectorStore
 
 _PHONE = "+1234567890"
 
@@ -49,6 +49,7 @@ def _make_use_case(
     )
     return AnswerQuestion(
         uow=uow,
+        event_publisher=InMemoryEventBus(),
         chat_model=MockChatModel(reply=reply, token_total=token_total),
         embedding_model=MockEmbeddingModel(),
         retrieval_service=retrieval_service,

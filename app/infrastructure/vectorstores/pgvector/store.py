@@ -3,7 +3,7 @@ from typing import Any
 
 from sqlalchemy.orm import Session
 
-from app.application.ports.vector_store import SearchResult, VectorStore
+from app.application.support.ports.vector_store import SearchResult, VectorStore
 from app.infrastructure.database.sqlalchemy.postgresql.models.document_chunk import (
     DocumentChunk as DocumentChunkORM,
 )

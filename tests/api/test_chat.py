@@ -4,7 +4,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 from fastapi.testclient import TestClient
 
-from app.application.support.answer_question import AnswerResult
+from app.application.support.use_cases.answer_question import AnswerResult
 from app.infrastructure.database.sqlalchemy.postgresql.engine import get_db
 from app.main import app
 

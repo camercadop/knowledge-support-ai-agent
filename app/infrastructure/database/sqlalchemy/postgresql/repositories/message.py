@@ -2,8 +2,8 @@ import uuid
 
 from sqlalchemy.orm import Session
 
-from app.application.models.message import Message
-from app.application.ports.repositories.message import AbstractMessageRepository
+from app.application.support.models.message import Message
+from app.application.support.ports.repositories.message import AbstractMessageRepository
 from app.infrastructure.database.sqlalchemy.postgresql.models.message import (
     Message as MessageORM,
 )

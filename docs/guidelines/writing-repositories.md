@@ -45,8 +45,8 @@ class MyModelRepository(AbstractMyModelRepository):
 - The caller (use case) owns the transaction and is responsible for calling `uow.commit()`.
 - Never import or call application services from a repository.
 - One repository per model.
-- Every repository must implement the corresponding abstract port defined in `app/application/ports/repositories/` — never expose a concrete repository class directly to the application layer.
-- Never return ORM model instances to the application layer — always map to the corresponding application model in `app/application/models/`.
+- Every repository must implement the corresponding abstract port defined in `app/application/<domain>/ports/repositories/` — never expose a concrete repository class directly to the application layer.
+- Never return ORM model instances to the application layer — always map to the corresponding application model in `app/application/<domain>/models/`.
 
 ## Transaction Boundary
 

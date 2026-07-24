@@ -1,6 +1,6 @@
 from typing import TYPE_CHECKING
 
-from app.application.ports.chat_model import (
+from app.application.support.ports.chat_model import (
     ChatMessage,
     ChatModel,
     ChatResponse,
@@ -9,7 +9,7 @@ from app.application.ports.chat_model import (
 )
 
 if TYPE_CHECKING:
-    from app.application.ports.tool_registry import ToolRegistry
+    from app.application.support.ports.tool_registry import ToolRegistry
 
 
 class MockChatModel(ChatModel):
@@ -19,15 +19,22 @@ class MockChatModel(ChatModel):
     Pass a custom reply to control the returned content.
     """
 
-    def __init__(self, reply: str = "mock reply", token_total: int = 0) -> None:
-        """Initialize with the fixed reply and token total for every generate call.
+    def __init__(
+        self,
+        reply: str = "mock reply",
+        token_total: int = 0,
+        model_used: str = "mock-model",
+    ) -> None:
+        """Initialize with the fixed reply, token total, and model name.
 
         Args:
             reply: The fixed reply text to return.
             token_total: The token total to report in usage.
+            model_used: The model name to report in the response.
         """
         self._reply = reply
         self._token_total = token_total
+        self._model_used = model_used
 
     def generate(
         self,
@@ -46,4 +53,5 @@ class MockChatModel(ChatModel):
         return ChatResponse(
             message=ChatMessage(role=Role.ASSISTANT, content=self._reply),
             usage=TokenUsage(total=self._token_total),
+            model_used=self._model_used,
         )

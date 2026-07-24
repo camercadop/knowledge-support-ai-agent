@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
 
-from app.application.models.contact import Contact
-from app.application.ports.repositories.contact import AbstractContactRepository
+from app.application.support.models.contact import Contact
+from app.application.support.ports.repositories.contact import AbstractContactRepository
 from app.infrastructure.database.sqlalchemy.postgresql.models.contact import (
     Contact as ContactORM,
 )

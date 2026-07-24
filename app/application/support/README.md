@@ -1,14 +1,19 @@
 # support
 
-This sub-package handles the support use case. `AnswerQuestion` orchestrates a full chat turn: it resolves the contact and conversation, retrieves message history, calls the LLM, persists both the user and assistant turns, and returns the reply text to the API layer.
+This sub-package contains everything belonging to the support domain: models, ports, services, and use cases.
 
-## Responsibilities
+## Structure
 
-- Coordinate repositories, the LLM client, and the database session
-- Own the transaction boundary: commit only after all side effects succeed
-- Return plain values to the API layer; never expose ORM objects
+- `models/` — infrastructure-free dataclasses used as return types by repository ports
+- `ports/` — abstract interfaces the use cases depend on
+  - `repositories/` — one abstract repository per aggregate root
+  - `unit_of_work/` — domain-scoped transactional boundaries (`MessagingUnitOfWork`, `KnowledgeUnitOfWork`)
+  - `chat_model.py`, `embedding_model.py`, `prompt_builder.py`, `tool_registry.py`, `observability.py`, `chunk_strategy.py`, `vector_store.py`
+- `services/` — shared application-layer logic consumed by multiple use cases
+  - `chunk_retriever.py` — wraps vector store search with deduplication, capping, and token budget enforcement
+- `use_cases/` — one module per user-facing action
 
-## Flow
+## Use Cases
 
 ### AnswerQuestion
 
@@ -80,7 +85,6 @@ sequenceDiagram
     UC->>UoW: commit()
 ```
 
-## Modules
+### ClearHistory
 
-- `answer_question.py` — `AnswerQuestion` and `AnswerResult`; handles a full chat turn end-to-end and returns the reply alongside retrieved chunk metadata
-- `ingest_document.py` — `IngestDocument`; chunks, embeds, and indexes a document into the knowledge base
+Deletes all messages for the conversation associated with a phone number.

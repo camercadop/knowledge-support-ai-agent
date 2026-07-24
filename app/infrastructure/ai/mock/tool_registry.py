@@ -1,7 +1,7 @@
 from collections.abc import Callable
 from typing import Any
 
-from app.application.ports.tool_registry import ToolDefinition, ToolRegistry
+from app.application.support.ports.tool_registry import ToolDefinition, ToolRegistry
 
 
 class MockToolRegistry(ToolRegistry):

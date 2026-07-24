@@ -2,8 +2,8 @@ import uuid
 
 from sqlalchemy.orm import Session
 
-from app.application.models.conversation import Conversation
-from app.application.ports.repositories.conversation import (
+from app.application.support.models.conversation import Conversation
+from app.application.support.ports.repositories.conversation import (
     AbstractConversationRepository,
 )
 from app.infrastructure.database.sqlalchemy.postgresql.models.conversation import (

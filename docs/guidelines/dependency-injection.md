@@ -65,7 +65,7 @@ When constructing a dependency requires non-trivial logic (e.g. selecting an imp
 
 ## Adding a New Infrastructure Dependency
 
-1. Define the port (abstract class) in `app/application/ports/`.
+1. Define the port (abstract class) in `app/application/<domain>/ports/`.
 2. Implement it in `app/infrastructure/`.
 3. If stateless, instantiate it at module level in the router.
 4. Pass it into the use case constructor.

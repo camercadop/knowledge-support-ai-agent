@@ -1,4 +1,4 @@
-from app.application.ports.chunk_strategy import ChunkStrategy
+from app.application.support.ports.chunk_strategy import ChunkStrategy
 from app.infrastructure.ai.chunking.factory import chunk_strategy
 
 _SEPARATORS = ["\n\n", "\n", ". ", " ", ""]

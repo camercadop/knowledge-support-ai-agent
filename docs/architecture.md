@@ -66,6 +66,8 @@ flowchart TB
             port_vs["VectorStore"]
             port_tools["ToolRegistry"]
             port_prompt["PromptBuilder"]
+            port_event["EventPublisher"]
+            port_obs["BaseInstrumentation"]
         end
     end
 
@@ -81,6 +83,14 @@ flowchart TB
             default_prompt["DefaultPromptBuilder"]
             tool_registry["ConcreteToolRegistry\nget_current_date · search_documents"]
         end
+        subgraph events_impl["Events"]
+            event_bus["InMemoryEventBus"]
+            rag_handler["RagInteractionLogHandler"]
+        end
+        subgraph obs_impl["Observability"]
+            otel_instrumentation["OtelDefaultInstrumentation"]
+            null_instrumentation["NullInstrumentation"]
+        end
     end
 
     subgraph external["External"]
@@ -93,9 +103,9 @@ flowchart TB
     cli_main --> uc_answer
     cli_main --> uc_ingest
 
-    uc_answer --> port_msg_uow & port_chat & port_tools & port_prompt & retrieval_svc
+    uc_answer --> port_msg_uow & port_chat & port_tools & port_prompt & retrieval_svc & port_event & port_obs
     retrieval_svc --> port_vs
-    uc_ingest --> port_know_uow & port_embed & port_vs
+    uc_ingest --> port_know_uow & port_embed & port_vs & port_obs
 
     port_msg_uow -.->|impl| sql_msg_uow
     port_know_uow -.->|impl| sql_know_uow
@@ -104,6 +114,9 @@ flowchart TB
     port_vs -.->|impl| pgvector
     port_tools -.->|impl| tool_registry
     port_prompt -.->|impl| default_prompt
+    port_event -.->|impl| event_bus
+    event_bus -->|dispatches| rag_handler
+    port_obs -.->|impl| otel_instrumentation
 
     sql_msg_uow & sql_know_uow & pgvector --> postgres
     openai_chat & openai_embed --> openai
@@ -114,12 +127,15 @@ flowchart TB
 ```
 app/
     api/              # Route handlers and webhook endpoints
-    application/      # Use cases and orchestration
-        models/       # Application-layer value objects
-        ports/        # Interfaces for infrastructure dependencies
-            repositories/   # One abstract repo per aggregate root
-            unit_of_work/   # Domain-scoped transactional boundaries
-        services/     # Shared application-layer services (collaborators, not entry points)
+    application/      # Use cases and orchestration, organized by domain
+        shared/       # Cross-domain event infrastructure (DomainEvent, EventPublisher, EventHandler)
+        <domain>/     # One sub-package per domain
+            models/       # Application-layer value objects
+            ports/        # Interfaces for infrastructure dependencies
+                repositories/   # One abstract repo per aggregate root
+                unit_of_work/   # Domain-scoped transactional boundaries
+            services/     # Shared application-layer services (collaborators, not entry points)
+            use_cases/    # One module per user-facing action
     cli/              # Typer CLI entry point
     config/           # Settings and environment configuration
     container/        # Composition Root — ApplicationContainer composes domain-scoped containers
@@ -133,6 +149,7 @@ app/
             prompt_builder/ # PromptBuilder implementations
             tools/        # Tool registry, @tool decorator, and tool implementations
         database/         # ORM adapters, repositories, and migrations
+        events/           # Event bus implementations
         observability/    # OTel instrumentation
             definitions/   # InstrumentationConfig constants grouped by domain
         vectorstores/

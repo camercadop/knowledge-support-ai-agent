@@ -118,11 +118,15 @@ Checks all dependencies against the OSV vulnerability database.
 ```
 app/
     api/          # Route handlers
-    application/  # Use cases and ports
-        models/   # Application-layer value objects
-        ports/    # Interfaces for infrastructure dependencies
-            repositories/  # One abstract repo per aggregate root
-            unit_of_work/  # Domain-scoped transactional boundaries
+    application/  # Use cases and orchestration, organized by domain
+        shared/   # Cross-domain event infrastructure
+        <domain>/ # One sub-package per domain
+            models/       # Application-layer value objects
+            ports/        # Interfaces for infrastructure dependencies
+                repositories/  # One abstract repo per aggregate root
+                unit_of_work/  # Domain-scoped transactional boundaries
+            services/     # Shared application-layer services
+            use_cases/    # One module per user-facing action
     cli/          # Typer CLI entry point
         commands/   # One module per command group
         context.py  # Request context manager (container + session lifecycle)

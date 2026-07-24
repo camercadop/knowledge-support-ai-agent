@@ -1,7 +1,7 @@
 from collections.abc import Callable
 from typing import Any, TypeVar
 
-from app.application.ports.tool_registry import ToolDefinition, ToolParameter
+from app.application.support.ports.tool_registry import ToolDefinition, ToolParameter
 
 F = TypeVar("F", bound=Callable[..., Any])
 

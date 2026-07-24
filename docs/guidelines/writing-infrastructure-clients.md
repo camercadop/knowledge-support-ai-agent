@@ -34,7 +34,7 @@ def call(payload: str) -> ExternalResponse:
 ## Rules
 
 - One module per external integration, under `app/infrastructure/<integration>/`.
-- Every infrastructure client that the application layer depends on must implement a port defined in `app/application/ports/` — the application layer must never import the concrete client directly.
+- Every infrastructure client that the application layer depends on must implement a port defined in `app/application/<domain>/ports/` — the application layer must never import the concrete client directly.
 - Instantiate the SDK client at module level using settings.
 - Wrap SDK responses in a typed dataclass or class — never return raw SDK objects to the application layer.
 - Infrastructure clients must not import from `app/application/` except for the port they implement.

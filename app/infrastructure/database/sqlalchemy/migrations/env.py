@@ -4,15 +4,19 @@ from alembic import context
 from sqlalchemy import create_engine, pool
 
 import app.infrastructure.database.sqlalchemy.postgresql.models  # noqa: F401 — ensures all models are registered with Base.metadata
+import app.infrastructure.database.sqlalchemy.postgresql.models.analytics  # noqa: F401 — ensures analytics models are registered with AnalyticsBase.metadata
 from app.config.settings import settings
 from app.infrastructure.database.sqlalchemy.postgresql.base import Base
+from app.infrastructure.database.sqlalchemy.postgresql.models.analytics.base import (
+    AnalyticsBase,
+)
 
 config = context.config
 
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-target_metadata = Base.metadata
+target_metadata = [Base.metadata, AnalyticsBase.metadata]
 
 # other values from the config, defined by the needs of env.py,
 # can be acquired:

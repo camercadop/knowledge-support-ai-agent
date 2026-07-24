@@ -1,11 +1,11 @@
 from sqlalchemy.orm import Session
 
-from app.application.ports.repositories.contact import AbstractContactRepository
-from app.application.ports.repositories.conversation import (
+from app.application.support.ports.repositories.contact import AbstractContactRepository
+from app.application.support.ports.repositories.conversation import (
     AbstractConversationRepository,
 )
-from app.application.ports.repositories.message import AbstractMessageRepository
-from app.application.ports.unit_of_work.messaging import MessagingUnitOfWork
+from app.application.support.ports.repositories.message import AbstractMessageRepository
+from app.application.support.ports.unit_of_work.messaging import MessagingUnitOfWork
 from app.infrastructure.database.sqlalchemy.postgresql.repositories.contact import (
     ContactRepository,
 )

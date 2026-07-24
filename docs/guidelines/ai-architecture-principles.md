@@ -4,11 +4,11 @@ This document describes how AI providers (chat, embeddings) are integrated in th
 
 ## Overview
 
-AI providers are abstracted behind ports in `app/application/ports/`. The application layer depends only on the port — never on a specific SDK. Concrete implementations live in `app/infrastructure/ai/`.
+AI providers are abstracted behind ports in `app/application/<domain>/ports/`. The application layer depends only on the port — never on a specific SDK. Concrete implementations live in `app/infrastructure/ai/`.
 
 ```
-app/application/ports/chat_model.py       # ChatModel port
-app/application/ports/embedding_model.py  # EmbeddingModel port
+app/application/<domain>/ports/chat_model.py       # ChatModel port
+app/application/<domain>/ports/embedding_model.py  # EmbeddingModel port
 
 app/infrastructure/ai/chat/openai.py      # OpenAI implementation
 app/infrastructure/ai/embeddings/openai.py
@@ -17,7 +17,7 @@ app/infrastructure/ai/mock/              # Fake implementations for tests
 
 ## Defining a Port
 
-A port is an abstract class in `app/application/ports/`. It defines the contract the use case depends on:
+A port is an abstract class in `app/application/<domain>/ports/`. It defines the contract the use case depends on:
 
 ```python
 from abc import ABC, abstractmethod

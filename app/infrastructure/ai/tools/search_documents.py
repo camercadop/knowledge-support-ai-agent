@@ -2,9 +2,9 @@ from typing import Any
 
 from sqlalchemy.orm import Session
 
-from app.application.ports.embedding_model import EmbeddingModel
-from app.application.ports.tool_registry import ToolParameter
-from app.application.ports.vector_store import VectorStore
+from app.application.support.ports.embedding_model import EmbeddingModel
+from app.application.support.ports.tool_registry import ToolParameter
+from app.application.support.ports.vector_store import VectorStore
 from app.infrastructure.ai.embeddings.openai import OpenAIEmbeddingModel
 from app.infrastructure.ai.tools.decorators import tool
 from app.infrastructure.vectorstores.pgvector.store import PgVectorStore

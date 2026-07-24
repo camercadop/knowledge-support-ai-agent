@@ -1,8 +1,8 @@
 import pytest
 from sqlalchemy.orm import Session
 
-from app.application.ports.observability import BaseInstrumentation
-from app.application.support.ingest_document import IngestDocument
+from app.application.support.ports.observability import BaseInstrumentation
+from app.application.support.use_cases.ingest_document import IngestDocument
 from app.infrastructure.ai.chunking.fixed_size import FixedSizeChunkStrategy
 from app.infrastructure.ai.mock.embeddings import MockEmbeddingModel
 from app.infrastructure.database.sqlalchemy.postgresql.unit_of_work.knowledge import (

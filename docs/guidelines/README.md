@@ -35,21 +35,24 @@ A guideline document must follow this structure:
 
 Ordered from foundational to specific — read top to bottom when onboarding.
 
+The order follows the natural dependency chain: start with the data layer, move up through the application layer, then cover entry points, cross-cutting concerns, and finally tooling.
+
 | Document | Description |
 |----------|-------------|
 | [Clean Architecture](clean-architecture.md) | How to work within the Clean Architecture, including adding a new domain |
 | [Writing Database Models](writing-database-models.md) | How to create a new SQLAlchemy model |
 | [Writing Repositories](writing-repositories.md) | How to implement a repository |
 | [Writing Use Cases](writing-use-cases.md) | How to implement a use case |
+| [Writing Events](writing-events.md) | How to define domain events, implement handlers, and wire the event bus |
+| [Writing Request Schemas](writing-request-schemas.md) | How to define Pydantic request/response schemas |
 | [Writing API Endpoints](writing-api-endpoints.md) | How to implement a route handler |
+| [Writing CLI Commands](writing-cli-commands.md) | How to implement a CLI command and register a new command group |
 | [Dependency Injection](dependency-injection.md) | How dependencies are wired across layers |
 | [Error Handling](error-handling.md) | How to handle and translate errors across layers |
 | [AI Architecture Principles](ai-architecture-principles.md) | How AI providers are abstracted and wired |
-| [Writing Request Schemas](writing-request-schemas.md) | How to define Pydantic request/response schemas |
 | [Writing Infrastructure Clients](writing-infrastructure-clients.md) | How to wrap an external SDK or service |
+| [Writing Agent Tools](writing-agent-tools.md) | How to implement a tool exposed to the LLM via the tool registry |
 | [Writing Settings](writing-settings.md) | How to add and access application settings |
 | [Writing Logs](writing-logs.md) | Logging conventions and formatting rules |
-| [Writing Tests](writing-tests.md) | Test structure, layer rules, and naming conventions |
-| [Writing Agent Tools](writing-agent-tools.md) | How to implement a tool exposed to the LLM via the tool registry |
-| [Writing CLI Commands](writing-cli-commands.md) | How to implement a CLI command and register a new command group |
 | [Writing Observability](writing-observability.md) | How to add OTel metrics and traces to a use case |
+| [Writing Tests](writing-tests.md) | Test structure, layer rules, and naming conventions |

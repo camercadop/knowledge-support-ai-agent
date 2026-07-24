@@ -20,6 +20,7 @@ WhatsApp Cloud API is the intended communication channel, with a REST API availa
 - Document ingestion — chunking, embedding, and pgvector indexing
 - Tool calling — `search_documents` and `get_current_date` built in
 - Provider independence — chat and embedding providers are swappable at config time
+- OpenTelemetry instrumentation — spans and metrics for use cases and RAG pipeline
 - WhatsApp Cloud API webhook integration
 - REST API and CLI interfaces
 
@@ -167,11 +168,15 @@ uv run agent clear-history --phone "+1234567890"
 ```
 app/
     api/              # Route handlers
-    application/      # Use cases and orchestration
-        models/       # Application-layer value objects
-        ports/        # Abstract interfaces (ports)
-            repositories/  # One abstract repo per aggregate root
-            unit_of_work/  # Domain-scoped transactional boundaries
+    application/      # Use cases and orchestration, organized by domain
+        shared/       # Cross-domain event infrastructure
+        <domain>/     # One sub-package per domain
+            models/       # Application-layer value objects
+            ports/        # Abstract interfaces (ports)
+                repositories/  # One abstract repo per aggregate root
+                unit_of_work/  # Domain-scoped transactional boundaries
+            services/     # Shared application-layer services
+            use_cases/    # One module per user-facing action
     cli/              # Typer CLI entry point
         commands/     # One module per command group
         context.py    # Request context manager (container + session lifecycle)
@@ -186,6 +191,7 @@ app/
             sqlalchemy/ # Models, repositories, migrations, and PostgreSQL engine
             sqlite/     # In-memory SQLite engine for tests
         vectorstores/ # Vector store implementations (pgvector)
+        observability/ # OTel instrumentation
         whatsapp/     # WhatsApp Cloud API integration
     schemas/          # Pydantic schemas
 

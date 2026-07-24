@@ -2,8 +2,8 @@ import uuid
 
 from sqlalchemy.orm import Session
 
-from app.application.models.document_chunk import DocumentChunk
-from app.application.ports.repositories.document_chunk import (
+from app.application.support.models.document_chunk import DocumentChunk
+from app.application.support.ports.repositories.document_chunk import (
     AbstractDocumentChunkRepository,
 )
 from app.infrastructure.database.sqlalchemy.postgresql.models.document_chunk import (

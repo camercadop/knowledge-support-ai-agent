@@ -1,6 +1,6 @@
 from openai import OpenAI
 
-from app.application.ports.embedding_model import EmbeddingModel
+from app.application.support.ports.embedding_model import EmbeddingModel
 from app.config.settings import settings
 
 

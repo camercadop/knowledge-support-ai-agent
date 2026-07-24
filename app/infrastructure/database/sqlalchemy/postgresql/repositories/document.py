@@ -2,8 +2,10 @@ import uuid
 
 from sqlalchemy.orm import Session
 
-from app.application.models.document import Document
-from app.application.ports.repositories.document import AbstractDocumentRepository
+from app.application.support.models.document import Document
+from app.application.support.ports.repositories.document import (
+    AbstractDocumentRepository,
+)
 from app.infrastructure.database.sqlalchemy.postgresql.models.document import (
     Document as DocumentORM,
 )

@@ -2,7 +2,7 @@ import math
 import uuid
 from typing import Any
 
-from app.application.ports.vector_store import SearchResult, VectorStore
+from app.application.support.ports.vector_store import SearchResult, VectorStore
 
 
 def _cosine_distance(a: list[float], b: list[float]) -> float:

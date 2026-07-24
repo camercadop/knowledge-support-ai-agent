@@ -10,6 +10,7 @@ The following is the default directory layout under `app/`. Each directory maps 
 app/
 ├── api/              # Route handlers
 ├── application/      # Use cases
+│   ├── shared/       # Cross-domain event infrastructure (DomainEvent, EventPublisher, EventHandler)
 │   ├── ports/        # Interfaces for infrastructure dependencies
 │   └── <domain>/
 │       └── <use_case>.py
@@ -112,5 +113,5 @@ app.include_router(<domain>_router)
 - `app/domain/` must not import from any other `app/` layer.
 - `app/application/` must only import from `app/domain/` and `app/application/` — never from `app/infrastructure/` or `app/api/`.
 - `app/infrastructure/` must not import from `app/api/`.
-- Every external dependency used by the application layer must have a port defined in `app/application/ports/` before any infrastructure code is written.
+- Every external dependency used by the application layer must have a port defined in `app/application/<domain>/ports/` before any infrastructure code is written.
 - Dependencies are injected at the composition root (`app/api/` route handlers) — never instantiated inside use cases or domain objects.

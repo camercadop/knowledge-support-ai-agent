@@ -1,6 +1,6 @@
 from typing import Any
 
-from app.application.ports.tool_registry import ToolDefinition, ToolParameter
+from app.application.support.ports.tool_registry import ToolDefinition, ToolParameter
 from app.infrastructure.ai.tools.decorators import (
     TOOL_DEPENDENCIES_ATTR,
     TOOL_METADATA_ATTR,
