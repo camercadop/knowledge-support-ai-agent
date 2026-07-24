@@ -1,8 +1,12 @@
 import logging
 
+from opentelemetry import trace
+
 from app.application.ports.unit_of_work.messaging import MessagingUnitOfWork
 
 logger = logging.getLogger(__name__)
+
+_tracer = trace.get_tracer(__name__)
 
 
 class ClearHistory:
@@ -24,8 +28,9 @@ class ClearHistory:
         Args:
             phone: The contact's phone number used to identify the conversation.
         """
-        contact = self._uow.contacts.get_or_create_by_phone(phone)
-        conversation = self._uow.conversations.get_or_create_for_contact(contact.id)
-        self._uow.messages.delete_by_conversation(conversation.id)
-        self._uow.commit()
-        logger.info("Cleared history for conversation %s", conversation.id)
+        with _tracer.start_as_current_span("clear_history.handle"):
+            contact = self._uow.contacts.get_or_create_by_phone(phone)
+            conversation = self._uow.conversations.get_or_create_for_contact(contact.id)
+            self._uow.messages.delete_by_conversation(conversation.id)
+            self._uow.commit()
+            logger.info("Cleared history for conversation %s", conversation.id)

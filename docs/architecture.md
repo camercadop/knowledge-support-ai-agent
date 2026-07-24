@@ -132,6 +132,7 @@ app/
             prompt_builder/ # PromptBuilder implementations
             tools/        # Tool registry, @tool decorator, and tool implementations
         database/         # ORM adapters, repositories, and migrations
+        observability/    # OTel instrumentation
         vectorstores/
             pgvector/   # PgVectorStore — cosine similarity search via pgvector
     schemas/          # Pydantic schemas

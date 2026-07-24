@@ -29,6 +29,8 @@ class TokenUsage:
     """Token consumption reported by the model."""
 
     total: int | None
+    input_tokens: int | None = None
+    output_tokens: int | None = None
 
 
 @dataclass(frozen=True)

@@ -137,6 +137,7 @@ app/
             sqlalchemy/ # Models, repositories, migrations, and PostgreSQL engine
             sqlite/     # In-memory SQLite engine for tests
         vectorstores/ # Vector store implementations (pgvector)
+        observability/ # OTel instrumentation
         whatsapp/     # WhatsApp Cloud API integration
     schemas/      # Pydantic schemas
 

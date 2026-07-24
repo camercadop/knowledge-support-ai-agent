@@ -27,6 +27,9 @@ class Settings(BaseSettings):
     retrieval_max_chunks: int = 5
     retrieval_max_context_tokens: int = 2000
     retrieval_encoding: str = "cl100k_base"
+    otel_enabled: bool = False
+    otel_endpoint: str = "http://localhost:4318"
+    otel_service_name: str = "knowledge-support-ai-agent"
     whatsapp_token: str
     whatsapp_verify_token: str
     log_level: str = "INFO"

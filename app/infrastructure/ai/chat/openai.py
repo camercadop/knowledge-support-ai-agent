@@ -106,6 +106,8 @@ class OpenAIChatModel(ChatModel):
 
         logger.info("Calling LLM with %s messages", len(messages))
         total_tokens = 0
+        input_tokens = 0
+        output_tokens = 0
         previous_response_id: str | None = None
 
         while True:
@@ -124,6 +126,8 @@ class OpenAIChatModel(ChatModel):
 
             if response.usage:
                 total_tokens += response.usage.total_tokens or 0
+                input_tokens += response.usage.input_tokens or 0
+                output_tokens += response.usage.output_tokens or 0
 
             tool_calls = [
                 item for item in response.output if item.type == "function_call"
@@ -137,7 +141,11 @@ class OpenAIChatModel(ChatModel):
                         role=Role.ASSISTANT,
                         content=response.output_text,
                     ),
-                    usage=TokenUsage(total=total_tokens or None),
+                    usage=TokenUsage(
+                        total=total_tokens or None,
+                        input_tokens=input_tokens or None,
+                        output_tokens=output_tokens or None,
+                    ),
                 )
 
             previous_response_id = response.id

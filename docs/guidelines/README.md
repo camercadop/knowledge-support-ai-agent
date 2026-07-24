@@ -52,3 +52,4 @@ Ordered from foundational to specific — read top to bottom when onboarding.
 | [Writing Tests](writing-tests.md) | Test structure, layer rules, and naming conventions |
 | [Writing Agent Tools](writing-agent-tools.md) | How to implement a tool exposed to the LLM via the tool registry |
 | [Writing CLI Commands](writing-cli-commands.md) | How to implement a CLI command and register a new command group |
+| [Writing Observability](writing-observability.md) | How to add OTel metrics and traces to a use case |

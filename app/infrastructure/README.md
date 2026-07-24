@@ -7,3 +7,4 @@ This package contains adapters for every external system the application depends
 - `database/` — SQLAlchemy engine, session factory, ORM models, repositories, and migrations
 - `ai/` — chat and embedding provider adapters
 - `vectorstores/` — vector store implementations (pgvector)
+- `observability/` — OTel instrumentation utilities and domain-scoped metric definitions
