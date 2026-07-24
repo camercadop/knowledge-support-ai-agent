@@ -35,7 +35,12 @@ def chat(
     result = container.answer_question(db).handle(request.phone, request.message)
     logger.info("Replied to %s", request.phone)
     chunks = (
-        [ChunkReference(chunk_id=c.chunk_id, document_id=c.document_id, score=c.score) for c in result.chunks]
+        [
+            ChunkReference(
+                chunk_id=c.chunk_id, document_id=c.document_id, score=c.score
+            )
+            for c in result.chunks
+        ]
         if result.chunks
         else None
     )

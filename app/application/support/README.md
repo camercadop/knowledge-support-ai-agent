@@ -84,4 +84,3 @@ sequenceDiagram
 
 - `answer_question.py` — `AnswerQuestion` and `AnswerResult`; handles a full chat turn end-to-end and returns the reply alongside retrieved chunk metadata
 - `ingest_document.py` — `IngestDocument`; chunks, embeds, and indexes a document into the knowledge base
-- `retrieval_service.py` — `RetrievalService` and `RetrievalResult`; wraps `VectorStore.search()` with post-retrieval quality controls (deduplication, max-chunks cap, token-based truncation) and returns both the assembled context string and the included `SearchResult` list

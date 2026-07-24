@@ -4,7 +4,7 @@ import pytest
 from sqlalchemy.orm import Session
 
 from app.application.support.answer_question import AnswerQuestion
-from app.application.support.retrieval_service import RetrievalService
+from app.application.services.chunk_retriever import ChunkRetriever
 from app.config.settings import settings
 from app.infrastructure.ai.mock.chat import MockChatModel
 from app.infrastructure.ai.prompt_builder.default import DefaultPromptBuilder, PromptConfig
@@ -35,7 +35,7 @@ def _make_use_case(
     reply: str = "hello",
     token_total: int = 0,
 ) -> AnswerQuestion:
-    retrieval_service = RetrievalService(
+    retrieval_service = ChunkRetriever(
         vector_store=vector_store,
         top_k=5,
         min_score=None,

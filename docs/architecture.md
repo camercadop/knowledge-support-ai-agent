@@ -56,7 +56,7 @@ flowchart TB
         subgraph use_cases["Use Cases"]
             uc_answer["AnswerQuestion"]
             uc_ingest["IngestDocument"]
-            retrieval_svc["RetrievalService"]
+            retrieval_svc["ChunkRetriever"]
         end
         subgraph ports["Ports"]
             port_msg_uow["MessagingUnitOfWork"]
@@ -119,6 +119,7 @@ app/
         ports/        # Interfaces for infrastructure dependencies
             repositories/   # One abstract repo per aggregate root
             unit_of_work/   # Domain-scoped transactional boundaries
+        services/     # Shared application-layer services (collaborators, not entry points)
     cli/              # Typer CLI entry point
     config/           # Settings and environment configuration
     container/        # Composition Root — ApplicationContainer composes domain-scoped containers

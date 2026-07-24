@@ -9,7 +9,7 @@ from app.application.ports.prompt_builder import PromptBuilder
 from app.application.ports.tool_registry import ToolRegistry
 from app.application.ports.unit_of_work.messaging import MessagingUnitOfWork
 from app.application.ports.vector_store import SearchResult
-from app.application.support.retrieval_service import RetrievalResult, RetrievalService
+from app.application.services.chunk_retriever import ChunkRetriever, RetrievalResult
 from app.infrastructure.observability.support.metrics import build_support_metrics
 from app.infrastructure.observability.utils import timed_span
 
@@ -53,7 +53,7 @@ class AnswerQuestion:
         uow: MessagingUnitOfWork,
         chat_model: ChatModel,
         embedding_model: EmbeddingModel,
-        retrieval_service: RetrievalService,
+        retrieval_service: ChunkRetriever,
         prompt_builder: PromptBuilder,
         tool_registry: ToolRegistry | None = None,
     ) -> None:

@@ -25,7 +25,7 @@ class RetrievalResult:
     chunks: list[SearchResult]
 
 
-class RetrievalService:
+class ChunkRetriever:
     """Wraps vector store search with post-retrieval quality controls.
 
     Applies deduplication by chunk text, a max-chunks cap, and a token-based

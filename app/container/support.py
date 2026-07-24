@@ -1,9 +1,9 @@
 from sqlalchemy.orm import Session
 
+from app.application.services.chunk_retriever import ChunkRetriever
 from app.application.support.answer_question import AnswerQuestion
 from app.application.support.clear_history import ClearHistory
 from app.application.support.ingest_document import IngestDocument
-from app.application.support.retrieval_service import RetrievalService
 from app.config.settings import settings
 from app.infrastructure.ai.chat.openai import OpenAIChatModel
 from app.infrastructure.ai.chunking.factory import build_chunk_strategy
@@ -50,7 +50,7 @@ class SupportContainer:
         Returns:
             A fully wired AnswerQuestion instance.
         """
-        retrieval_service = RetrievalService(
+        retrieval_service = ChunkRetriever(
             vector_store=PgVectorStore(db),
             top_k=settings.retrieval_top_k,
             min_score=settings.retrieval_min_score,
