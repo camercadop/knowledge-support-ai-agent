@@ -2,74 +2,84 @@
 
 This document describes how to add OTel metrics and traces to a use case.
 
-## Instruments
+## How it works
 
-Domain-scoped instruments are grouped into frozen dataclasses and built by a factory function. See `app/infrastructure/observability/` for existing domains.
+Each use case has a module-level `InstrumentationConfig` constant that declares its spans and metrics. `OtelDefaultInstrumentation` is the single concrete class — it accepts an `InstrumentationConfig` on construction and creates the corresponding OTel instruments via `_build_instruments`. Instances are cached and injected via `BaseContainer._instrumentation`.
 
-## Recording a metric
+## Using instrumentation in a use case
 
-Use `timed_span` from `app/infrastructure/observability/utils` to wrap any operation that needs both a latency histogram and a trace span:
+Inject `instrumentation: BaseInstrumentation` in the use case constructor and use it to wrap operations in spans and record metrics.
 
 ```python
-from opentelemetry import trace
-
-from app.infrastructure.observability.support.metrics import SupportMetrics
-from app.infrastructure.observability.utils import timed_span
-
-tracer = trace.get_tracer(__name__)
-
-
-class AnswerQuestion:
-    def __init__(self, metrics: SupportMetrics, ...) -> None:
-        self._metrics = metrics
-        self._tracer = tracer
+class MyUseCase:
+    def __init__(self, ..., instrumentation: BaseInstrumentation) -> None:
+        ...
+        self._instrumentation = instrumentation
 
     def handle(self, ...) -> ...:
-        with timed_span("embed_query", self._metrics.embedding_duration, self._tracer):
-            vector = self._embedding_model.embed(message)
-
-        self._metrics.chunk_count.record(len(chunks))
+        with self._instrumentation.root_span("my_use_case.handle"):
+            with self._instrumentation.span("operation.run"):
+                result = self._do_work()
+            self._instrumentation.record_metrics({"my_domain.item_count": len(result)})
+            return result
 ```
 
-For a plain counter (no span needed), call `.add()` directly:
+- `root_span` — wraps the entire use case execution in a top-level trace span. Call it once at the top of `handle`.
+- `span` — wraps a named sub-operation and records its duration if a matching `timed_spans` entry exists.
+- `record_metrics` — records arbitrary key-value pairs to their registered instruments. Keys not declared in `metrics` are silently ignored.
+
+## Adding instrumentation to a new use case
+
+1. Add an `InstrumentationConfig` constant to `app/infrastructure/observability/definitions/<domain>.py`.
+2. Wire it in the domain container via `self._instrumentation(<CONSTANT>)` and inject it into the use case constructor as `instrumentation: BaseInstrumentation`.
 
 ```python
-self._metrics.total_chunks_embedded.add(len(chunks))
+# app/infrastructure/observability/definitions/support.py
+MY_USE_CASE_INSTRUMENTATION = InstrumentationConfig(
+    timed_spans={
+        "operation.run": ("my_domain.operation_duration_seconds", "s", "Time spent on the main operation"),
+    },
+    metrics={
+        "my_domain.item_count": ("histogram", "my_domain.item_count", None, "Number of items processed"),
+        "my_domain.total_processed": ("counter", "my_domain.total_processed", None, "Cumulative items processed"),
+    },
+)
 ```
 
-## Adding a new domain
+## Config conventions
 
-1. Create `app/infrastructure/observability/<domain>/metrics.py`.
-2. Define a frozen dataclass holding the instruments and a `build_<domain>_metrics(meter)` factory.
-3. Wire the metrics instance through the container and inject it into the use case constructor.
+### `timed_spans`
+
+Maps a span name (passed to `instrumentation.span(name)`) to a `(metric_name, unit, description)` tuple.
+
+The instrumentation wraps the block in an OTel span and records its wall-clock duration to a histogram on exit. `unit` may be `None`.
 
 ```python
-from dataclasses import dataclass
-from opentelemetry import metrics
-
-
-@dataclass(frozen=True)
-class MyDomainMetrics:
-    """OTel instruments for the my-domain use case."""
-
-    operation_duration: metrics.Histogram
-
-
-def build_my_domain_metrics(meter: metrics.Meter) -> MyDomainMetrics:
-    """Instantiate all my-domain instruments from the given meter."""
-    return MyDomainMetrics(
-        operation_duration=meter.create_histogram(
-            "my_domain.operation_duration_seconds",
-            unit="s",
-            description="Time spent on the main operation",
-        ),
-    )
+timed_spans={
+    "embedding.embed": ("rag.embedding_duration_seconds", "s", "Time spent generating the query embedding"),
+}
 ```
+
+### `metrics`
+
+Maps a metric key (passed to `instrumentation.record_metrics({key: value})`) to a `(kind, metric_name, unit, description)` tuple.
+
+`kind` must be `"histogram"` or `"counter"`. `unit` may be `None`.
+
+```python
+metrics={
+    "rag.chunk_count": ("histogram", "rag.chunk_count", None, "Number of chunks included in RAG context per turn"),
+    "ingest.total_chunks_embedded": ("counter", "ingest.total_chunks_embedded", None, "Cumulative count of chunks embedded"),
+}
+```
+
+## Use cases with no metrics
+
+Pass an empty `InstrumentationConfig()` for use cases that only need span tracing and no metrics. Both fields default to empty dicts, so `record_metrics` is a safe no-op.
 
 ## Rules
 
-- All instruments for a domain live in a single frozen dataclass in `app/infrastructure/observability/<domain>/metrics.py`.
 - Instrument names follow the pattern `<domain>.<metric_name>_<unit>` (e.g. `rag.embedding_duration_seconds`).
-- Use `timed_span` for any operation that needs both a latency histogram and a trace span.
-- Metrics instances are injected into use cases — use cases must not import `build_*` factories directly.
+- One `InstrumentationConfig` constant per use case — do not share configs across use cases.
+- Instrumentation instances are injected into use cases — use cases must not instantiate them directly.
 - Never record PII (phone numbers, message content, user identifiers) as metric attributes.

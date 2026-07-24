@@ -5,6 +5,7 @@ from app.application.support.answer_question import AnswerQuestion
 from app.application.support.clear_history import ClearHistory
 from app.application.support.ingest_document import IngestDocument
 from app.config.settings import settings
+from app.container.base import BaseContainer
 from app.infrastructure.ai.chat.openai import OpenAIChatModel
 from app.infrastructure.ai.chunking.factory import build_chunk_strategy
 from app.infrastructure.ai.embeddings.openai import OpenAIEmbeddingModel
@@ -19,17 +20,22 @@ from app.infrastructure.database.sqlalchemy.postgresql.unit_of_work.knowledge im
 from app.infrastructure.database.sqlalchemy.postgresql.unit_of_work.messaging import (
     SqlAlchemyMessagingUnitOfWork,
 )
+from app.infrastructure.observability.definitions.support import (
+    ANSWER_QUESTION_INSTRUMENTATION,
+    INGEST_DOCUMENT_INSTRUMENTATION,
+)
+from app.infrastructure.observability.instrumentation import InstrumentationConfig
 from app.infrastructure.vectorstores.pgvector.store import PgVectorStore
 
 
-class SupportContainer:
+class SupportContainer(BaseContainer):
     """Lazy provider for all support use cases.
 
     Holds shared infrastructure singletons and builds fresh use case instances
     on every call. Nothing is instantiated until a method is called.
     """
 
-    def __init__(self) -> None:
+    def _setup(self) -> None:
         self._prompt_builder = DefaultPromptBuilder(
             config=PromptConfig(
                 system_instructions=settings.prompts_system_instructions,
@@ -38,7 +44,6 @@ class SupportContainer:
             )
         )
         self._chat_model = OpenAIChatModel(prompt_builder=self._prompt_builder)
-        self._embedding_model = OpenAIEmbeddingModel()
         self._chunk_strategy = build_chunk_strategy()
 
     def answer_question(self, db: Session) -> AnswerQuestion:
@@ -61,9 +66,10 @@ class SupportContainer:
         return AnswerQuestion(
             uow=SqlAlchemyMessagingUnitOfWork(db),
             chat_model=self._chat_model,
-            embedding_model=self._embedding_model,
+            embedding_model=self._singleton(OpenAIEmbeddingModel),
             retrieval_service=retrieval_service,
             prompt_builder=self._prompt_builder,
+            instrumentation=self._instrumentation(ANSWER_QUESTION_INSTRUMENTATION),
             tool_registry=build_tool_registry(db),
         )
 
@@ -76,7 +82,10 @@ class SupportContainer:
         Returns:
             A fully wired ClearHistory instance.
         """
-        return ClearHistory(uow=SqlAlchemyMessagingUnitOfWork(db))
+        return ClearHistory(
+            uow=SqlAlchemyMessagingUnitOfWork(db),
+            instrumentation=self._instrumentation(InstrumentationConfig()),
+        )
 
     def ingest_document(self, db: Session) -> IngestDocument:
         """Build a fresh IngestDocument use case bound to the given session.
@@ -89,7 +98,8 @@ class SupportContainer:
         """
         return IngestDocument(
             uow=SqlAlchemyKnowledgeUnitOfWork(db),
-            embedding_model=self._embedding_model,
+            embedding_model=self._singleton(OpenAIEmbeddingModel),
             vector_store=PgVectorStore(db),
             chunk_strategy=self._chunk_strategy,
+            instrumentation=self._instrumentation(INGEST_DOCUMENT_INSTRUMENTATION),
         )

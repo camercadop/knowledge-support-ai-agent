@@ -1,12 +1,9 @@
 import logging
 
-from opentelemetry import trace
-
+from app.application.ports.observability import BaseInstrumentation
 from app.application.ports.unit_of_work.messaging import MessagingUnitOfWork
 
 logger = logging.getLogger(__name__)
-
-_tracer = trace.get_tracer(__name__)
 
 
 class ClearHistory:
@@ -14,10 +11,16 @@ class ClearHistory:
 
     Args:
         uow: Transactional boundary for contacts, conversations, and messages.
+        instrumentation: Observability adapter for recording spans.
     """
 
-    def __init__(self, uow: MessagingUnitOfWork) -> None:
+    def __init__(
+        self,
+        uow: MessagingUnitOfWork,
+        instrumentation: BaseInstrumentation,
+    ) -> None:
         self._uow = uow
+        self._instrumentation = instrumentation
 
     def handle(self, phone: str) -> None:
         """Delete all messages for the contact's active conversation.
@@ -28,7 +31,7 @@ class ClearHistory:
         Args:
             phone: The contact's phone number used to identify the conversation.
         """
-        with _tracer.start_as_current_span("clear_history.handle"):
+        with self._instrumentation.root_span("clear_history.handle"):
             contact = self._uow.contacts.get_or_create_by_phone(phone)
             conversation = self._uow.conversations.get_or_create_for_contact(contact.id)
             self._uow.messages.delete_by_conversation(conversation.id)

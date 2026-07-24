@@ -134,6 +134,7 @@ app/
             tools/        # Tool registry, @tool decorator, and tool implementations
         database/         # ORM adapters, repositories, and migrations
         observability/    # OTel instrumentation
+            definitions/   # InstrumentationConfig constants grouped by domain
         vectorstores/
             pgvector/   # PgVectorStore — cosine similarity search via pgvector
     schemas/          # Pydantic schemas

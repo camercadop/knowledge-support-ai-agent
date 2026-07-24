@@ -14,6 +14,8 @@ from app.infrastructure.database.sqlalchemy.postgresql.unit_of_work.messaging im
 )
 from app.infrastructure.vectorstores.fake.store import FakeVectorStore
 
+from app.infrastructure.observability.instrumentation import NullInstrumentation
+
 _PHONE = "+1234567890"
 
 
@@ -55,6 +57,7 @@ def _make_use_case(
                 no_context_instructions=settings.prompts_no_context_instructions,
             )
         ),
+        instrumentation=NullInstrumentation(),
     )
 
 

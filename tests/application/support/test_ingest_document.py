@@ -10,6 +10,9 @@ from app.infrastructure.database.sqlalchemy.postgresql.unit_of_work.knowledge im
 from app.infrastructure.vectorstores.fake.store import FakeVectorStore
 
 
+from app.infrastructure.observability.instrumentation import NullInstrumentation
+
+
 @pytest.fixture()
 def uow(pg_db: Session) -> SqlAlchemyKnowledgeUnitOfWork:
     """Return a KnowledgeUnitOfWork backed by the PostgreSQL session."""
@@ -31,6 +34,7 @@ def _make_use_case(
         embedding_model=MockEmbeddingModel(),
         vector_store=vector_store,
         chunk_strategy=FixedSizeChunkStrategy(chunk_size=500, chunk_overlap=50),
+        instrumentation=NullInstrumentation(),
     )
 
 

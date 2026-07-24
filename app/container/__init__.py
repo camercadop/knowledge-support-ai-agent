@@ -1,4 +1,7 @@
+from app.container.base import BaseContainer
 from app.container.support import SupportContainer
+
+__all__ = ["ApplicationContainer", "BaseContainer"]
 
 
 class ApplicationContainer:

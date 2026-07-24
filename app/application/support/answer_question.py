@@ -1,23 +1,16 @@
 import logging
 from dataclasses import dataclass
 
-from opentelemetry import metrics, trace
-
 from app.application.ports.chat_model import ChatMessage, ChatModel, ChatResponse, Role
 from app.application.ports.embedding_model import EmbeddingModel
+from app.application.ports.observability import BaseInstrumentation
 from app.application.ports.prompt_builder import PromptBuilder
 from app.application.ports.tool_registry import ToolRegistry
 from app.application.ports.unit_of_work.messaging import MessagingUnitOfWork
 from app.application.ports.vector_store import SearchResult
 from app.application.services.chunk_retriever import ChunkRetriever, RetrievalResult
-from app.infrastructure.observability.support.metrics import build_support_metrics
-from app.infrastructure.observability.utils import timed_span
 
 logger = logging.getLogger(__name__)
-
-_tracer = trace.get_tracer(__name__)
-_meter = metrics.get_meter(__name__)
-_support_metrics = build_support_metrics(_meter)
 
 
 @dataclass(frozen=True)
@@ -46,6 +39,7 @@ class AnswerQuestion:
             and retrieved context before passing it to the chat model.
         tool_registry: Optional registry of tools the model may invoke
             during generation.
+        instrumentation: Observability adapter for recording spans and metrics.
     """
 
     def __init__(
@@ -55,6 +49,7 @@ class AnswerQuestion:
         embedding_model: EmbeddingModel,
         retrieval_service: ChunkRetriever,
         prompt_builder: PromptBuilder,
+        instrumentation: BaseInstrumentation,
         tool_registry: ToolRegistry | None = None,
     ) -> None:
         self._uow = uow
@@ -63,6 +58,7 @@ class AnswerQuestion:
         self._retrieval_service = retrieval_service
         self._prompt_builder = prompt_builder
         self._tool_registry = tool_registry
+        self._instrumentation = instrumentation
 
     def handle(self, phone: str, user_message: str) -> AnswerResult:
         """Process a user message and return the assistant reply with chunk metadata.
@@ -79,7 +75,7 @@ class AnswerQuestion:
         Returns:
             AnswerResult with the assistant reply and retrieved chunk metadata.
         """
-        with _tracer.start_as_current_span("answer_question.handle") as root_span:
+        with self._instrumentation.root_span("answer_question.handle"):
             embedding = self._embed(user_message)
             retrieval = self._retrieve(embedding)
 
@@ -94,8 +90,6 @@ class AnswerQuestion:
             messages.append(ChatMessage(role=Role.USER, content=user_message))
 
             response = self._generate(messages, retrieval)
-
-            self._record_span_attributes(root_span, retrieval, response)
             self._record_metrics(retrieval, response)
 
             self._uow.messages.create(conversation.id, "user", user_message)
@@ -122,9 +116,7 @@ class AnswerQuestion:
         Returns:
             Query embedding vector.
         """
-        with timed_span(
-            "embedding.embed", _support_metrics.embedding_duration, _tracer
-        ):
+        with self._instrumentation.span("embedding.embed"):
             return self._embedding_model.embed(user_message)
 
     def _retrieve(self, embedding: list[float]) -> RetrievalResult:
@@ -136,9 +128,7 @@ class AnswerQuestion:
         Returns:
             RetrievalResult with context string and matched chunks.
         """
-        with timed_span(
-            "retrieval.retrieve", _support_metrics.retrieval_duration, _tracer
-        ):
+        with self._instrumentation.span("retrieval.retrieve"):
             return self._retrieval_service.retrieve(embedding)
 
     def _generate(
@@ -154,50 +144,29 @@ class AnswerQuestion:
             ChatResponse with the assistant reply and token usage.
         """
         prompt = self._prompt_builder.build(messages, retrieval.context)
-        with timed_span("llm.generate", _support_metrics.llm_duration, _tracer):
+        with self._instrumentation.span("llm.generate"):
             return self._chat_model.generate(prompt, tool_registry=self._tool_registry)
-
-    def _record_span_attributes(
-        self,
-        span: trace.Span,
-        retrieval: RetrievalResult,
-        response: ChatResponse,
-    ) -> None:
-        """Set RAG and token attributes on the root span.
-
-        Args:
-            span: The root span for the current chat turn.
-            retrieval: Retrieval result containing the chunks used in context.
-            response: LLM response containing token usage.
-        """
-        chunk_count = len(retrieval.chunks)
-        avg_score = (
-            sum(r.score for r in retrieval.chunks) / chunk_count if chunk_count else 0.0
-        )
-        span.set_attribute("rag.chunk_count", chunk_count)
-        span.set_attribute("rag.avg_similarity_score", avg_score)
-        span.set_attribute("llm.input_tokens", response.usage.input_tokens or 0)
-        span.set_attribute("llm.output_tokens", response.usage.output_tokens or 0)
-        span.set_attribute("llm.total_tokens", response.usage.total or 0)
 
     def _record_metrics(
         self, retrieval: RetrievalResult, response: ChatResponse
     ) -> None:
-        """Record per-turn RAG and token metrics to OTel histograms.
+        """Record per-turn RAG and token metrics.
 
         Args:
             retrieval: Retrieval result containing the chunks used in context.
             response: LLM response containing token usage.
         """
         chunk_count = len(retrieval.chunks)
-        avg_score = (
-            sum(r.score for r in retrieval.chunks) / chunk_count if chunk_count else 0.0
+        self._instrumentation.record_metrics(
+            {
+                "rag.chunk_count": chunk_count,
+                "rag.avg_similarity_score": (
+                    sum(r.score for r in retrieval.chunks) / chunk_count
+                    if chunk_count
+                    else 0.0
+                ),
+                "llm.input_tokens": response.usage.input_tokens,
+                "llm.output_tokens": response.usage.output_tokens,
+                "llm.total_tokens": response.usage.total,
+            }
         )
-        _support_metrics.chunk_count.record(chunk_count)
-        _support_metrics.avg_similarity_score.record(avg_score)
-        if response.usage.input_tokens is not None:
-            _support_metrics.input_tokens.record(response.usage.input_tokens)
-        if response.usage.output_tokens is not None:
-            _support_metrics.output_tokens.record(response.usage.output_tokens)
-        if response.usage.total is not None:
-            _support_metrics.total_tokens.record(response.usage.total)

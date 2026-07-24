@@ -1,20 +1,13 @@
 import logging
 
-from opentelemetry import metrics, trace
-
 from app.application.models.document import Document
 from app.application.ports.chunk_strategy import ChunkStrategy
 from app.application.ports.embedding_model import EmbeddingModel
+from app.application.ports.observability import BaseInstrumentation
 from app.application.ports.unit_of_work.knowledge import KnowledgeUnitOfWork
 from app.application.ports.vector_store import VectorStore
-from app.infrastructure.observability.support.metrics import build_ingest_metrics
-from app.infrastructure.observability.utils import timed_span
 
 logger = logging.getLogger(__name__)
-
-_tracer = trace.get_tracer(__name__)
-_meter = metrics.get_meter("knowledge_support_ai_agent.support")
-_ingest_metrics = build_ingest_metrics(_meter)
 
 
 class IngestDocument:
@@ -25,6 +18,7 @@ class IngestDocument:
         embedding_model: Provider used to embed each text chunk.
         vector_store: Store used to index chunk embeddings for similarity search.
         chunk_strategy: Strategy used to split document content into chunks.
+        instrumentation: Observability adapter for recording spans and metrics.
     """
 
     def __init__(
@@ -33,11 +27,13 @@ class IngestDocument:
         embedding_model: EmbeddingModel,
         vector_store: VectorStore,
         chunk_strategy: ChunkStrategy,
+        instrumentation: BaseInstrumentation,
     ) -> None:
         self._uow = uow
         self._embedding_model = embedding_model
         self._vector_store = vector_store
         self._chunk_strategy = chunk_strategy
+        self._instrumentation = instrumentation
 
     def handle(self, title: str, source: str | None, content: str) -> Document:
         """Ingest a document by persisting it, chunking the content, and indexing
@@ -54,7 +50,7 @@ class IngestDocument:
         Returns:
             The persisted Document application model.
         """
-        with _tracer.start_as_current_span("ingest_document.handle"):
+        with self._instrumentation.root_span("ingest_document.handle"):
             document = self._uow.documents.create(
                 title=title, source=source, content=content
             )
@@ -62,11 +58,7 @@ class IngestDocument:
 
             chunks = self._chunk_strategy.chunk(content)
             for chunk_text in chunks:
-                with timed_span(
-                    "ingest.embedding.embed",
-                    _ingest_metrics.embedding_duration,
-                    _tracer,
-                ):
+                with self._instrumentation.span("ingest.embedding.embed"):
                     embedding = self._embedding_model.embed(chunk_text)
                 chunk = self._uow.document_chunks.create(
                     document_id=document.id,
@@ -81,8 +73,12 @@ class IngestDocument:
                 )
 
             chunk_count = len(chunks)
-            _ingest_metrics.chunk_count.record(chunk_count)
-            _ingest_metrics.total_chunks_embedded.add(chunk_count)
+            self._instrumentation.record_metrics(
+                {
+                    "ingest.chunk_count": chunk_count,
+                    "ingest.total_chunks_embedded": chunk_count,
+                }
+            )
 
             self._uow.commit()
             logger.info("Ingested document %s with %s chunks", document.id, chunk_count)
