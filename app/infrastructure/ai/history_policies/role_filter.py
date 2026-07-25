@@ -9,7 +9,9 @@ class RoleFilterPolicy:
     removed. The current user message is always protected from removal.
     """
 
-    def __init__(self, allowed_roles: list[str], blocked_roles: list[str] | None = None):
+    def __init__(
+        self, allowed_roles: list[str], blocked_roles: list[str] | None = None
+    ):
         """Initialize the role filter policy.
 
         Args:

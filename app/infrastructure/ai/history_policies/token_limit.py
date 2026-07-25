@@ -17,7 +17,9 @@ class TokenLimitPolicy(MessageRetentionPolicy):
     always protected from removal.
     """
 
-    def __init__(self, max_tokens: int, token_calculator: Callable[[str], int] | None = None):
+    def __init__(
+        self, max_tokens: int, token_calculator: Callable[[str], int] | None = None
+    ):
         """Initialize the token limit policy.
 
         Args:

@@ -19,9 +19,10 @@ WhatsApp Cloud API is the intended communication channel, with a REST API availa
 - RAG — knowledge chunks retrieved via semantic search on every turn
 - Document ingestion — chunking, embedding, and pgvector indexing
 - Tool calling — `search_documents` and `get_current_date` built in
+- Conversation history optimization — pluggable retention policies (token limit, message count, role filter, summarization)
 - Provider independence — chat and embedding providers are swappable at config time
 - OpenTelemetry instrumentation — spans and metrics for use cases and RAG pipeline
-- WhatsApp Cloud API webhook integration
+- WhatsApp Cloud API webhook integration (pending)
 - REST API and CLI interfaces
 
 ## Architecture
@@ -100,6 +101,16 @@ uv run alembic upgrade head
 | `RETRIEVAL_MAX_CHUNKS` | Maximum deduplicated chunks included in context (default: `5`) |
 | `RETRIEVAL_MAX_CONTEXT_TOKENS` | Token budget for assembled context (default: `2000`) |
 | `RETRIEVAL_ENCODING` | tiktoken encoding for token counting (default: `cl100k_base`) |
+| `CHUNK_STRATEGY` | Chunking strategy: `fixed`, `recursive`, `markdown` (default: `fixed`) |
+| `CHUNK_SIZE` | Target chunk size in characters (default: `500`) |
+| `CHUNK_OVERLAP` | Overlap between consecutive chunks in characters (default: `50`) |
+| `CONVERSATION_MAX_MESSAGES` | Maximum number of messages kept in history before pruning (default: `50`) |
+| `CONVERSATION_MAX_TOKENS` | Token budget for conversation history (default: `2000`) |
+| `CONVERSATION_SUMMARY_MAX_TOKENS` | Token threshold that triggers summarization (default: `1000`) |
+| `CONVERSATION_SUMMARY_MAX_MESSAGES` | Message count threshold that triggers summarization (default: `5`) |
+| `OTEL_ENABLED` | Enable OpenTelemetry instrumentation (default: `false`) |
+| `OTEL_ENDPOINT` | OTLP exporter endpoint (default: `http://localhost:4318`) |
+| `OTEL_SERVICE_NAME` | Service name reported to the collector (default: `knowledge-support-ai-agent`) |
 | `WHATSAPP_TOKEN` | WhatsApp Cloud API token |
 | `WHATSAPP_VERIFY_TOKEN` | Webhook verification token |
 | `LOG_LEVEL` | Log level: `DEBUG`, `INFO`, `WARNING` (default: `INFO`) |
@@ -185,14 +196,16 @@ app/
     domain/           # Domain models and business logic
     infrastructure/
         ai/           # Chat and embedding provider implementations
+            chunking/       # Chunking strategy implementations
+            history_policies/ # Message retention policy implementations
             prompt_builder/ # PromptBuilder implementations
             tools/    # Tool registry, @tool decorator, and tool implementations
+        analytics/    # Event handlers for analytics domain
         database/
             sqlalchemy/ # Models, repositories, migrations, and PostgreSQL engine
-            sqlite/     # In-memory SQLite engine for tests
+        events/       # In-memory event bus
         vectorstores/ # Vector store implementations (pgvector)
         observability/ # OTel instrumentation
-        whatsapp/     # WhatsApp Cloud API integration
     schemas/          # Pydantic schemas
 
 tests/
