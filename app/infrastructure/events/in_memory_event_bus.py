@@ -17,10 +17,10 @@ class InMemoryEventBus:
         """Initialize with an empty handler registry."""
         self._handlers: dict[type, list[EventHandler[Any]]] = defaultdict(list)
 
-    def register(
-        self, event_type: type[DomainEvent], handler: EventHandler[Any]
+    def subscribe[TEvent: DomainEvent](
+        self, event_type: type[TEvent], handler: EventHandler[TEvent]
     ) -> None:
-        """Register a handler for a specific event type.
+        """Subscribe a handler to a specific event type.
 
         Args:
             event_type: The domain event class to subscribe to.

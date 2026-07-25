@@ -115,7 +115,7 @@ class SupportContainer(BaseContainer):
             encoding_name=settings.retrieval_encoding,
         )
         event_bus = InMemoryEventBus()
-        event_bus.register(
+        event_bus.subscribe(
             QuestionAnswered,
             RagInteractionLogHandler(
                 RecordRagInteraction(SqlAlchemyAnalyticsUnitOfWork(db))

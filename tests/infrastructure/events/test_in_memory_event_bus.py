@@ -31,7 +31,7 @@ def test_registered_handler_receives_event() -> None:
     handler = _RecordingHandler()
     event = OrderPlaced(order_id=uuid.uuid4())
 
-    bus.register(OrderPlaced, handler)
+    bus.subscribe(OrderPlaced, handler)
     bus.publish(event)
 
     assert handler.received == [event]
@@ -40,7 +40,7 @@ def test_registered_handler_receives_event() -> None:
 def test_unregistered_event_type_is_silently_ignored() -> None:
     bus = InMemoryEventBus()
     handler = _RecordingHandler()
-    bus.register(OrderPlaced, handler)
+    bus.subscribe(OrderPlaced, handler)
 
     bus.publish(OrderCancelled(order_id=uuid.uuid4()))
 
@@ -53,8 +53,8 @@ def test_multiple_handlers_for_same_event_all_called() -> None:
     handler_b = _RecordingHandler()
     event = OrderPlaced(order_id=uuid.uuid4())
 
-    bus.register(OrderPlaced, handler_a)
-    bus.register(OrderPlaced, handler_b)
+    bus.subscribe(OrderPlaced, handler_a)
+    bus.subscribe(OrderPlaced, handler_b)
     bus.publish(event)
 
     assert handler_a.received == [event]
@@ -72,8 +72,8 @@ def test_handlers_called_in_registration_order() -> None:
         def handle(self, event: DomainEvent) -> None:
             call_order.append(self._name)
 
-    bus.register(OrderPlaced, _OrderedHandler("first"))
-    bus.register(OrderPlaced, _OrderedHandler("second"))
+    bus.subscribe(OrderPlaced, _OrderedHandler("first"))
+    bus.subscribe(OrderPlaced, _OrderedHandler("second"))
     bus.publish(OrderPlaced(order_id=uuid.uuid4()))
 
     assert call_order == ["first", "second"]
@@ -84,8 +84,8 @@ def test_handler_for_one_type_does_not_receive_other_type() -> None:
     placed_handler = _RecordingHandler()
     cancelled_handler = _RecordingHandler()
 
-    bus.register(OrderPlaced, placed_handler)
-    bus.register(OrderCancelled, cancelled_handler)
+    bus.subscribe(OrderPlaced, placed_handler)
+    bus.subscribe(OrderCancelled, cancelled_handler)
 
     bus.publish(OrderPlaced(order_id=uuid.uuid4()))
 
@@ -96,7 +96,7 @@ def test_handler_for_one_type_does_not_receive_other_type() -> None:
 def test_publish_multiple_events_accumulates_in_handler() -> None:
     bus = InMemoryEventBus()
     handler = _RecordingHandler()
-    bus.register(OrderPlaced, handler)
+    bus.subscribe(OrderPlaced, handler)
 
     bus.publish(OrderPlaced(order_id=uuid.uuid4()))
     bus.publish(OrderPlaced(order_id=uuid.uuid4()))
