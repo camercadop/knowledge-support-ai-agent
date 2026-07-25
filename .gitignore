@@ -217,5 +217,6 @@ session*
 /_*.md
 
 .amazonq/*
+.continue/*
 .ai-devrules/*
 .*_cache/

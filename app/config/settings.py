@@ -34,6 +34,10 @@ class Settings(BaseSettings):
     whatsapp_verify_token: str
     log_level: str = "INFO"
     log_format: str = "text"
+    conversation_max_messages: int = 50
+    conversation_max_tokens: int = 2000
+    conversation_summary_max_tokens: int = 1000
+    conversation_summary_max_messages: int = 5
     prompts_system_instructions: str = ""
     prompts_grounded_instructions: str = ""
     prompts_no_context_instructions: str = ""

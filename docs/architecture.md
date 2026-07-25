@@ -49,6 +49,7 @@ flowchart TB
     subgraph entry["Entry Points"]
         chat_router["chat.py\nFastAPI router"]
         docs_router["documents.py\nFastAPI router"]
+        analytics_router["analytics.py\nFastAPI router"]
         cli_main["main.py\nTyper app"]
     end
 
@@ -56,11 +57,13 @@ flowchart TB
         subgraph use_cases["Use Cases"]
             uc_answer["AnswerQuestion"]
             uc_ingest["IngestDocument"]
+            uc_export["ExportRagInteractions"]
             retrieval_svc["ChunkRetriever"]
         end
         subgraph ports["Ports"]
             port_msg_uow["MessagingUnitOfWork"]
             port_know_uow["KnowledgeUnitOfWork"]
+            port_analytics_uow["AnalyticsUnitOfWork"]
             port_chat["ChatModel"]
             port_embed["EmbeddingModel"]
             port_vs["VectorStore"]
@@ -75,6 +78,7 @@ flowchart TB
         subgraph db_impl["Database"]
             sql_msg_uow["SqlAlchemyMessagingUoW\nContactRepo · ConvRepo · MsgRepo"]
             sql_know_uow["SqlAlchemyKnowledgeUoW\nDocRepo · ChunkRepo"]
+            sql_analytics_uow["SqlAlchemyAnalyticsUoW\nRagInteractionLogRepo"]
             pgvector["PgVectorStore"]
         end
         subgraph ai_impl["AI"]
@@ -100,15 +104,18 @@ flowchart TB
 
     chat_router --> uc_answer
     docs_router --> uc_ingest
+    analytics_router --> uc_export
     cli_main --> uc_answer
     cli_main --> uc_ingest
 
     uc_answer --> port_msg_uow & port_chat & port_tools & port_prompt & retrieval_svc & port_event & port_obs
+    uc_export --> port_analytics_uow
     retrieval_svc --> port_vs
     uc_ingest --> port_know_uow & port_embed & port_vs & port_obs
 
     port_msg_uow -.->|impl| sql_msg_uow
     port_know_uow -.->|impl| sql_know_uow
+    port_analytics_uow -.->|impl| sql_analytics_uow
     port_chat -.->|impl| openai_chat
     port_embed -.->|impl| openai_embed
     port_vs -.->|impl| pgvector
@@ -118,7 +125,7 @@ flowchart TB
     event_bus -->|dispatches| rag_handler
     port_obs -.->|impl| otel_instrumentation
 
-    sql_msg_uow & sql_know_uow & pgvector --> postgres
+    sql_msg_uow & sql_know_uow & sql_analytics_uow & pgvector --> postgres
     openai_chat & openai_embed --> openai
 ```
 
@@ -148,6 +155,7 @@ app/
             mock/         # Mock implementations for testing
             prompt_builder/ # PromptBuilder implementations
             tools/        # Tool registry, @tool decorator, and tool implementations
+        analytics/        # Infrastructure handlers for the analytics domain
         database/         # ORM adapters, repositories, and migrations
         events/           # Event bus implementations
         observability/    # OTel instrumentation

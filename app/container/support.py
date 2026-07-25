@@ -4,7 +4,13 @@ from app.application.analytics.use_cases.export_rag_interactions import (
     ExportRagInteractions,
 )
 from app.application.support.events.question_answered import QuestionAnswered
+from app.application.support.ports.message_retention_policy import (
+    MessageRetentionPolicy,
+)
 from app.application.support.services.chunk_retriever import ChunkRetriever
+from app.application.support.services.history_optimizer import (
+    ConversationHistoryOptimizer,
+)
 from app.application.support.use_cases.answer_question import AnswerQuestion
 from app.application.support.use_cases.clear_history import ClearHistory
 from app.application.support.use_cases.ingest_document import IngestDocument
@@ -54,6 +60,39 @@ class SupportContainer(BaseContainer):
         )
         self._chat_model = OpenAIChatModel(prompt_builder=self._prompt_builder)
         self._chunk_strategy = build_chunk_strategy()
+        self._conversation_history_optimizer = self._create_history_optimizer()
+
+    def _create_history_optimizer(self) -> ConversationHistoryOptimizer:
+        """Create the conversation history optimizer with enabled policies.
+
+        The conversation history optimizer applies retention policies to manage
+        conversation history length and composition before LLM calls. Policies
+        are accumulated from configuration settings.
+
+        Returns:
+            ConversationHistoryOptimizer instance with enabled policies.
+        """
+        from app.infrastructure.ai.history_policies.message_count import (
+            MessageCountPolicy,
+        )
+        from app.infrastructure.ai.history_policies.summary import (
+            SummaryPolicy,
+        )
+        from app.infrastructure.ai.history_policies.token_limit import (
+            TokenLimitPolicy,
+        )
+
+        policies: list[MessageRetentionPolicy] = [
+            MessageCountPolicy(max_messages=settings.conversation_max_messages),
+            TokenLimitPolicy(max_tokens=settings.conversation_max_tokens),
+            SummaryPolicy(
+                chat_model=self._chat_model,
+                max_summary_tokens=settings.conversation_summary_max_tokens,
+                max_summary_messages=settings.conversation_summary_max_messages,
+            ),
+        ]
+
+        return ConversationHistoryOptimizer(policies)
 
     def answer_question(self, db: Session) -> AnswerQuestion:
         """Build a fresh AnswerQuestion use case bound to the given session.
