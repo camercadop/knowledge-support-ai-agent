@@ -1,4 +1,4 @@
-# Knowledge Support AI Agent
+# Enterprise Knowledge AI Platform
 
 [![CI](https://github.com/camercadop/knowledge-support-ai-agent/actions/workflows/ci.yml/badge.svg)](https://github.com/camercadop/knowledge-support-ai-agent/actions/workflows/ci.yml)
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
@@ -242,6 +242,8 @@ uv audit --preview-features audit-command
 - [Data Model](docs/data-model.md) — database conventions, base model fields, and migration rules
 - [Architecture Decision Records](docs/adr/) — formal, binding decisions that shaped the system design
 - [Guidelines](docs/guidelines/) — how-to references for implementing common patterns correctly
+- [Roadmap](Roadmap.md) — product roadmap and implementation status
+- [Vision](docs/vision.md) — product vision and strategic direction
 - [Contributing](CONTRIBUTING.md) — branching, commit conventions, and PR process
 
 ## License
