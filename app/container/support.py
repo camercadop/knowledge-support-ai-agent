@@ -3,6 +3,9 @@ from sqlalchemy.orm import Session
 from app.application.analytics.use_cases.export_rag_interactions import (
     ExportRagInteractions,
 )
+from app.application.analytics.use_cases.record_rag_interaction import (
+    RecordRagInteraction,
+)
 from app.application.support.events.question_answered import QuestionAnswered
 from app.application.support.ports.message_retention_policy import (
     MessageRetentionPolicy,
@@ -114,7 +117,9 @@ class SupportContainer(BaseContainer):
         event_bus = InMemoryEventBus()
         event_bus.register(
             QuestionAnswered,
-            RagInteractionLogHandler(SqlAlchemyAnalyticsUnitOfWork(db)),
+            RagInteractionLogHandler(
+                RecordRagInteraction(SqlAlchemyAnalyticsUnitOfWork(db))
+            ),
         )
         return AnswerQuestion(
             uow=SqlAlchemyMessagingUnitOfWork(db),

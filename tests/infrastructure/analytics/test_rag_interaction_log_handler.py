@@ -1,12 +1,16 @@
 import uuid
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
+from unittest.mock import MagicMock
 
 from app.application.analytics.models.rag_interaction_log import RagInteractionLog
 from app.application.analytics.ports.repositories.rag_interaction_log import (
     AbstractRagInteractionLogRepository,
 )
 from app.application.analytics.ports.unit_of_work.analytics import AnalyticsUnitOfWork
+from app.application.analytics.use_cases.record_rag_interaction import (
+    RecordRagInteraction,
+)
 from app.application.support.events.question_answered import QuestionAnswered
 from app.application.support.ports.vector_store import SearchResult
 from app.infrastructure.analytics.event_handlers import RagInteractionLogHandler
@@ -74,11 +78,24 @@ def _make_event(**kwargs: object) -> QuestionAnswered:
 # --- RagInteractionLogHandler ---
 
 
+def test_handler_delegates_to_use_case() -> None:
+    use_case = MagicMock(spec=RecordRagInteraction)
+    handler = RagInteractionLogHandler(use_case=use_case)
+    event = _make_event()
+
+    handler.handle(event)
+
+    use_case.handle.assert_called_once_with(event)
+
+
+# --- RecordRagInteraction ---
+
+
 def test_persists_log_from_event() -> None:
     uow = FakeAnalyticsUnitOfWork()
-    handler = RagInteractionLogHandler(uow=uow)
+    use_case = RecordRagInteraction(uow=uow)
 
-    handler.handle(_make_event(question="what is rag?", answer="rag answer"))
+    use_case.handle(_make_event(question="what is rag?", answer="rag answer"))
 
     assert len(uow.rag_interaction_logs._logs) == 1
     log = uow.rag_interaction_logs._logs[0]
@@ -88,27 +105,27 @@ def test_persists_log_from_event() -> None:
 
 def test_commits_after_persisting() -> None:
     uow = FakeAnalyticsUnitOfWork()
-    handler = RagInteractionLogHandler(uow=uow)
+    use_case = RecordRagInteraction(uow=uow)
 
-    handler.handle(_make_event())
+    use_case.handle(_make_event())
 
     assert uow.committed is True
 
 
 def test_persists_model_used_from_event() -> None:
     uow = FakeAnalyticsUnitOfWork()
-    handler = RagInteractionLogHandler(uow=uow)
+    use_case = RecordRagInteraction(uow=uow)
 
-    handler.handle(_make_event(model_used="gpt-4o"))
+    use_case.handle(_make_event(model_used="gpt-4o"))
 
     assert uow.rag_interaction_logs._logs[0].model_used == "gpt-4o"
 
 
 def test_persists_token_counts_from_event() -> None:
     uow = FakeAnalyticsUnitOfWork()
-    handler = RagInteractionLogHandler(uow=uow)
+    use_case = RecordRagInteraction(uow=uow)
 
-    handler.handle(_make_event(prompt_tokens=20, completion_tokens=8))
+    use_case.handle(_make_event(prompt_tokens=20, completion_tokens=8))
 
     log = uow.rag_interaction_logs._logs[0]
     assert log.prompt_tokens == 20
@@ -117,7 +134,7 @@ def test_persists_token_counts_from_event() -> None:
 
 def test_persists_chunks_from_event() -> None:
     uow = FakeAnalyticsUnitOfWork()
-    handler = RagInteractionLogHandler(uow=uow)
+    use_case = RecordRagInteraction(uow=uow)
     chunk = SearchResult(
         chunk_id=uuid.uuid4(),
         document_id=uuid.uuid4(),
@@ -125,7 +142,7 @@ def test_persists_chunks_from_event() -> None:
         score=0.85,
     )
 
-    handler.handle(_make_event(chunks=[chunk]))
+    use_case.handle(_make_event(chunks=[chunk]))
 
     log = uow.rag_interaction_logs._logs[0]
     assert log.chunks is not None
@@ -134,8 +151,8 @@ def test_persists_chunks_from_event() -> None:
 
 def test_persists_none_chunks_when_no_context() -> None:
     uow = FakeAnalyticsUnitOfWork()
-    handler = RagInteractionLogHandler(uow=uow)
+    use_case = RecordRagInteraction(uow=uow)
 
-    handler.handle(_make_event(chunks=None))
+    use_case.handle(_make_event(chunks=None))
 
     assert uow.rag_interaction_logs._logs[0].chunks is None
