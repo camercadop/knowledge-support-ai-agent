@@ -21,6 +21,8 @@ class ChunkReference(BaseModel):
     chunk_id: uuid.UUID
     document_id: uuid.UUID
     score: float
+    document_title: str
+    source: str | None
 
 
 class ChatResponse(BaseModel):

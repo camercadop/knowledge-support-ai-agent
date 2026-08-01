@@ -47,8 +47,8 @@
 
 ### Responses
 
-- Citations
-- Source Attribution
+- ✅ Citations
+- ✅ Source Attribution
 - Confidence Score
 
 ### Conversations

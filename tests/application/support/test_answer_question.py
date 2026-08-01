@@ -152,9 +152,11 @@ def test_passes_no_context_when_vector_store_empty(
 def test_builds_rag_context_from_vector_store(
     uow: SqlAlchemyMessagingUnitOfWork, vector_store: FakeVectorStore
 ) -> None:
+    doc_id = uuid.uuid4()
+    vector_store.add_document(doc_id, "Test Doc", "manual")
     vector_store.upsert(
         chunk_id=uuid.uuid4(),
-        document_id=uuid.uuid4(),
+        document_id=doc_id,
         chunk="relevant chunk",
         embedding=[1.0, 0.0, 0.0],
     )
@@ -182,10 +184,12 @@ def test_history_is_passed_to_chat_model(
 def test_multiple_rag_chunks_joined_with_double_newline(
     uow: SqlAlchemyMessagingUnitOfWork, vector_store: FakeVectorStore
 ) -> None:
+    doc_id = uuid.uuid4()
+    vector_store.add_document(doc_id, "Test Doc", "manual")
     for chunk in ("chunk one", "chunk two"):
         vector_store.upsert(
             chunk_id=uuid.uuid4(),
-            document_id=uuid.uuid4(),
+            document_id=doc_id,
             chunk=chunk,
             embedding=[1.0, 0.0, 0.0],
         )
@@ -220,3 +224,36 @@ def test_different_phones_have_separate_conversations(
     messages_b = uow.messages.list_by_conversation(conv_b.id)
     assert all(m.content != "Hi from second" for m in messages_a)
     assert all(m.content != "Hi from first" for m in messages_b)
+
+
+def test_chunks_include_document_title_and_source(
+    uow: SqlAlchemyMessagingUnitOfWork, vector_store: FakeVectorStore
+) -> None:
+    doc_id = uuid.uuid4()
+    vector_store.add_document(doc_id, "Test Doc", "manual")
+    vector_store.upsert(
+        chunk_id=uuid.uuid4(),
+        document_id=doc_id,
+        chunk="relevant chunk",
+        embedding=[1.0, 0.0, 0.0],
+    )
+    result = _make_use_case(uow, vector_store).handle(_PHONE, "Hi")
+    assert result.chunks is not None
+    assert len(result.chunks) == 1
+    assert result.chunks[0].document_title == "Test Doc"
+    assert result.chunks[0].source == "manual"
+
+
+def test_chunks_have_empty_title_when_document_not_registered(
+    uow: SqlAlchemyMessagingUnitOfWork, vector_store: FakeVectorStore
+) -> None:
+    vector_store.upsert(
+        chunk_id=uuid.uuid4(),
+        document_id=uuid.uuid4(),
+        chunk="relevant chunk",
+        embedding=[1.0, 0.0, 0.0],
+    )
+    result = _make_use_case(uow, vector_store).handle(_PHONE, "Hi")
+    assert result.chunks is not None
+    assert result.chunks[0].document_title == ""
+    assert result.chunks[0].source is None

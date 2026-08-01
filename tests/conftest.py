@@ -7,11 +7,6 @@ from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session
 
 from app.infrastructure.database.sqlalchemy.postgresql.base import Base
-from app.infrastructure.database.sqlalchemy.sqlite.engine import (
-    SessionLocal,
-    create_tables,
-    engine,
-)
 
 _TEST_DATABASE_URL = os.getenv(
     "TEST_DATABASE_URL",
@@ -53,15 +48,3 @@ def pg_db(pg_engine: Engine) -> Generator[Session]:
         session.close()
         transaction.rollback()
         connection.close()
-
-
-@pytest.fixture()
-def db() -> Generator[Session]:
-    """Yield an in-memory SQLite session with a clean schema for each test."""
-    Base.metadata.drop_all(bind=engine)
-    create_tables()
-    session = SessionLocal()
-    try:
-        yield session
-    finally:
-        session.close()

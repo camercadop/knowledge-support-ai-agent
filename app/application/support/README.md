@@ -41,10 +41,11 @@ sequenceDiagram
     Embed-->>UC: query_vector
     UC->>RS: retrieve(query_vector)
     RS->>VS: search(query_vector, top_k, min_score, metadata_filters)
-    VS-->>RS: SearchResult list
+    VS-->>RS: SearchResult list (with document_title, source)
     RS->>RS: deduplicate by chunk text
     RS->>RS: cap at max_chunks
     RS->>RS: truncate to max_context_tokens
+    RS->>RS: format chunks with document title and source for citations
     RS-->>UC: RetrievalResult (context string + SearchResult list)
     UC->>UoW: contacts.get_or_create_by_phone(phone)
     UC->>UoW: conversations.get_or_create_for_contact(contact_id)

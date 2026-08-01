@@ -32,7 +32,7 @@ def _make_use_case(
 ) -> IngestDocument:
     return IngestDocument(
         uow=uow,
-        embedding_model=MockEmbeddingModel(),
+        embedding_model=MockEmbeddingModel(dimensions=1536),
         vector_store=vector_store,
         chunk_strategy=FixedSizeChunkStrategy(chunk_size=500, chunk_overlap=50),
         instrumentation=instrumentation or NullInstrumentation(),
@@ -71,7 +71,7 @@ def test_upserts_chunks_into_vector_store(
 ) -> None:
     content = "a" * 600  # produces 2 chunks
     _make_use_case(uow, vector_store).handle("Doc", None, content)
-    results = vector_store.search([0.0, 0.0, 0.0])
+    results = vector_store.search([0.0] * 1536)
     assert len(results) == 2
 
 
@@ -79,7 +79,7 @@ def test_single_chunk_for_short_content(
     uow: SqlAlchemyKnowledgeUnitOfWork, vector_store: FakeVectorStore
 ) -> None:
     _make_use_case(uow, vector_store).handle("Doc", None, "short content")
-    results = vector_store.search([0.0, 0.0, 0.0])
+    results = vector_store.search([0.0] * 1536)
     assert len(results) == 1
     assert results[0].chunk == "short content"
 

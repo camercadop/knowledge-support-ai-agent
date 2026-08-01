@@ -28,6 +28,8 @@ def _deserialize_chunk(c: dict[str, object]) -> SearchResult:
         document_id=uuid.UUID(str(c["document_id"])),
         chunk=str(c["chunk"]),
         score=float(str(c["score"])),
+        document_title=str(c.get("document_title", "")),
+        source=str(c["source"]) if c.get("source") else None,
     )
 
 
@@ -74,6 +76,8 @@ class RagInteractionLogRepository(AbstractRagInteractionLogRepository):
                         "document_id": str(c.document_id),
                         "chunk": c.chunk,
                         "score": c.score,
+                        "document_title": c.document_title,
+                        "source": c.source,
                     }
                     for c in chunks
                 ]

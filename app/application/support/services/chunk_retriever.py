@@ -8,6 +8,22 @@ from app.application.support.ports.vector_store import SearchResult, VectorStore
 logger = logging.getLogger(__name__)
 
 
+def _format_chunk(result: SearchResult) -> str:
+    """Format a search result chunk with its document title and source.
+
+    Args:
+        result: The search result containing chunk text, document title,
+            and source URL.
+
+    Returns:
+        A formatted string that includes the document title and source
+        alongside the chunk text for citation purposes.
+    """
+    if result.source:
+        return f"{result.document_title} ({result.source}): {result.chunk}"
+    return f"{result.document_title}: {result.chunk}"
+
+
 @dataclass(frozen=True)
 class RetrievalResult:
     """Outcome of a retrieval pass.
@@ -94,10 +110,11 @@ class ChunkRetriever:
         chunks: list[str] = []
         total_tokens = 0
         for result in capped:
-            tokens = len(self._encoding.encode(result.chunk))
+            formatted = _format_chunk(result)
+            tokens = len(self._encoding.encode(formatted))
             if total_tokens + tokens > self._max_context_tokens:
                 break
-            chunks.append(result.chunk)
+            chunks.append(formatted)
             included.append(result)
             total_tokens += tokens
 

@@ -33,7 +33,6 @@ def analytics_engine() -> Generator[Engine]:
     AnalyticsBase.metadata.create_all(bind=eng)
     yield eng
     AnalyticsBase.metadata.drop_all(bind=eng)
-    Base.metadata.drop_all(bind=eng)
     eng.dispose()
 
 
@@ -109,6 +108,8 @@ def test_create_persists_chunks(repo: RagInteractionLogRepository) -> None:
         document_id=uuid.uuid4(),
         chunk="some context",
         score=0.9,
+        document_title="Test Doc",
+        source=None,
     )
     log = _create(repo, chunks=[chunk])
 
@@ -147,6 +148,8 @@ def test_list_all_deserializes_chunks(repo: RagInteractionLogRepository) -> None
         document_id=uuid.uuid4(),
         chunk="context text",
         score=0.75,
+        document_title="Test Doc",
+        source=None,
     )
     _create(repo, chunks=[chunk])
 

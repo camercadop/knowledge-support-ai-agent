@@ -4,6 +4,9 @@ from typing import Any
 from sqlalchemy.orm import Session
 
 from app.application.support.ports.vector_store import SearchResult, VectorStore
+from app.infrastructure.database.sqlalchemy.postgresql.models.document import (
+    Document as DocumentORM,
+)
 from app.infrastructure.database.sqlalchemy.postgresql.models.document_chunk import (
     DocumentChunk as DocumentChunkORM,
 )
@@ -26,7 +29,8 @@ class PgVectorStore(VectorStore):
         """Store or update a chunk with its embedding.
 
         Inserts a new row if the chunk_id does not exist, otherwise updates
-        the embedding and text in place.
+        the embedding and text in place. Document metadata (title, source) is
+        fetched from the documents table at query time via a JOIN in search().
         """
         orm = self._db.get(DocumentChunkORM, chunk_id)
         if orm is None:
@@ -54,7 +58,16 @@ class PgVectorStore(VectorStore):
         distance = DocumentChunkORM.embedding.cosine_distance(embedding).label(
             "distance"
         )
-        query = self._db.query(DocumentChunkORM, distance).order_by(distance)
+        query = (
+            self._db.query(
+                DocumentChunkORM,
+                DocumentORM.title,
+                DocumentORM.source,
+                distance,
+            )
+            .join(DocumentORM, DocumentChunkORM.document_id == DocumentORM.id)
+            .order_by(distance)
+        )
 
         if min_score is not None:
             query = query.filter(distance <= min_score)
@@ -72,6 +85,8 @@ class PgVectorStore(VectorStore):
                 document_id=row.document_id,
                 chunk=row.chunk,
                 score=float(dist),
+                document_title=title,
+                source=source,
             )
-            for row, dist in rows
+            for row, title, source, dist in rows
         ]

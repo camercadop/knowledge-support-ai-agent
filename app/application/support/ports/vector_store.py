@@ -11,6 +11,8 @@ class SearchResult:
     document_id: uuid.UUID
     chunk: str
     score: float
+    document_title: str
+    source: str | None
 
 
 class VectorStore(ABC):

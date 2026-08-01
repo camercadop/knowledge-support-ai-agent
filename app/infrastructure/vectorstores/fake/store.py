@@ -35,6 +35,37 @@ class FakeVectorStore(VectorStore):
         self._store: dict[
             uuid.UUID, tuple[uuid.UUID, str, list[float], dict[str, Any]]
         ] = {}
+        self._documents: dict[uuid.UUID, tuple[str, str | None]] = {}
+
+    def add_document(
+        self, document_id: uuid.UUID, title: str, source: str | None = None
+    ) -> None:
+        """Register document metadata for lookup during search.
+
+        This is a test-only helper that mirrors the documents table in
+        PgVectorStore. Call this before upserting chunks that belong to
+        the document so search() can populate title and source on results.
+
+        Args:
+            document_id: UUID of the document.
+            title: Human-readable title of the document.
+            source: Optional origin of the document (e.g. file path, URL).
+        """
+        self._documents[document_id] = (title, source)
+
+    def set_metadata(self, chunk_id: uuid.UUID, metadata: dict[str, Any]) -> None:
+        """Attach metadata to an already-upserted chunk.
+
+        This is a test-only helper that mirrors the metadata column stored on
+        document_chunks in PgVectorStore. Call this after upserting the chunk
+        to enable metadata_filters in search().
+
+        Args:
+            chunk_id: UUID of the chunk to update.
+            metadata: Key-value pairs to attach to the chunk.
+        """
+        document_id, chunk, embedding, _ = self._store[chunk_id]
+        self._store[chunk_id] = (document_id, chunk, embedding, metadata)
 
     def upsert(
         self,
@@ -42,7 +73,6 @@ class FakeVectorStore(VectorStore):
         document_id: uuid.UUID,
         chunk: str,
         embedding: list[float],
-        metadata: dict[str, Any] | None = None,
     ) -> None:
         """Store or replace a chunk and its embedding by chunk_id.
 
@@ -51,9 +81,8 @@ class FakeVectorStore(VectorStore):
             document_id: UUID of the parent document.
             chunk: The text content of the chunk.
             embedding: The vector embedding for the chunk.
-            metadata: Optional key-value metadata for filtering.
         """
-        self._store[chunk_id] = (document_id, chunk, embedding, metadata or {})
+        self._store[chunk_id] = (document_id, chunk, embedding, {})
 
     def search(
         self,
@@ -82,6 +111,8 @@ class FakeVectorStore(VectorStore):
                 document_id=document_id,
                 chunk=chunk,
                 score=_cosine_distance(embedding, stored_embedding),
+                document_title=self._documents.get(document_id, ("", None))[0],
+                source=self._documents.get(document_id, ("", None))[1],
             )
             for chunk_id, (
                 document_id,

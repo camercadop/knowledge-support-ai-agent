@@ -190,10 +190,11 @@ sequenceDiagram
     OpenAI-->>Embed: query_vector
     UC->>RS: retrieve(query_vector)
     RS->>VS: search(query_vector, top_k, min_score, metadata_filters)
-    VS->>DB: SELECT chunks ORDER BY cosine_distance
-    DB-->>VS: top-k chunks
-    VS-->>RS: SearchResult list
+    VS->>DB: SELECT chunks JOIN documents ORDER BY cosine_distance
+    DB-->>VS: top-k chunks with document title and source
+    VS-->>RS: SearchResult list (with document_title, source)
     RS->>RS: deduplicate · cap · truncate to token budget
+    RS->>RS: format chunks with document title and source for citations
     RS-->>UC: RetrievalResult (context string + SearchResult list)
     UC->>UoW: contacts.get_or_create_by_phone(phone)
     UoW->>DB: SELECT / INSERT contact
@@ -210,8 +211,8 @@ sequenceDiagram
     UC->>UoW: messages.create(conversation_id, "assistant", ...)
     UC->>UoW: commit()
     UoW->>DB: COMMIT
-    UC-->>Router: AnswerResult (reply + chunks)
-    Router-->>Client: {reply, chunks}
+    UC-->>Router: AnswerResult (reply + chunks with document_title, source)
+    Router-->>Client: {reply, chunks: [{chunk_id, document_id, score, document_title, source}]}
 ```
 
 ### POST /documents

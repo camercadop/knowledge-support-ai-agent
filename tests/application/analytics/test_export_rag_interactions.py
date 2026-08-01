@@ -126,6 +126,8 @@ def test_returns_logs_with_chunks() -> None:
         document_id=uuid.uuid4(),
         chunk="some context",
         score=0.9,
+        document_title="Test Doc",
+        source=None,
     )
     log = _make_log(chunks=[chunk])
     uow.rag_interaction_logs._logs = [log]

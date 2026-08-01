@@ -102,20 +102,46 @@ def test_search_excludes_results_above_min_score() -> None:
 
 def test_search_filters_by_metadata() -> None:
     store = FakeVectorStore()
-    store.upsert(
-        chunk_id=_chunk_id(),
-        document_id=_doc_id(),
-        chunk="match",
-        embedding=[1.0, 0.0],
-        metadata={"lang": "en"},
-    )
-    store.upsert(
-        chunk_id=_chunk_id(),
-        document_id=_doc_id(),
-        chunk="no-match",
-        embedding=[1.0, 0.0],
-        metadata={"lang": "es"},
-    )
+    cid_match = _chunk_id()
+    cid_no_match = _chunk_id()
+    store.upsert(chunk_id=cid_match, document_id=_doc_id(), chunk="match", embedding=[1.0, 0.0])
+    store.upsert(chunk_id=cid_no_match, document_id=_doc_id(), chunk="no-match", embedding=[1.0, 0.0])
+    store.set_metadata(cid_match, {"lang": "en"})
+    store.set_metadata(cid_no_match, {"lang": "es"})
     results = store.search([1.0, 0.0], metadata_filters={"lang": "en"})
     assert len(results) == 1
     assert results[0].chunk == "match"
+
+
+# --- document metadata ---
+
+
+def test_search_returns_document_title_and_source() -> None:
+    store = FakeVectorStore()
+    doc_id = _doc_id()
+    store.add_document(doc_id, "Test Doc", "https://example.com")
+    cid = _chunk_id()
+    store.upsert(chunk_id=cid, document_id=doc_id, chunk="hello", embedding=[1.0, 0.0])
+    results = store.search([1.0, 0.0])
+    assert len(results) == 1
+    assert results[0].document_title == "Test Doc"
+    assert results[0].source == "https://example.com"
+
+
+def test_search_returns_empty_document_title_when_not_registered() -> None:
+    store = FakeVectorStore()
+    store.upsert(chunk_id=_chunk_id(), document_id=_doc_id(), chunk="hello", embedding=[1.0, 0.0])
+    results = store.search([1.0, 0.0])
+    assert results[0].document_title == ""
+    assert results[0].source is None
+
+
+def test_search_returns_empty_source_when_none() -> None:
+    store = FakeVectorStore()
+    doc_id = _doc_id()
+    store.add_document(doc_id, "Test Doc")
+    cid = _chunk_id()
+    store.upsert(chunk_id=cid, document_id=doc_id, chunk="hello", embedding=[1.0, 0.0])
+    results = store.search([1.0, 0.0])
+    assert results[0].document_title == "Test Doc"
+    assert results[0].source is None

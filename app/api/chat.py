@@ -37,7 +37,11 @@ def chat(
     chunks = (
         [
             ChunkReference(
-                chunk_id=c.chunk_id, document_id=c.document_id, score=c.score
+                chunk_id=c.chunk_id,
+                document_id=c.document_id,
+                score=c.score,
+                document_title=c.document_title,
+                source=c.source,
             )
             for c in result.chunks
         ]

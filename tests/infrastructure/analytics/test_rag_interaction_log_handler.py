@@ -140,6 +140,8 @@ def test_persists_chunks_from_event() -> None:
         document_id=uuid.uuid4(),
         chunk="some context",
         score=0.85,
+        document_title="Test Doc",
+        source=None,
     )
 
     use_case.handle(_make_event(chunks=[chunk]))

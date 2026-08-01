@@ -7,7 +7,7 @@ This package contains the Pydantic models that define the API contract. Schemas 
 | Schema | Direction | Fields |
 |--------|-----------|--------|
 | `ChatRequest` | inbound | `phone: str`, `message: str` |
-| `ChunkReference` | outbound | `chunk_id: UUID`, `document_id: UUID`, `score: float` |
+| `ChunkReference` | outbound | `chunk_id: UUID`, `document_id: UUID`, `score: float`, `document_title: str`, `source: str | None` |
 | `ChatResponse` | outbound | `reply: str`, `chunks: list[ChunkReference] \| None` |
 
 ## Documents
