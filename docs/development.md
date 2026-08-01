@@ -140,7 +140,6 @@ app/
         commands/   # One module per command group
         context.py  # Request context manager (container + session lifecycle)
     config/       # Settings and environment configuration
-    middlewares/    # ASGI middleware (CORS, security headers, rate limiting)
     container/    # Composition Root — ApplicationContainer composes domain-scoped containers
     domain/       # Domain models and business logic
     infrastructure/
@@ -150,6 +149,7 @@ app/
         database/
             sqlalchemy/ # Models, repositories, migrations, and PostgreSQL engine
             sqlite/     # In-memory SQLite engine for tests
+        middleware/   # ASGI middleware (security headers, rate limiting, request size limiting)
         vectorstores/ # Vector store implementations (pgvector)
         observability/ # OTel instrumentation
         whatsapp/     # WhatsApp Cloud API integration
@@ -159,6 +159,7 @@ tests/
     api/              # mirrors app/api/
     application/      # mirrors app/application/
     infrastructure/   # mirrors app/infrastructure/
+        middleware/   # mirrors app/infrastructure/middleware/
     conftest.py       # shared fixtures
 
 docs/

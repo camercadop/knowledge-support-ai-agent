@@ -6,7 +6,7 @@ from fastapi.testclient import TestClient
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 
-from app.middleware.rate_limit import MovingWindowRateLimitMiddleware
+from app.infrastructure.middleware.rate_limit import MovingWindowRateLimitMiddleware
 
 
 def _make_app(default_limit: str = "1/minute", enabled: bool = True) -> FastAPI:

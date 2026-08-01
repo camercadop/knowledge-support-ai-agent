@@ -22,6 +22,8 @@ WhatsApp Cloud API is the intended communication channel, with a REST API availa
 - Conversation history optimization — pluggable retention policies (token limit, message count, role filter, summarization)
 - Provider independence — chat and embedding providers are swappable at config time
 - OpenTelemetry instrumentation — spans and metrics for use cases and RAG pipeline
+- Rate limiting — moving-window algorithm via slowapi, configurable per environment
+- Security headers — CSP, HSTS, X-Frame-Options, and more, all configurable
 - WhatsApp Cloud API webhook integration (pending)
 - REST API and CLI interfaces
 
@@ -114,6 +116,14 @@ uv run alembic upgrade head
 | `WHATSAPP_TOKEN` | WhatsApp Cloud API token |
 | `WHATSAPP_VERIFY_TOKEN` | Webhook verification token |
 | `CORS_ORIGINS` | Comma-separated list of allowed CORS origins (default: empty, which denies all) |
+| `RATE_LIMIT_ENABLED` | Enable rate limiting on all endpoints (default: `true`) |
+| `RATE_LIMIT_DEFAULT` | Maximum requests per minute per IP (default: `60`) |
+| `SECURITY_HEADERS_ENABLED` | Enable security headers middleware (default: `true`) |
+| `SECURITY_HEADERS_CONTENT_SECURITY_POLICY` | `Content-Security-Policy` header value (default: `default-src 'none'; frame-ancestors 'none'`) |
+| `SECURITY_HEADERS_X_CONTENT_TYPE_OPTIONS` | `X-Content-Type-Options` header value (default: `nosniff`) |
+| `SECURITY_HEADERS_X_FRAME_OPTIONS` | `X-Frame-Options` header value (default: `DENY`) |
+| `SECURITY_HEADERS_STRICT_TRANSPORT_SECURITY` | `Strict-Transport-Security` header value (default: `max-age=31536000; includeSubDomains`) |
+| `SECURITY_HEADERS_REFERRER_POLICY` | `Referrer-Policy` header value (default: `strict-origin-when-cross-origin`) |
 | `LOG_LEVEL` | Log level: `DEBUG`, `INFO`, `WARNING` (default: `INFO`) |
 | `LOG_FORMAT` | Log format: `text` for console, `json` for production (default: `text`) |
 
@@ -205,6 +215,7 @@ app/
         database/
             sqlalchemy/ # Models, repositories, migrations, and PostgreSQL engine
         events/       # In-memory event bus
+        middleware/   # ASGI middleware (security headers, rate limiting, request size limiting)
         vectorstores/ # Vector store implementations (pgvector)
         observability/ # OTel instrumentation
     schemas/          # Pydantic schemas

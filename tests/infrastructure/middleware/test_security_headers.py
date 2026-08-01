@@ -6,7 +6,7 @@ from fastapi.testclient import TestClient
 
 from app.config.settings import Settings
 from app.main import app
-from app.middleware.security_headers import SecurityHeadersMiddleware
+from app.infrastructure.middleware.security_headers import SecurityHeadersMiddleware
 
 
 @pytest.fixture()

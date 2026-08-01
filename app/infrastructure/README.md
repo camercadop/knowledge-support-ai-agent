@@ -8,3 +8,4 @@ This package contains adapters for every external system the application depends
 - `ai/` — chat and embedding provider adapters
 - `vectorstores/` — vector store implementations (pgvector)
 - `observability/` — OTel instrumentation utilities and domain-scoped metric definitions
+- `middleware/` — ASGI middleware (security headers, rate limiting, request size limiting)
