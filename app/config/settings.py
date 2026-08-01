@@ -22,6 +22,7 @@ class Settings(BaseSettings):
     chunk_strategy: str = "fixed"
     chunk_size: int = 500
     chunk_overlap: int = 50
+    cors_origins: list[str] = []
     retrieval_top_k: int = 5
     retrieval_min_score: float | None = None
     retrieval_max_chunks: int = 5

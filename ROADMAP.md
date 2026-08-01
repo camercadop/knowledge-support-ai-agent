@@ -78,6 +78,7 @@
 
 ### Security
 
+- ✅ CORS Configuration
 - Document Authorization
 - Tenant Isolation
 - Policy Enforcement

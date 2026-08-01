@@ -113,6 +113,7 @@ uv run alembic upgrade head
 | `OTEL_SERVICE_NAME` | Service name reported to the collector (default: `knowledge-support-ai-agent`) |
 | `WHATSAPP_TOKEN` | WhatsApp Cloud API token |
 | `WHATSAPP_VERIFY_TOKEN` | Webhook verification token |
+| `CORS_ORIGINS` | Comma-separated list of allowed CORS origins (default: empty, which denies all) |
 | `LOG_LEVEL` | Log level: `DEBUG`, `INFO`, `WARNING` (default: `INFO`) |
 | `LOG_FORMAT` | Log format: `text` for console, `json` for production (default: `text`) |
 
@@ -239,6 +240,7 @@ uv audit --preview-features audit-command
 
 - [Architecture](docs/architecture.md) — C4 diagrams (context, container, component) and request flow sequences
 - [Development Guide](docs/development.md) — conventions, local setup, testing, linting, and code style rules
+- [Security](docs/security.md) — implemented security controls and rules
 - [Data Model](docs/data-model.md) — database conventions, base model fields, and migration rules
 - [Architecture Decision Records](docs/adr/) — formal, binding decisions that shaped the system design
 - [Guidelines](docs/guidelines/) — how-to references for implementing common patterns correctly

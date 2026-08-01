@@ -66,6 +66,7 @@ Or use the interactive docs at `http://localhost:8000/docs`.
 | `RETRIEVAL_ENCODING` | tiktoken encoding for token counting (default: `cl100k_base`) |
 | `WHATSAPP_TOKEN` | WhatsApp Cloud API token |
 | `WHATSAPP_VERIFY_TOKEN` | Webhook verification token |
+| `CORS_ORIGINS` | Comma-separated list of allowed CORS origins (default: empty, which denies all) |
 
 ## Running Tests
 
@@ -233,6 +234,10 @@ sequenceDiagram
     UC-->>Router: Document
     Router-->>Client: {id, title, source}
 ```
+
+## Security Controls
+
+Implemented security controls are documented in [docs/security.md](security.md).
 
 ## Decision Tracking
 
