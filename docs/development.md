@@ -73,6 +73,8 @@ Or use the interactive docs at `http://localhost:8000/docs`.
 | `SECURITY_HEADERS_X_FRAME_OPTIONS` | X-Frame-Options header value (default: `DENY`) |
 | `SECURITY_HEADERS_STRICT_TRANSPORT_SECURITY` | Strict-Transport-Security header value (default: `max-age=31536000; includeSubDomains`) |
 | `SECURITY_HEADERS_REFERRER_POLICY` | Referrer-Policy header value (default: `strict-origin-when-cross-origin`) |
+| `RATE_LIMIT_ENABLED` | Enable or disable rate limiting (default: `true`) |
+| `RATE_LIMIT_DEFAULT` | Default rate limit per minute (default: `60`) |
 
 ## Running Tests
 
@@ -138,6 +140,7 @@ app/
         commands/   # One module per command group
         context.py  # Request context manager (container + session lifecycle)
     config/       # Settings and environment configuration
+    middlewares/    # ASGI middleware (CORS, security headers, rate limiting)
     container/    # Composition Root — ApplicationContainer composes domain-scoped containers
     domain/       # Domain models and business logic
     infrastructure/

@@ -23,12 +23,18 @@ class Settings(BaseSettings):
     chunk_size: int = 500
     chunk_overlap: int = 50
     cors_origins: list[str] = []
-    security_headers_content_security_policy: str = "default-src 'none'; frame-ancestors 'none'"
+    security_headers_content_security_policy: str = (
+        "default-src 'none'; frame-ancestors 'none'"
+    )
     security_headers_x_content_type_options: str = "nosniff"
     security_headers_x_frame_options: str = "DENY"
-    security_headers_strict_transport_security: str = "max-age=31536000; includeSubDomains"
+    security_headers_strict_transport_security: str = (
+        "max-age=31536000; includeSubDomains"
+    )
     security_headers_referrer_policy: str = "strict-origin-when-cross-origin"
     security_headers_enabled: bool = True
+    rate_limit_enabled: bool = True
+    rate_limit_default: int = 60
     retrieval_top_k: int = 5
     retrieval_min_score: float | None = None
     retrieval_max_chunks: int = 5

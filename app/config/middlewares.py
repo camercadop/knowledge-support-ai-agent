@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.config.settings import settings
+from app.middleware.rate_limit import setup_rate_limiter
 from app.middleware.security_headers import SecurityHeadersMiddleware
 
 
@@ -11,6 +12,8 @@ def register_middlewares(app: FastAPI) -> None:
     Centralises middleware wiring so that app/main.py stays focused on
     application bootstrap. Add new middlewares here rather than in main.py.
     """
+    setup_rate_limiter(app)
+
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.cors_origins,
