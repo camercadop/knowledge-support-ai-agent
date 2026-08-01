@@ -17,7 +17,7 @@ The `EventPublisher` port lives in `app/application/shared/events/`. The `InMemo
 Subclass `DomainEvent` in `app/application/<domain>/events/`:
 
 ```python
-# app/application/support/events/question_answered.py
+# app/application/<domain>/events/user_created.py
 import uuid
 from dataclasses import dataclass
 
@@ -25,12 +25,12 @@ from app.application.shared.events.domain_event import DomainEvent
 
 
 @dataclass(frozen=True)
-class QuestionAnswered(DomainEvent):
-    """Raised after a chat turn completes and both messages are persisted."""
+class UserCreated(DomainEvent):
+    """Raised after a user is created and persisted."""
 
-    conversation_id: uuid.UUID
-    question: str
-    answer: str
+    user_id: uuid.UUID
+    email: str
+    name: str
 ```
 
 Rules:
@@ -43,27 +43,26 @@ Rules:
 Create a handler class in `app/infrastructure/<domain>/event_handlers.py`:
 
 ```python
-# app/infrastructure/analytics/event_handlers.py
-from app.application.analytics.ports.unit_of_work.analytics import AnalyticsUnitOfWork
-from app.application.support.events.question_answered import QuestionAnswered
+# app/infrastructure/<domain>/event_handlers.py
+from app.application.<domain>.use_cases.notify_user import NotifyUser
+from app.application.<domain>.events.user_created import UserCreated
 
 
-class RagInteractionLogHandler:
-    """Persists a RAG interaction log entry when a QuestionAnswered event is received."""
+class UserCreatedHandler:
+    """Invokes NotifyUser when a UserCreated event is received."""
 
-    def __init__(self, uow: AnalyticsUnitOfWork) -> None:
-        """Initialize with the analytics unit of work."""
-        self._uow = uow
+    def __init__(self, use_case: NotifyUser) -> None:
+        """Initialize with the use case to delegate to."""
+        self._use_case = use_case
 
-    def handle(self, event: QuestionAnswered) -> None:
-        """Persist a RAG interaction log entry from the event payload."""
-        self._uow.rag_interaction_logs.create(...)
-        self._uow.commit()
+    def handle(self, event: UserCreated) -> None:
+        """Delegate to the use case with the event payload."""
+        self._use_case.handle(event)
 ```
 
 Rules:
 - One handler class per event type per concern.
-- Handlers own their own transaction — call `uow.commit()` inside `handle`.
+- Handlers delegate to a use case — the use case owns the transaction.
 - Handlers must not publish further events.
 
 ## Publishing from a Use Case
@@ -73,15 +72,15 @@ Inject `EventPublisher` as a constructor dependency and call `publish` after `uo
 ```python
 from app.application.shared.events.event_publisher import EventPublisher
 
-class AnswerQuestion:
-    def __init__(self, uow: MessagingUnitOfWork, event_publisher: EventPublisher, ...) -> None:
+class CreateUser:
+    def __init__(self, uow: UserUnitOfWork, event_publisher: EventPublisher, ...) -> None:
         self._event_publisher = event_publisher
         ...
 
-    def handle(self, ...) -> AnswerResult:
+    def handle(self, ...) -> UserResult:
         ...
         self._uow.commit()
-        self._event_publisher.publish(QuestionAnswered(...))
+        self._event_publisher.publish(UserCreated(...))
 ```
 
 Always publish after commit — never before. The event signals that the state change is durable.
@@ -91,11 +90,14 @@ Always publish after commit — never before. The event signals that the state c
 Register handlers on the `InMemoryEventBus` in the container, before building the use case:
 
 ```python
-# app/container/support.py
+# app/container/<domain>.py
 event_bus = InMemoryEventBus()
-event_bus.register(QuestionAnswered, RagInteractionLogHandler(SqlAlchemyAnalyticsUnitOfWork(db)))
+event_bus.subscribe(
+    UserCreated,
+    UserCreatedHandler(NotifyUser(SqlAlchemyUserUnitOfWork(db))),
+)
 
-return AnswerQuestion(uow=..., event_publisher=event_bus, ...)
+return CreateUser(uow=..., event_publisher=event_bus, ...)
 ```
 
 A fresh `InMemoryEventBus` is created per request — handlers are registered at construction time and discarded after the request completes.
@@ -105,6 +107,6 @@ A fresh `InMemoryEventBus` is created per request — handlers are registered at
 - `DomainEvent`, `EventPublisher`, and `EventHandler` live in `app/application/shared/events/` — never in a domain sub-package.
 - Domain-specific events live in `app/application/<domain>/events/`.
 - Handlers live in `app/infrastructure/<domain>/` — never in `app/application/`.
-- Use cases depend on `EventPublisher` (the port) — never on `InMemoryEventBus` directly.
+- Use cases depend on `EventPublisher` (a `Protocol`) — never on `InMemoryEventBus` directly.
 - Always publish after `uow.commit()` — never inside the transaction.
 - Unhandled event types are silently ignored by `InMemoryEventBus`.
