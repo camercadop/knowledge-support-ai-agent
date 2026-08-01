@@ -67,6 +67,12 @@ Or use the interactive docs at `http://localhost:8000/docs`.
 | `WHATSAPP_TOKEN` | WhatsApp Cloud API token |
 | `WHATSAPP_VERIFY_TOKEN` | Webhook verification token |
 | `CORS_ORIGINS` | Comma-separated list of allowed CORS origins (default: empty, which denies all) |
+| `SECURITY_HEADERS_ENABLED` | Enable or disable security headers (default: `true`) |
+| `SECURITY_HEADERS_CONTENT_SECURITY_POLICY` | Content-Security-Policy header value (default: `default-src 'none'; frame-ancestors 'none'`) |
+| `SECURITY_HEADERS_X_CONTENT_TYPE_OPTIONS` | X-Content-Type-Options header value (default: `nosniff`) |
+| `SECURITY_HEADERS_X_FRAME_OPTIONS` | X-Frame-Options header value (default: `DENY`) |
+| `SECURITY_HEADERS_STRICT_TRANSPORT_SECURITY` | Strict-Transport-Security header value (default: `max-age=31536000; includeSubDomains`) |
+| `SECURITY_HEADERS_REFERRER_POLICY` | Referrer-Policy header value (default: `strict-origin-when-cross-origin`) |
 
 ## Running Tests
 
