@@ -18,25 +18,44 @@ class DocumentRepository(AbstractDocumentRepository):
         """Initialize with an active database session."""
         self._db = db
 
-    def create(self, title: str, source: str | None, content: str) -> Document:
+    def create(
+        self,
+        title: str,
+        source: str | None,
+        content: str,
+        embedding_model_used: str | None = None,
+    ) -> Document:
         """Persist a new document and return it.
 
         Args:
             title: Human-readable title of the document.
             source: Optional origin of the document (e.g. file path, URL).
             content: Full raw text content of the document.
+            embedding_model_used: Identifier of the embedding model used
+                when this document was ingested.
 
         Returns:
             The persisted Document.
         """
-        orm = DocumentORM(title=title, source=source, content=content)
+        orm = DocumentORM(
+            title=title,
+            source=source,
+            content=content,
+            embedding_model_used=embedding_model_used,
+        )
         self._db.add(orm)
         self._db.flush()
         return Document(
-            id=orm.id, title=orm.title, source=orm.source, content=orm.content
+            id=orm.id,
+            title=orm.title,
+            source=orm.source,
+            content=orm.content,
+            embedding_model_used=orm.embedding_model_used,
         )
 
-    def get_by_title_and_source(self, title: str, source: str | None) -> Document | None:
+    def get_by_title_and_source(
+        self, title: str, source: str | None
+    ) -> Document | None:
         """Return the document matching title and source, or None if not found."""
         orm = (
             self._db.query(DocumentORM)
@@ -45,7 +64,13 @@ class DocumentRepository(AbstractDocumentRepository):
         )
         if orm is None:
             return None
-        return Document(id=orm.id, title=orm.title, source=orm.source, content=orm.content)
+        return Document(
+            id=orm.id,
+            title=orm.title,
+            source=orm.source,
+            content=orm.content,
+            embedding_model_used=orm.embedding_model_used,
+        )
 
     def delete(self, document_id: uuid.UUID) -> None:
         """Delete the document and all its chunks (cascade via FK)."""
@@ -67,5 +92,9 @@ class DocumentRepository(AbstractDocumentRepository):
         if orm is None:
             return None
         return Document(
-            id=orm.id, title=orm.title, source=orm.source, content=orm.content
+            id=orm.id,
+            title=orm.title,
+            source=orm.source,
+            content=orm.content,
+            embedding_model_used=orm.embedding_model_used,
         )

@@ -108,17 +108,13 @@ class OpenAIChatModel(ChatModel):
         total_tokens = 0
         input_tokens = 0
         output_tokens = 0
-        previous_response_id: str | None = None
 
         while True:
             kwargs: dict[str, Any] = {
                 "model": settings.chat_model,
+                "input": input_messages,
                 "max_output_tokens": settings.chat_max_tokens,
             }
-            if previous_response_id:
-                kwargs["previous_response_id"] = previous_response_id
-            else:
-                kwargs["input"] = input_messages
             if tools:
                 kwargs["tools"] = tools
 
@@ -149,16 +145,18 @@ class OpenAIChatModel(ChatModel):
                     model_used=settings.chat_model,
                 )
 
-            previous_response_id = response.id
+            tool_outputs: list[Any] = []
             for call in tool_calls:
                 arguments = json.loads(call.arguments)
                 logger.info("Tool call: %s args=%s", call.name, arguments)
                 result = tool_registry.execute(call.name, arguments)  # type: ignore[union-attr]
                 logger.info("Tool result for %s: %s", call.name, result)
-                input_messages.append(
+                input_messages.append(call)
+                tool_outputs.append(
                     {
                         "type": "function_call_output",
                         "call_id": call.call_id,
                         "output": result,
                     }
                 )
+            input_messages.extend(tool_outputs)

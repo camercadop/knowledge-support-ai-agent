@@ -3,6 +3,7 @@ import uuid
 import pytest
 from sqlalchemy.orm import Session
 
+from app.config.settings import settings
 from app.infrastructure.database.sqlalchemy.postgresql.models.document import (
     Document as DocumentORM,
 )
@@ -11,7 +12,8 @@ from app.infrastructure.database.sqlalchemy.postgresql.models.document_chunk imp
 )
 from app.infrastructure.vectorstores.pgvector.store import PgVectorStore
 
-_EMBEDDING = [0.0] * 1536
+_DIMS = settings.embedding_dimensions or 1536
+_EMBEDDING = [0.0] * _DIMS
 
 
 @pytest.fixture()
@@ -75,8 +77,8 @@ def test_search_returns_correct_chunk_and_document_ids(
 def test_search_orders_by_score_ascending(
     store: PgVectorStore, pg_db: Session
 ) -> None:
-    _seed(pg_db, "Near Doc", None, "near", embedding=[1.0] + [0.0] * 1535)
-    _seed(pg_db, "Far Doc", None, "far", embedding=[0.0] * 1535 + [1.0])
-    results = store.search([1.0] + [0.0] * 1535)
+    _seed(pg_db, "Near Doc", None, "near", embedding=[1.0] + [0.0] * (_DIMS - 1))
+    _seed(pg_db, "Far Doc", None, "far", embedding=[0.0] * (_DIMS - 1) + [1.0])
+    results = store.search([1.0] + [0.0] * (_DIMS - 1))
     assert results[0].chunk == "near"
     assert results[1].chunk == "far"

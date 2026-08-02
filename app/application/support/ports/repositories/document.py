@@ -8,7 +8,13 @@ class AbstractDocumentRepository(ABC):
     """Port that defines the contract for document persistence."""
 
     @abstractmethod
-    def create(self, title: str, source: str | None, content: str) -> Document:
+    def create(
+        self,
+        title: str,
+        source: str | None,
+        content: str,
+        embedding_model_used: str | None = None,
+    ) -> Document:
         """Persist a new document and return it."""
 
     @abstractmethod

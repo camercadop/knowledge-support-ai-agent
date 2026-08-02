@@ -67,7 +67,10 @@ class IngestDocument:
 
             logger.debug("Persisting document title=%r source=%r", title, source)
             document = self._uow.documents.create(
-                title=title, source=source, content=content
+                title=title,
+                source=source,
+                content=content,
+                embedding_model_used=self._embedding_model.model_name,
             )
             logger.info("Persisted document id=%s", document.id)
 
@@ -88,7 +91,9 @@ class IngestDocument:
                 )
                 if on_chunk is not None:
                     on_chunk(i, chunk_count)
-                logger.debug("Indexing chunk %d/%d chunk_id=%s", i, chunk_count, chunk.id)
+                logger.debug(
+                    "Indexing chunk %d/%d chunk_id=%s", i, chunk_count, chunk.id
+                )
                 self._vector_store.upsert(
                     chunk_id=chunk.id,
                     document_id=document.id,
@@ -111,4 +116,5 @@ class IngestDocument:
                 source=document.source,
                 content=document.content,
                 chunk_count=chunk_count,
+                embedding_model_used=self._embedding_model.model_name,
             )

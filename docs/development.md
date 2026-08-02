@@ -230,8 +230,8 @@ sequenceDiagram
 
     Client->>Router: POST /documents {title, source, content}
     Router->>UC: handle(title, source, content)
-    UC->>UoW: documents.create(...)
-    UoW->>DB: INSERT document
+    UC->>UoW: documents.create(title, source, content, embedding_model_used)
+    UoW->>DB: INSERT document (with embedding_model_used)
     loop for each chunk
         UC->>Embed: embed(chunk)
         Embed->>OpenAI: embeddings.create(...)

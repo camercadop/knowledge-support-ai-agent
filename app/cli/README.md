@@ -6,7 +6,7 @@ A Typer-based command-line interface for the Knowledge Support AI Agent. It is a
 
 | Command | Description |
 |---------|-------------|
-| `agent chat` | Start an interactive chat REPL for a contact |
+| `agent chat` | Start an interactive chat REPL for a contact, or send a single message with `--message` |
 | `agent clear-history` | Delete all chat messages for a contact's conversation |
 | `agent ingest` | Ingest a document from a file into the knowledge base |
 
@@ -15,6 +15,7 @@ A Typer-based command-line interface for the Knowledge Support AI Agent. It is a
 ```bash
 uv run agent --help
 uv run agent chat --phone "+1234567890"
+uv run agent chat --phone "+1234567890" --message "what currencies do you support?"
 uv run agent clear-history --phone "+1234567890"
 uv run agent ingest --file ./doc.txt --title "My Doc"
 ```

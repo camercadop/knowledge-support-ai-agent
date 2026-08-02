@@ -60,12 +60,12 @@ sequenceDiagram
 
 ### IngestDocument
 
-1. Persist the document (title, source, raw content) via the UoW
+1. Persist the document (title, source, raw content, embedding_model_used) via the UoW
 2. Split the content into chunks using the configured chunk strategy
 3. For each chunk:
-   - Embed the chunk text into a vector
-   - Persist the chunk and its embedding via the UoW
-   - Upsert the chunk into the vector store for similarity search
+    - Embed the chunk text into a vector
+    - Persist the chunk and its embedding via the UoW
+    - Upsert the chunk into the vector store for similarity search
 4. Commit the transaction
 5. Return the persisted Document to the caller
 
@@ -76,7 +76,7 @@ sequenceDiagram
     participant Embed as EmbeddingModel
     participant VS as VectorStore
 
-    UC->>UoW: documents.create(title, source, content)
+    UC->>UoW: documents.create(title, source, content, embedding_model_used)
     loop for each chunk
         UC->>Embed: embed(chunk)
         Embed-->>UC: vector

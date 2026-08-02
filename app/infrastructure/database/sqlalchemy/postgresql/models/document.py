@@ -32,5 +32,11 @@ class Document(Base):
         Text,
         nullable=False,
     )
+    embedding_model_used: Mapped[str | None] = mapped_column(
+        # Identifier of the embedding model used when this document was ingested
+        nullable=True,
+    )
 
-    chunks: Mapped[list[DocumentChunk]] = relationship(back_populates="document")
+    chunks: Mapped[list[DocumentChunk]] = relationship(
+        back_populates="document", passive_deletes=True
+    )

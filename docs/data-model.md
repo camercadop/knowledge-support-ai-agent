@@ -17,6 +17,7 @@ All models inherit from a shared base class that provides:
 - Foreign keys use `ondelete="CASCADE"` — deleting a parent record removes all dependent records.
 - Nullable fields are declared explicitly with `nullable=True`.
 - Every field has a comment explaining its purpose.
+- The `embedding_model_used` column on the `documents` table records the identifier of the embedding model used when the document was ingested, enabling traceability across model upgrades and re-ingestions.
 
 ## Relationships
 

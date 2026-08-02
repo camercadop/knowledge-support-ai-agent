@@ -11,7 +11,7 @@ from app.main import app
 
 _DOCUMENT_ID = uuid.uuid4()
 _MOCK_DOCUMENT = Document(
-    id=_DOCUMENT_ID, title="My Doc", source="manual", content="..."
+    id=_DOCUMENT_ID, title="My Doc", source="manual", content="...", embedding_model_used="text-embedding-3-small"
 )
 _MOCK_USE_CASE = MagicMock()
 _MOCK_USE_CASE.handle.return_value = _MOCK_DOCUMENT

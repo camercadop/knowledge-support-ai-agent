@@ -8,9 +8,15 @@ class MockEmbeddingModel(EmbeddingModel):
     Pass custom dimensions to match the expected vector size.
     """
 
-    def __init__(self, dimensions: int = 3) -> None:
+    def __init__(self, dimensions: int = 3, model_name: str = "mock-embedding") -> None:
         """Initialize with the number of dimensions for the returned vector."""
         self._dimensions = dimensions
+        self._model_name = model_name
+
+    @property
+    def model_name(self) -> str:
+        """Return the mock model identifier."""
+        return self._model_name
 
     def embed(self, text: str) -> list[float]:
         """Return a zero vector of the configured dimensions.

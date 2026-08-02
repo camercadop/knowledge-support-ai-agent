@@ -7,6 +7,7 @@ from app.application.analytics.use_cases.record_rag_interaction import (
     RecordRagInteraction,
 )
 from app.application.support.events.question_answered import QuestionAnswered
+from app.application.support.ports.embedding_model import EmbeddingModel
 from app.application.support.ports.message_retention_policy import (
     MessageRetentionPolicy,
 )
@@ -62,8 +63,16 @@ class SupportContainer(BaseContainer):
             )
         )
         self._chat_model = OpenAIChatModel(prompt_builder=self._prompt_builder)
+        self._embedding_model = self._resolve_embedding_model()
         self._chunk_strategy = build_chunk_strategy()
         self._conversation_history_optimizer = self._create_history_optimizer()
+
+    def _resolve_embedding_model(self) -> EmbeddingModel:
+        if settings.embedding_provider == "mock":
+            from app.infrastructure.ai.mock.embeddings import MockEmbeddingModel
+
+            return MockEmbeddingModel()
+        return OpenAIEmbeddingModel()
 
     def _create_history_optimizer(self) -> ConversationHistoryOptimizer:
         """Create the conversation history optimizer with enabled policies.
@@ -125,7 +134,7 @@ class SupportContainer(BaseContainer):
             uow=SqlAlchemyMessagingUnitOfWork(db),
             event_publisher=event_bus,
             chat_model=self._chat_model,
-            embedding_model=self._singleton(OpenAIEmbeddingModel),
+            embedding_model=self._embedding_model,
             retrieval_service=retrieval_service,
             prompt_builder=self._prompt_builder,
             instrumentation=self._instrumentation(ANSWER_QUESTION_INSTRUMENTATION),
@@ -168,7 +177,7 @@ class SupportContainer(BaseContainer):
         """
         return IngestDocument(
             uow=SqlAlchemyKnowledgeUnitOfWork(db),
-            embedding_model=self._singleton(OpenAIEmbeddingModel),
+            embedding_model=self._embedding_model,
             vector_store=PgVectorStore(db),
             chunk_strategy=self._chunk_strategy,
             instrumentation=self._instrumentation(INGEST_DOCUMENT_INSTRUMENTATION),

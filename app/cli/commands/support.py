@@ -1,3 +1,5 @@
+import logging
+
 import typer
 from prompt_toolkit import prompt as pt_prompt
 from prompt_toolkit.styles import Style
@@ -34,16 +36,32 @@ def _citations_table(chunks: list[SearchResult]) -> Table:
 @app.command()
 def chat(
     phone: str = typer.Option(..., prompt=True, help="Contact phone number."),
+    message: str | None = typer.Option(
+        default=None, help="Send a single message and exit."
+    ),
 ) -> None:
     """Start an interactive chat session with a contact.
 
-    Loops until the user types 'exit' or 'quit'.
+    Loops until the user types 'exit' or 'quit'. When --message is provided,
+    sends that single message, prints the result, and exits immediately.
     """
     with request_context() as (container, db):
         use_case = container.support.answer_question(db)
+
+        if message is not None:
+            result = use_case.handle(phone, message)
+            console.print(
+                Panel(result.reply, title="[green]Agent[/green]", border_style="green")
+            )
+            if result.chunks:
+                console.print("[dim]Citations:[/dim]")
+                console.print(_citations_table(result.chunks))
+            return
+
         console.print(
             Panel(
-                "[bold]Knowledge Support AI Agent[/bold]\nType [cyan]exit[/cyan] or [cyan]quit[/cyan] to end the session.",
+                "[bold]Knowledge Support AI Agent[/bold]\nType [cyan]exit[/cyan]"
+                " or [cyan]quit[/cyan] to end the session.",
                 style="blue",
             )
         )
@@ -87,7 +105,7 @@ def ingest(
 
     path = pathlib.Path(file)
     if not path.exists():
-        console.print(f"[red]✗ File not found: {file}[/red]", err=True)
+        console.print(f"[red]✗ File not found: {file}[/red]")
         raise typer.Exit(code=1)
 
     content = path.read_text(encoding="utf-8")
@@ -100,6 +118,7 @@ def ingest(
             console=console,
             transient=True,
         ) as progress:
+            logging.disable(logging.INFO)
             task = progress.add_task("Embedding chunks…", total=None)
 
             def on_chunk(current: int, total: int) -> None:
@@ -111,7 +130,9 @@ def ingest(
                 content=content,
                 on_chunk=on_chunk,
             )
+            logging.disable(logging.NOTSET)
 
+        console.line()
         table = Table(show_header=False, box=None, padding=(0, 1))
         table.add_row("[bold]ID[/bold]", str(document.id))
         table.add_row("[bold]Title[/bold]", document.title)

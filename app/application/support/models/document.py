@@ -11,3 +11,4 @@ class Document:
     source: str | None
     content: str
     chunk_count: int = 0
+    embedding_model_used: str | None = None

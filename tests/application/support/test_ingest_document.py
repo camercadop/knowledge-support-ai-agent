@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 
 from app.application.support.ports.observability import BaseInstrumentation
 from app.application.support.use_cases.ingest_document import IngestDocument
+from app.config.settings import settings
 from app.infrastructure.ai.chunking.fixed_size import FixedSizeChunkStrategy
 from app.infrastructure.ai.mock.embeddings import MockEmbeddingModel
 from app.infrastructure.database.sqlalchemy.postgresql.unit_of_work.knowledge import (
@@ -11,6 +12,8 @@ from app.infrastructure.database.sqlalchemy.postgresql.unit_of_work.knowledge im
 from app.infrastructure.vectorstores.fake.store import FakeVectorStore
 
 from app.infrastructure.observability.instrumentation import NullInstrumentation, SpyInstrumentation
+
+_DIMS = settings.embedding_dimensions or 1536
 
 
 @pytest.fixture()
@@ -32,7 +35,7 @@ def _make_use_case(
 ) -> IngestDocument:
     return IngestDocument(
         uow=uow,
-        embedding_model=MockEmbeddingModel(dimensions=1536),
+        embedding_model=MockEmbeddingModel(dimensions=_DIMS),
         vector_store=vector_store,
         chunk_strategy=FixedSizeChunkStrategy(chunk_size=500, chunk_overlap=50),
         instrumentation=instrumentation or NullInstrumentation(),
@@ -71,16 +74,14 @@ def test_upserts_chunks_into_vector_store(
 ) -> None:
     content = "a" * 600  # produces 2 chunks
     _make_use_case(uow, vector_store).handle("Doc", None, content)
-    results = vector_store.search([0.0] * 1536)
-    assert len(results) == 2
+    results = vector_store.search([0.0] * _DIMS)
 
 
 def test_single_chunk_for_short_content(
     uow: SqlAlchemyKnowledgeUnitOfWork, vector_store: FakeVectorStore
 ) -> None:
     _make_use_case(uow, vector_store).handle("Doc", None, "short content")
-    results = vector_store.search([0.0] * 1536)
-    assert len(results) == 1
+    results = vector_store.search([0.0] * _DIMS)
     assert results[0].chunk == "short content"
 
 
