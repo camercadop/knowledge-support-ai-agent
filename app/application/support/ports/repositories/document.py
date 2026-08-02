@@ -14,3 +14,13 @@ class AbstractDocumentRepository(ABC):
     @abstractmethod
     def get_by_id(self, document_id: uuid.UUID) -> Document | None:
         """Return the document with the given id, or None if not found."""
+
+    @abstractmethod
+    def get_by_title_and_source(
+        self, title: str, source: str | None
+    ) -> Document | None:
+        """Return the document matching title and source, or None if not found."""
+
+    @abstractmethod
+    def delete(self, document_id: uuid.UUID) -> None:
+        """Delete the document."""

@@ -1,6 +1,6 @@
 from typing import TYPE_CHECKING
 
-from sqlalchemy import Text
+from sqlalchemy import Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.infrastructure.database.sqlalchemy.postgresql.base import Base
@@ -10,10 +10,14 @@ if TYPE_CHECKING:
         DocumentChunk,
     )
 
+
 class Document(Base):
     """Represents a knowledge base document that can be chunked and indexed."""
 
     __tablename__ = "documents"
+    __table_args__ = (
+        UniqueConstraint("title", "source", name="uq_documents_title_source"),
+    )
 
     title: Mapped[str] = mapped_column(
         # Human-readable title of the document

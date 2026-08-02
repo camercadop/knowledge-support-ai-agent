@@ -10,3 +10,4 @@ class Document:
     title: str
     source: str | None
     content: str
+    chunk_count: int = 0

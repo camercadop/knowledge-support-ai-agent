@@ -36,6 +36,24 @@ class DocumentRepository(AbstractDocumentRepository):
             id=orm.id, title=orm.title, source=orm.source, content=orm.content
         )
 
+    def get_by_title_and_source(self, title: str, source: str | None) -> Document | None:
+        """Return the document matching title and source, or None if not found."""
+        orm = (
+            self._db.query(DocumentORM)
+            .filter(DocumentORM.title == title, DocumentORM.source == source)
+            .first()
+        )
+        if orm is None:
+            return None
+        return Document(id=orm.id, title=orm.title, source=orm.source, content=orm.content)
+
+    def delete(self, document_id: uuid.UUID) -> None:
+        """Delete the document and all its chunks (cascade via FK)."""
+        orm = self._db.get(DocumentORM, document_id)
+        if orm is not None:
+            self._db.delete(orm)
+            self._db.flush()
+
     def get_by_id(self, document_id: uuid.UUID) -> Document | None:
         """Return the document with the given id, or None if not found.
 

@@ -1,32 +1,43 @@
 import logging
+from typing import Literal
 
 import structlog
 
 from app.config.settings import settings
 
 
-def configure_logging() -> None:
+def configure_logging(mode: Literal["api", "cli"] = "api") -> None:
     """Configure structlog as the logging backend for the entire application.
 
-    Routes all stdlib logging.getLogger() callers through structlog's processor
-    chain. Output format is controlled by the LOG_FORMAT env var: use "text" for
-    colored console output (default) and "json" for structured production logs.
+    In CLI mode the output is always a human-friendly ConsoleRenderer regardless
+    of LOG_FORMAT. In API mode the renderer is controlled by LOG_FORMAT.
     """
-    # Processors shared between structlog's own pipeline and the stdlib formatter,
-    # ensuring both produce identical fields regardless of the entry point.
-    shared_processors: list[structlog.types.Processor] = [
+    api_processors: list[structlog.types.Processor] = [
         structlog.stdlib.add_logger_name,
         structlog.stdlib.add_log_level,
         structlog.processors.TimeStamper(fmt="iso"),
     ]
+    cli_processors: list[structlog.types.Processor] = [
+        structlog.stdlib.add_log_level,
+    ]
+    shared_processors = cli_processors if mode == "cli" else api_processors
 
-    if settings.log_format == "json":
-        renderer: structlog.types.Processor = structlog.processors.JSONRenderer()
+    if mode == "cli":
+        renderer: structlog.types.Processor = structlog.dev.ConsoleRenderer(
+            level_styles={
+                "debug": "\x1b[34m",  # blue
+                "info": "\x1b[32m",  # green
+                "warning": "\x1b[33m",  # yellow
+                "error": "\x1b[31m",  # red
+                "critical": "\x1b[1;31m",  # bold red
+            },
+            exception_formatter=structlog.dev.plain_traceback,
+        )
+    elif settings.log_format == "json":
+        renderer = structlog.processors.JSONRenderer()
     else:
         renderer = structlog.dev.ConsoleRenderer()
 
-    # Configure structlog to hand off to stdlib so that logging.getLogger() callers
-    # are routed through the same processor chain as structlog.get_logger() callers.
     structlog.configure(
         processors=[
             *shared_processors,
@@ -36,14 +47,21 @@ def configure_logging() -> None:
     )
 
     logging.basicConfig(
-        level=settings.log_level.upper(),
+        level=logging.INFO,
         handlers=[logging.StreamHandler()],
     )
+    logging.getLogger("app").setLevel(settings.log_level.upper())
 
-    # Replace the default stdlib formatter with structlog's ProcessorFormatter so
-    # all stdlib log records are rendered through the same pipeline and renderer.
     logging.getLogger().handlers[0].setFormatter(
         structlog.stdlib.ProcessorFormatter(
-            processors=[*shared_processors, renderer],
+            processors=[
+                *(
+                    [structlog.stdlib.ProcessorFormatter.remove_processors_meta]
+                    if mode == "cli"
+                    else []
+                ),
+                *shared_processors,
+                renderer,
+            ],
         )
     )

@@ -1,4 +1,5 @@
 import logging
+from collections.abc import Callable
 
 from app.application.support.models.document import Document
 from app.application.support.ports.chunk_strategy import ChunkStrategy
@@ -35,29 +36,49 @@ class IngestDocument:
         self._chunk_strategy = chunk_strategy
         self._instrumentation = instrumentation
 
-    def handle(self, title: str, source: str | None, content: str) -> Document:
-        """Ingest a document by persisting it, chunking the content, and indexing
-        embeddings.
+    def handle(
+        self,
+        title: str,
+        source: str | None,
+        content: str,
+        on_chunk: Callable[[int, int], None] | None = None,
+    ) -> Document:
+        """Ingest a document by persisting it, chunking, embedding, and indexing.
 
-        Persists the document and all its chunks, then upserts each chunk into
-        the vector store. Commits the transaction once at the end.
+        If a document with the same title and source already exists, it is deleted
+        and replaced. Commits the transaction once at the end.
 
         Args:
             title: Human-readable title of the document.
             source: Optional origin of the document (e.g. file path, URL).
             content: Full raw text content of the document.
+            on_chunk: Optional callback invoked after each chunk is embedded and
+                indexed. Receives (current, total) chunk counts, useful for
+                reporting progress to a CLI or UI.
 
         Returns:
-            The persisted Document application model.
+            The persisted Document with chunk_count populated.
         """
         with self._instrumentation.root_span("ingest_document.handle"):
+            existing = self._uow.documents.get_by_title_and_source(title, source)
+            if existing is not None:
+                logger.info("Replacing existing document id=%s", existing.id)
+                self._uow.documents.delete(existing.id)
+
+            logger.debug("Persisting document title=%r source=%r", title, source)
             document = self._uow.documents.create(
                 title=title, source=source, content=content
             )
-            logger.info("Persisted document %s", document.id)
+            logger.info("Persisted document id=%s", document.id)
 
             chunks = self._chunk_strategy.chunk(content)
-            for chunk_text in chunks:
+            chunk_count = len(chunks)
+            logger.debug("Chunked document id=%s chunks=%d", document.id, chunk_count)
+
+            for i, chunk_text in enumerate(chunks, start=1):
+                logger.debug(
+                    "Embedding chunk %d/%d document_id=%s", i, chunk_count, document.id
+                )
                 with self._instrumentation.span("ingest.embedding.embed"):
                     embedding = self._embedding_model.embed(chunk_text)
                 chunk = self._uow.document_chunks.create(
@@ -65,6 +86,9 @@ class IngestDocument:
                     chunk=chunk_text,
                     embedding=embedding,
                 )
+                if on_chunk is not None:
+                    on_chunk(i, chunk_count)
+                logger.debug("Indexing chunk %d/%d chunk_id=%s", i, chunk_count, chunk.id)
                 self._vector_store.upsert(
                     chunk_id=chunk.id,
                     document_id=document.id,
@@ -72,7 +96,6 @@ class IngestDocument:
                     embedding=embedding,
                 )
 
-            chunk_count = len(chunks)
             self._instrumentation.record_metrics(
                 {
                     "ingest.chunk_count": chunk_count,
@@ -81,5 +104,11 @@ class IngestDocument:
             )
 
             self._uow.commit()
-            logger.info("Ingested document %s with %s chunks", document.id, chunk_count)
-            return document
+            logger.info("Ingested document id=%s chunks=%d", document.id, chunk_count)
+            return Document(
+                id=document.id,
+                title=document.title,
+                source=document.source,
+                content=document.content,
+                chunk_count=chunk_count,
+            )

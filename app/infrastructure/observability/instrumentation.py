@@ -24,6 +24,12 @@ class InstrumentationConfig:
     timed_spans: dict[str, tuple[str, str | None, str]] = field(default_factory=dict)
     metrics: dict[str, tuple[str, str, str | None, str]] = field(default_factory=dict)
 
+    def __hash__(self) -> int:
+        return hash((
+            frozenset(self.timed_spans.items()),
+            frozenset(self.metrics.items()),
+        ))
+
 
 class NullInstrumentation(BaseInstrumentation):
     """No-op instrumentation used as the default when no backend is configured.

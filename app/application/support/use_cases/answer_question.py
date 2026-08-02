@@ -94,7 +94,7 @@ class AnswerQuestion:
 
             contact = self._uow.contacts.get_or_create_by_phone(phone)
             conversation = self._uow.conversations.get_or_create_for_contact(contact.id)
-            logger.info("Handling chat turn for conversation %s", conversation.id)
+            logger.debug("Handling chat turn for conversation %s", conversation.id)
 
             history = self._uow.messages.list_by_conversation(conversation.id)
             messages = [
@@ -125,7 +125,7 @@ class AnswerQuestion:
                     completion_tokens=response.usage.output_tokens,
                 )
             )
-            logger.info("Chat turn complete for conversation %s", conversation.id)
+            logger.debug("Chat turn complete for conversation %s", conversation.id)
 
             return AnswerResult(
                 reply=response.message.content,

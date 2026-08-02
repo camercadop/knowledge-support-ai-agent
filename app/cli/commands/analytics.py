@@ -37,3 +37,9 @@ def export_rag_interactions(
             with open(output, "w", encoding="utf-8") as f:
                 f.write(serialized)
             typer.echo(f"Exported {len(data)} records to {output}")
+            typer.echo(
+                typer.style("✓ Exported ", fg=typer.colors.GREEN, bold=True)
+                + typer.style(str(len(data)), bold=True)
+                + " records to "
+                + typer.style(output, fg=typer.colors.CYAN)
+            )

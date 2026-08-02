@@ -96,6 +96,12 @@ class ChunkRetriever:
             min_score=self._min_score,
             metadata_filters=metadata_filters,
         )
+        logger.debug("Vector search returned %d results", len(results))
+        for r in results:
+            logger.debug(
+                "chunk score=%.4f document=%r source=%r",
+                r.score, r.document_title, r.source,
+            )
 
         seen: set[str] = set()
         deduplicated = []
@@ -105,6 +111,7 @@ class ChunkRetriever:
                 deduplicated.append(result)
 
         capped = deduplicated[: self._max_chunks]
+        logger.debug("%d chunks after dedup+cap", len(capped))
 
         included: list[SearchResult] = []
         chunks: list[str] = []
@@ -119,10 +126,10 @@ class ChunkRetriever:
             total_tokens += tokens
 
         if not chunks:
-            logger.info("No chunks passed retrieval filters")
+            logger.debug("No chunks passed retrieval filters")
             return RetrievalResult(context=None, chunks=[])
 
-        logger.info(
+        logger.debug(
             "Retrieved %s chunks (%s tokens) for RAG context", len(chunks), total_tokens
         )
         return RetrievalResult(context="\n\n".join(chunks), chunks=included)

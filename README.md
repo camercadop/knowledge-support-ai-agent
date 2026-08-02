@@ -96,10 +96,11 @@ uv run alembic upgrade head
 | `EMBEDDING_PROVIDER` | Embedding provider: `openai`, `ollama`, `mock` |
 | `EMBEDDING_API_KEY` | API key for the embedding provider |
 | `EMBEDDING_MODEL` | Embedding model name (default: `text-embedding-3-small`) |
-| `EMBEDDING_DIMENSIONS` | Embedding vector dimensions (default: `1536`) |
+| `EMBEDDING_DIMENSIONS` | Embedding vector dimensions — omit or leave empty to let the provider decide (default: `1536`) |
 | `EMBEDDING_BASE_URL` | Optional base URL override for the embedding provider |
+| `EMBEDDING_ENCODING_FORMAT` | Embedding encoding format: `float` or `base64` (default: `float`) |
 | `RETRIEVAL_TOP_K` | Number of chunks to request from the vector store (default: `5`) |
-| `RETRIEVAL_MIN_SCORE` | Maximum cosine distance to accept — lower is stricter (default: unset) |
+| `RETRIEVAL_MIN_SCORE` | Maximum cosine distance to accept — lower is stricter (default: `0.7`) |
 | `RETRIEVAL_MAX_CHUNKS` | Maximum deduplicated chunks included in context (default: `5`) |
 | `RETRIEVAL_MAX_CONTEXT_TOKENS` | Token budget for assembled context (default: `2000`) |
 | `RETRIEVAL_ENCODING` | tiktoken encoding for token counting (default: `cl100k_base`) |
@@ -140,7 +141,7 @@ API docs available at `http://localhost:8000/docs`.
 ### CLI
 
 ```bash
-uv run agent --help
+uv run python -m app.cli.main --help
 ```
 
 ## Trying it out
@@ -170,20 +171,22 @@ Or use the interactive docs at `http://localhost:8000/docs`.
 Start an interactive chat session:
 
 ```bash
-uv run agent chat --phone "+1234567890"
+uv run python -m app.cli.main support chat --phone "+1234567890"
 ```
 
 Ingest a document from a file:
 
 ```bash
-uv run agent ingest --file ./doc.txt --title "My Doc"
+uv run python -m app.cli.main support ingest --file ./doc.txt --title "My Doc"
 ```
 
 Clear a contact's chat history:
 
 ```bash
-uv run agent clear-history --phone "+1234567890"
+uv run python -m app.cli.main support clear-history --phone "+1234567890"
 ```
+
+Each agent reply includes a citations table showing the source documents and their similarity score (higher is better).
 
 ## Project Structure
 
@@ -226,6 +229,24 @@ tests/
     infrastructure/   # mirrors app/infrastructure/
     conftest.py       # shared fixtures
 ```
+
+## Retrieval & Similarity Scoring
+
+The RAG pipeline uses **cosine distance** to measure how relevant a knowledge chunk is to the user's query.
+
+- Range: `0.0` to `1.0` — lower means more similar
+- `0.0` = identical vectors (perfect match)
+- `1.0` = completely unrelated
+
+Citations shown after each agent reply display a **Similarity %**, which is `(1 - cosine_distance) × 100`. A chunk at distance `0.2` shows as `80%` similarity.
+
+`RETRIEVAL_MIN_SCORE` controls the maximum cosine distance accepted. Chunks above this threshold are filtered out before being passed to the LLM. The default of `0.7` works well for most embedding models, but you may need to tune it depending on your provider:
+
+| Embedding provider | Recommended `RETRIEVAL_MIN_SCORE` |
+|--------------------|-----------------------------------|
+| OpenAI | `0.4` – `0.5` |
+| Nvidia | `0.6` – `0.8` |
+| Ollama (nomic-embed-text) | `0.5` – `0.7` |
 
 ## Testing
 

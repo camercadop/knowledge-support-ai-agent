@@ -23,6 +23,11 @@ class OpenAIEmbeddingModel(EmbeddingModel):
         response = self._client.embeddings.create(
             model=settings.embedding_model,
             input=text,
-            dimensions=settings.embedding_dimensions,
+            **(
+                ({"dimensions": settings.embedding_dimensions})
+                if settings.embedding_dimensions
+                else {}
+            ),
+            encoding_format=settings.embedding_encoding_format,
         )
         return response.data[0].embedding
