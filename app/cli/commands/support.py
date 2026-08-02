@@ -1,4 +1,6 @@
 import typer
+from prompt_toolkit import prompt as pt_prompt
+from prompt_toolkit.styles import Style
 from rich.console import Console
 from rich.panel import Panel
 from rich.progress import (
@@ -46,7 +48,10 @@ def chat(
             )
         )
         while True:
-            message = typer.prompt(typer.style("You", fg=typer.colors.CYAN, bold=True))
+            message = pt_prompt(
+                "You: ",
+                style=Style.from_dict({"prompt": "cyan bold"}),
+            )
             if message.strip().lower() in {"exit", "quit"}:
                 break
             result = use_case.handle(phone, message)
