@@ -145,3 +145,41 @@ def test_search_returns_empty_source_when_none() -> None:
     results = store.search([1.0, 0.0])
     assert results[0].document_title == "Test Doc"
     assert results[0].source is None
+
+
+def test_upsert_stores_metadata() -> None:
+    store = FakeVectorStore()
+    cid = _chunk_id()
+    store.upsert(
+        chunk_id=cid,
+        document_id=_doc_id(),
+        chunk="hello",
+        embedding=[1.0, 0.0],
+        metadata={"lang": "en"},
+    )
+    results = store.search([1.0, 0.0], metadata_filters={"lang": "en"})
+    assert len(results) == 1
+    assert results[0].chunk == "hello"
+
+
+def test_upsert_overwrites_metadata() -> None:
+    store = FakeVectorStore()
+    cid = _chunk_id()
+    store.upsert(
+        chunk_id=cid,
+        document_id=_doc_id(),
+        chunk="hello",
+        embedding=[1.0, 0.0],
+        metadata={"lang": "en"},
+    )
+    store.upsert(
+        chunk_id=cid,
+        document_id=_doc_id(),
+        chunk="hello",
+        embedding=[1.0, 0.0],
+        metadata={"lang": "es"},
+    )
+    results_en = store.search([1.0, 0.0], metadata_filters={"lang": "en"})
+    results_es = store.search([1.0, 0.0], metadata_filters={"lang": "es"})
+    assert len(results_en) == 0
+    assert len(results_es) == 1

@@ -25,6 +25,7 @@ class PgVectorStore(VectorStore):
         document_id: uuid.UUID,
         chunk: str,
         embedding: list[float],
+        metadata: dict[str, str] | None = None,
     ) -> None:
         """Store or update a chunk with its embedding.
 
@@ -35,12 +36,17 @@ class PgVectorStore(VectorStore):
         orm = self._db.get(DocumentChunkORM, chunk_id)
         if orm is None:
             orm = DocumentChunkORM(
-                id=chunk_id, document_id=document_id, chunk=chunk, embedding=embedding
+                id=chunk_id,
+                document_id=document_id,
+                chunk=chunk,
+                embedding=embedding,
+                metadata_=metadata or {},
             )
             self._db.add(orm)
         else:
             orm.chunk = chunk
             orm.embedding = embedding
+            orm.metadata_ = metadata or {}
 
     def search(
         self,

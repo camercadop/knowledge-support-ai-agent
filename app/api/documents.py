@@ -39,6 +39,7 @@ def ingest_document(
         title=request.title,
         source=request.source,
         content=request.content,
+        metadata=request.metadata,
     )
     logger.info("Document %s ingested successfully", document.id)
     return DocumentIngestResponse(

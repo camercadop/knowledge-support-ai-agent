@@ -9,3 +9,4 @@ class DocumentChunk:
     id: uuid.UUID
     document_id: uuid.UUID
     chunk: str
+    metadata: dict[str, str] | None = None

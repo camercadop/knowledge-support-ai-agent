@@ -9,6 +9,10 @@ class AbstractDocumentChunkRepository(ABC):
 
     @abstractmethod
     def create(
-        self, document_id: uuid.UUID, chunk: str, embedding: list[float]
+        self,
+        document_id: uuid.UUID,
+        chunk: str,
+        embedding: list[float],
+        metadata: dict[str, str] | None = None,
     ) -> DocumentChunk:
         """Persist a new document chunk with its embedding and return it."""

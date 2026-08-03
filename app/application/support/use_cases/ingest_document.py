@@ -41,6 +41,7 @@ class IngestDocument:
         title: str,
         source: str | None,
         content: str,
+        metadata: dict[str, str] | None = None,
         on_chunk: Callable[[int, int], None] | None = None,
     ) -> Document:
         """Ingest a document by persisting it, chunking, embedding, and indexing.
@@ -52,6 +53,7 @@ class IngestDocument:
             title: Human-readable title of the document.
             source: Optional origin of the document (e.g. file path, URL).
             content: Full raw text content of the document.
+            metadata: Optional key-value metadata attached to each chunk.
             on_chunk: Optional callback invoked after each chunk is embedded and
                 indexed. Receives (current, total) chunk counts, useful for
                 reporting progress to a CLI or UI.
@@ -88,6 +90,7 @@ class IngestDocument:
                     document_id=document.id,
                     chunk=chunk_text,
                     embedding=embedding,
+                    metadata=metadata,
                 )
                 if on_chunk is not None:
                     on_chunk(i, chunk_count)
@@ -99,6 +102,7 @@ class IngestDocument:
                     document_id=document.id,
                     chunk=chunk_text,
                     embedding=embedding,
+                    metadata=metadata,
                 )
 
             self._instrumentation.record_metrics(

@@ -19,7 +19,11 @@ class DocumentChunkRepository(AbstractDocumentChunkRepository):
         self._db = db
 
     def create(
-        self, document_id: uuid.UUID, chunk: str, embedding: list[float]
+        self,
+        document_id: uuid.UUID,
+        chunk: str,
+        embedding: list[float],
+        metadata: dict[str, str] | None = None,
     ) -> DocumentChunk:
         """Persist a new document chunk with its embedding and return it.
 
@@ -27,12 +31,16 @@ class DocumentChunkRepository(AbstractDocumentChunkRepository):
             document_id: UUID of the parent document.
             chunk: The text content of the chunk.
             embedding: The vector embedding for the chunk.
+            metadata: Optional key-value metadata for filtering.
 
         Returns:
             The persisted DocumentChunk.
         """
         orm = DocumentChunkORM(
-            document_id=document_id, chunk=chunk, embedding=embedding
+            document_id=document_id,
+            chunk=chunk,
+            embedding=embedding,
+            metadata_=metadata or {},
         )
         self._db.add(orm)
         self._db.flush()

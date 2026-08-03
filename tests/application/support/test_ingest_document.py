@@ -105,3 +105,27 @@ def test_record_metrics_includes_chunk_count(
     _make_use_case(uow, vector_store, instrumentation=spy).handle("Doc", None, content)
     assert spy.recorded["ingest.chunk_count"] == 2
     assert spy.recorded["ingest.total_chunks_embedded"] == 2
+
+
+def test_stores_metadata_on_chunks(
+    uow: SqlAlchemyKnowledgeUnitOfWork, vector_store: FakeVectorStore
+) -> None:
+    content = "a" * 600  # produces 2 chunks
+    _make_use_case(uow, vector_store).handle(
+        "Doc", None, content, metadata={"lang": "en", "dept": "HR"}
+    )
+    results = vector_store.search([0.0] * _DIMS, metadata_filters={"lang": "en"})
+    assert len(results) == 2
+
+
+def test_stores_metadata_on_chunks_per_chunk(
+    uow: SqlAlchemyKnowledgeUnitOfWork, vector_store: FakeVectorStore
+) -> None:
+    content = "a" * 600  # produces 2 chunks
+    _make_use_case(uow, vector_store).handle(
+        "Doc", None, content, metadata={"lang": "en"}
+    )
+    results = vector_store.search([0.0] * _DIMS, metadata_filters={"lang": "en"})
+    assert len(results) == 2
+    for result in results:
+        assert result.chunk is not None

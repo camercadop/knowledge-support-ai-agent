@@ -36,12 +36,12 @@
 - Multiple Knowledge Bases
 - Departments
 - Collections
-- Metadata
+- ✅ Metadata
 
 ### Retrieval
 
 - Hybrid Search
-- Metadata Filters
+- 🔄 Metadata Filters
 - Query Rewriting
 - Context Compression
 

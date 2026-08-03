@@ -62,3 +62,25 @@ def test_ingest_document_source_is_optional(client: TestClient) -> None:
         json={"title": "My Doc", "content": "some content"},
     )
     assert response.status_code == 200
+
+
+def test_ingest_document_metadata_is_optional(client: TestClient) -> None:
+    """POST /documents without metadata still returns 200."""
+    response = client.post(
+        "/documents",
+        json={"title": "My Doc", "content": "some content"},
+    )
+    assert response.status_code == 200
+
+
+def test_ingest_document_accepts_metadata(client: TestClient) -> None:
+    """POST /documents with metadata returns 200."""
+    response = client.post(
+        "/documents",
+        json={
+            "title": "My Doc",
+            "content": "some content",
+            "metadata": {"lang": "en", "dept": "HR"},
+        },
+    )
+    assert response.status_code == 200

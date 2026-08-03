@@ -73,6 +73,7 @@ class FakeVectorStore(VectorStore):
         document_id: uuid.UUID,
         chunk: str,
         embedding: list[float],
+        metadata: dict[str, str] | None = None,
     ) -> None:
         """Store or replace a chunk and its embedding by chunk_id.
 
@@ -81,8 +82,9 @@ class FakeVectorStore(VectorStore):
             document_id: UUID of the parent document.
             chunk: The text content of the chunk.
             embedding: The vector embedding for the chunk.
+            metadata: Optional key-value metadata for filtering.
         """
-        self._store[chunk_id] = (document_id, chunk, embedding, {})
+        self._store[chunk_id] = (document_id, chunk, embedding, metadata or {})
 
     def search(
         self,

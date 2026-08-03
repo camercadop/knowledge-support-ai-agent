@@ -40,7 +40,7 @@ Ingest a document:
 ```bash
 curl -X POST http://localhost:8000/documents \
   -H "Content-Type: application/json" \
-  -d '{"title": "My Doc", "source": "manual", "content": "Your document text here..."}'
+  -d '{"title": "My Doc", "source": "manual", "content": "Your document text here...", "metadata": {"lang": "en", "dept": "HR"}}'
 ```
 
 Or use the interactive docs at `http://localhost:8000/docs`.
@@ -228,8 +228,8 @@ sequenceDiagram
     participant VS as PgVectorStore
     participant OpenAI as OpenAI API
 
-    Client->>Router: POST /documents {title, source, content}
-    Router->>UC: handle(title, source, content)
+    Client->>Router: POST /documents {title, source, content, metadata}
+    Router->>UC: handle(title, source, content, metadata)
     UC->>UoW: documents.create(title, source, content, embedding_model_used)
     UoW->>DB: INSERT document (with embedding_model_used)
     loop for each chunk

@@ -9,6 +9,7 @@ class DocumentIngestRequest(BaseModel):
     title: str = Field(min_length=1, max_length=255)
     source: str | None = None
     content: str = Field(min_length=1)
+    metadata: dict[str, str] | None = None
 
     @field_validator("title")
     @classmethod
