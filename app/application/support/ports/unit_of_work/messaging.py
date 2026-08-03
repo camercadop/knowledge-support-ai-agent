@@ -1,5 +1,6 @@
-from abc import ABC, abstractmethod
+from abc import abstractmethod
 
+from app.application.shared.ports.unit_of_work import UnitOfWork
 from app.application.support.ports.repositories.contact import AbstractContactRepository
 from app.application.support.ports.repositories.conversation import (
     AbstractConversationRepository,
@@ -7,7 +8,7 @@ from app.application.support.ports.repositories.conversation import (
 from app.application.support.ports.repositories.message import AbstractMessageRepository
 
 
-class MessagingUnitOfWork(ABC):
+class MessagingUnitOfWork(UnitOfWork):
     """Port that defines the transactional boundary for the messaging domain.
 
     Exposes contact, conversation, and message repositories within a single
@@ -28,7 +29,3 @@ class MessagingUnitOfWork(ABC):
     @abstractmethod
     def messages(self) -> AbstractMessageRepository:
         """Return the message repository bound to the current transaction."""
-
-    @abstractmethod
-    def commit(self) -> None:
-        """Persist all changes made within the current transaction."""

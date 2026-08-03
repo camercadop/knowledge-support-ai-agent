@@ -33,9 +33,7 @@ def _to_input(messages: list[ChatMessage]) -> list[EasyInputMessageParam]:
         List of EasyInputMessageParam entries.
     """
     return [
-        EasyInputMessageParam(role=m.role.value, content=m.content)
-        for m in messages
-        if m.role.value in _ALLOWED_ROLES
+        EasyInputMessageParam(role=m.role.value, content=m.content) for m in messages
     ]
 
 

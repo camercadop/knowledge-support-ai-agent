@@ -15,14 +15,17 @@ from app.infrastructure.database.sqlalchemy.postgresql.repositories.conversation
 from app.infrastructure.database.sqlalchemy.postgresql.repositories.message import (
     MessageRepository,
 )
+from app.infrastructure.database.sqlalchemy.postgresql.unit_of_work.base import (
+    SqlAlchemyUnitOfWork,
+)
 
 
-class SqlAlchemyMessagingUnitOfWork(MessagingUnitOfWork):
+class SqlAlchemyMessagingUnitOfWork(SqlAlchemyUnitOfWork, MessagingUnitOfWork):
     """MessagingUnitOfWork backed by a SQLAlchemy session."""
 
     def __init__(self, db: Session) -> None:
         """Initialize with an active database session."""
-        self._db = db
+        super().__init__(db)
         self._contacts = ContactRepository(db)
         self._conversations = ConversationRepository(db)
         self._messages = MessageRepository(db)
@@ -41,7 +44,3 @@ class SqlAlchemyMessagingUnitOfWork(MessagingUnitOfWork):
     def messages(self) -> AbstractMessageRepository:
         """Return the message repository bound to the current session."""
         return self._messages
-
-    def commit(self) -> None:
-        """Commit the current session transaction."""
-        self._db.commit()

@@ -1,5 +1,4 @@
 import uuid
-from typing import Any
 
 from sqlalchemy.orm import Session
 
@@ -86,10 +85,7 @@ class PgVectorStore(VectorStore):
             query = query.filter(DocumentORM.knowledge_base_id.is_(None))
 
         if metadata_filters is not None:
-            filters: dict[str, Any] = metadata_filters
-            query = query.filter(
-                DocumentChunkORM.metadata_.cast(type_=None).op("@>")(filters)
-            )
+            query = query.filter(DocumentChunkORM.metadata_.op("@>")(metadata_filters))
 
         rows = query.limit(top_k).all()
         return [

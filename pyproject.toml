@@ -72,3 +72,11 @@ forbidden_modules = ["app.api"]
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests"]
+
+[tool.coverage.run]
+omit = [
+    "tests/*",
+    "app/cli/*",
+    "app/config/*",
+    "app/infrastructure/database/sqlalchemy/sqlite/*"
+]

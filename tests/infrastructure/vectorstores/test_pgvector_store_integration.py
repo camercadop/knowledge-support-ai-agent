@@ -82,3 +82,108 @@ def test_search_orders_by_score_ascending(
     results = store.search([1.0] + [0.0] * (_DIMS - 1))
     assert results[0].chunk == "near"
     assert results[1].chunk == "far"
+
+
+def test_search_top_k_limits_results(store: PgVectorStore, pg_db: Session) -> None:
+    for i in range(4):
+        _seed(pg_db, f"Doc {i}", None, f"chunk {i}")
+    results = store.search(_EMBEDDING, top_k=2)
+    assert len(results) == 2
+
+
+def test_search_min_score_excludes_distant_chunks(
+    store: PgVectorStore, pg_db: Session
+) -> None:
+    _seed(pg_db, "Near", None, "near", embedding=[1.0] + [0.0] * (_DIMS - 1))
+    _seed(pg_db, "Far", None, "far", embedding=[0.0] * (_DIMS - 1) + [1.0])
+    # cosine distance between [1,0,...] and [0,...,1] is 1.0; strict threshold excludes it
+    results = store.search([1.0] + [0.0] * (_DIMS - 1), min_score=0.5)
+    assert all(r.score <= 0.5 for r in results)
+    chunks = [r.chunk for r in results]
+    assert "near" in chunks
+    assert "far" not in chunks
+
+
+def test_search_min_score_none_returns_all_chunks(
+    store: PgVectorStore, pg_db: Session
+) -> None:
+    _seed(pg_db, "Near", None, "near", embedding=[1.0] + [0.0] * (_DIMS - 1))
+    _seed(pg_db, "Far", None, "far", embedding=[0.0] * (_DIMS - 1) + [1.0])
+    results = store.search([1.0] + [0.0] * (_DIMS - 1), min_score=None)
+    assert len(results) == 2
+
+
+def test_search_knowledge_base_id_filters_by_kb(
+    store: PgVectorStore, pg_db: Session
+) -> None:
+    kb_id = uuid.uuid4()
+    doc_in = DocumentORM(title="In KB", source=None, content="in", knowledge_base_id=kb_id)
+    doc_out = DocumentORM(title="Out KB", source=None, content="out", knowledge_base_id=None)
+    pg_db.add_all([doc_in, doc_out])
+    pg_db.flush()
+    for doc in (doc_in, doc_out):
+        pg_db.add(DocumentChunkORM(document_id=doc.id, chunk=doc.content, embedding=_EMBEDDING))
+    pg_db.flush()
+
+    results = store.search(_EMBEDDING, knowledge_base_id=kb_id)
+    assert len(results) == 1
+    assert results[0].chunk == "in"
+    assert results[0].knowledge_base_id == kb_id
+
+
+def test_search_no_knowledge_base_id_excludes_kb_docs(
+    store: PgVectorStore, pg_db: Session
+) -> None:
+    kb_id = uuid.uuid4()
+    doc_kb = DocumentORM(title="KB Doc", source=None, content="kb", knowledge_base_id=kb_id)
+    doc_none = DocumentORM(title="No KB", source=None, content="none")
+    pg_db.add_all([doc_kb, doc_none])
+    pg_db.flush()
+    for doc in (doc_kb, doc_none):
+        pg_db.add(DocumentChunkORM(document_id=doc.id, chunk=doc.content, embedding=_EMBEDDING))
+    pg_db.flush()
+
+    results = store.search(_EMBEDDING)
+    chunks = [r.chunk for r in results]
+    assert "none" in chunks
+    assert "kb" not in chunks
+
+
+def test_search_metadata_filters_returns_matching_chunks(
+    store: PgVectorStore, pg_db: Session
+) -> None:
+    doc = DocumentORM(title="Doc", source=None, content="text")
+    pg_db.add(doc)
+    pg_db.flush()
+    pg_db.add(
+        DocumentChunkORM(
+            document_id=doc.id, chunk="en chunk", embedding=_EMBEDDING, metadata_={"lang": "en"}
+        )
+    )
+    pg_db.add(
+        DocumentChunkORM(
+            document_id=doc.id, chunk="es chunk", embedding=_EMBEDDING, metadata_={"lang": "es"}
+        )
+    )
+    pg_db.flush()
+
+    results = store.search(_EMBEDDING, metadata_filters={"lang": "en"})
+    assert len(results) == 1
+    assert results[0].chunk == "en chunk"
+
+
+def test_search_metadata_filters_no_match_returns_empty(
+    store: PgVectorStore, pg_db: Session
+) -> None:
+    doc = DocumentORM(title="Doc", source=None, content="text")
+    pg_db.add(doc)
+    pg_db.flush()
+    pg_db.add(
+        DocumentChunkORM(
+            document_id=doc.id, chunk="chunk", embedding=_EMBEDDING, metadata_={"lang": "en"}
+        )
+    )
+    pg_db.flush()
+
+    results = store.search(_EMBEDDING, metadata_filters={"lang": "fr"})
+    assert results == []

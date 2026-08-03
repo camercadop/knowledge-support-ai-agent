@@ -19,14 +19,17 @@ from app.infrastructure.database.sqlalchemy.postgresql.repositories.document_chu
 from app.infrastructure.database.sqlalchemy.postgresql.repositories.knowledge_base import (  # noqa: E501
     KnowledgeBaseRepository,
 )
+from app.infrastructure.database.sqlalchemy.postgresql.unit_of_work.base import (
+    SqlAlchemyUnitOfWork,
+)
 
 
-class SqlAlchemyKnowledgeUnitOfWork(KnowledgeUnitOfWork):
+class SqlAlchemyKnowledgeUnitOfWork(SqlAlchemyUnitOfWork, KnowledgeUnitOfWork):
     """KnowledgeUnitOfWork backed by a SQLAlchemy session."""
 
     def __init__(self, db: Session) -> None:
         """Initialize with an active database session."""
-        self._db = db
+        super().__init__(db)
         self._documents = DocumentRepository(db)
         self._document_chunks = DocumentChunkRepository(db)
         self._knowledge_bases = KnowledgeBaseRepository(db)
@@ -45,7 +48,3 @@ class SqlAlchemyKnowledgeUnitOfWork(KnowledgeUnitOfWork):
     def knowledge_bases(self) -> AbstractKnowledgeBaseRepository:
         """Return the knowledge base repository bound to the current session."""
         return self._knowledge_bases
-
-    def commit(self) -> None:
-        """Commit the current session transaction."""
-        self._db.commit()

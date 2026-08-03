@@ -1,11 +1,12 @@
-from abc import ABC, abstractmethod
+from abc import abstractmethod
 
 from app.application.analytics.ports.repositories.rag_interaction_log import (
     AbstractRagInteractionLogRepository,
 )
+from app.application.shared.ports.unit_of_work import UnitOfWork
 
 
-class AnalyticsUnitOfWork(ABC):
+class AnalyticsUnitOfWork(UnitOfWork):
     """Port that defines the transactional boundary for the analytics domain.
 
     Exposes the RAG interaction log repository within a single transaction.
@@ -18,7 +19,3 @@ class AnalyticsUnitOfWork(ABC):
         """
         Return the RAG interaction log repository bound to the current transaction.
         """
-
-    @abstractmethod
-    def commit(self) -> None:
-        """Persist all changes made within the current transaction."""

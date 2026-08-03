@@ -1,15 +1,12 @@
 from collections.abc import Callable
-from typing import TypeVar
 
 from app.application.support.ports.chunk_strategy import ChunkStrategy
 from app.config.settings import settings
 
 _CHUNK_STRATEGIES: dict[str, Callable[[int, int], ChunkStrategy]] = {}
 
-_C = TypeVar("_C", bound=type[ChunkStrategy])
 
-
-def chunk_strategy(name: str) -> Callable[[_C], _C]:
+def chunk_strategy[C: type[ChunkStrategy]](name: str) -> Callable[[C], C]:
     """Class decorator that registers a ChunkStrategy implementation under a name.
 
     Apply this decorator to any ChunkStrategy subclass to make it available to
@@ -23,7 +20,7 @@ def chunk_strategy(name: str) -> Callable[[_C], _C]:
         The unmodified class, registered as a side effect.
     """
 
-    def decorator(cls: _C) -> _C:
+    def decorator(cls: C) -> C:
         _CHUNK_STRATEGIES[name] = cls
         return cls
 
