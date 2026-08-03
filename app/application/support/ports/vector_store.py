@@ -13,6 +13,7 @@ class SearchResult:
     score: float
     document_title: str
     source: str | None
+    knowledge_base_id: uuid.UUID | None = None
 
 
 class VectorStore(ABC):
@@ -46,6 +47,7 @@ class VectorStore(ABC):
         embedding: list[float],
         top_k: int = 5,
         min_score: float | None = None,
+        knowledge_base_id: uuid.UUID | None = None,
         metadata_filters: dict[str, str] | None = None,
     ) -> list[SearchResult]:
         """Return the top-k chunks closest to the given embedding.
@@ -55,6 +57,8 @@ class VectorStore(ABC):
             top_k: Maximum number of results to return.
             min_score: If set, exclude results with a score above this threshold.
                 Score is cosine distance, so lower is more similar.
+            knowledge_base_id: If set, only return chunks belonging to this
+                knowledge base (filtered via the documents table).
             metadata_filters: If set, only return chunks whose metadata contains
                 all specified key-value pairs (JSONB containment).
 

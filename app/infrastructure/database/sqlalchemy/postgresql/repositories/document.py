@@ -24,6 +24,7 @@ class DocumentRepository(AbstractDocumentRepository):
         source: str | None,
         content: str,
         embedding_model_used: str | None = None,
+        knowledge_base_id: uuid.UUID | None = None,
     ) -> Document:
         """Persist a new document and return it.
 
@@ -33,6 +34,7 @@ class DocumentRepository(AbstractDocumentRepository):
             content: Full raw text content of the document.
             embedding_model_used: Identifier of the embedding model used
                 when this document was ingested.
+            knowledge_base_id: Optional knowledge base this document belongs to.
 
         Returns:
             The persisted Document.
@@ -42,6 +44,7 @@ class DocumentRepository(AbstractDocumentRepository):
             source=source,
             content=content,
             embedding_model_used=embedding_model_used,
+            knowledge_base_id=knowledge_base_id,
         )
         self._db.add(orm)
         self._db.flush()
@@ -70,6 +73,7 @@ class DocumentRepository(AbstractDocumentRepository):
             source=orm.source,
             content=orm.content,
             embedding_model_used=orm.embedding_model_used,
+            knowledge_base_id=orm.knowledge_base_id,
         )
 
     def delete(self, document_id: uuid.UUID) -> None:
@@ -97,4 +101,5 @@ class DocumentRepository(AbstractDocumentRepository):
             source=orm.source,
             content=orm.content,
             embedding_model_used=orm.embedding_model_used,
+            knowledge_base_id=orm.knowledge_base_id,
         )

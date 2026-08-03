@@ -12,3 +12,4 @@ class Document:
     content: str
     chunk_count: int = 0
     embedding_model_used: str | None = None
+    knowledge_base_id: uuid.UUID | None = None

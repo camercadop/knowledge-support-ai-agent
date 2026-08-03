@@ -35,23 +35,29 @@ class FakeVectorStore(VectorStore):
         self._store: dict[
             uuid.UUID, tuple[uuid.UUID, str, list[float], dict[str, Any]]
         ] = {}
-        self._documents: dict[uuid.UUID, tuple[str, str | None]] = {}
+        self._documents: dict[uuid.UUID, tuple[str, str | None, uuid.UUID | None]] = {}
 
     def add_document(
-        self, document_id: uuid.UUID, title: str, source: str | None = None
+        self,
+        document_id: uuid.UUID,
+        title: str,
+        source: str | None = None,
+        knowledge_base_id: uuid.UUID | None = None,
     ) -> None:
         """Register document metadata for lookup during search.
 
         This is a test-only helper that mirrors the documents table in
         PgVectorStore. Call this before upserting chunks that belong to
-        the document so search() can populate title and source on results.
+        the document so search() can populate title, source, and
+        knowledge_base_id on results.
 
         Args:
             document_id: UUID of the document.
             title: Human-readable title of the document.
             source: Optional origin of the document (e.g. file path, URL).
+            knowledge_base_id: Optional knowledge base this document belongs to.
         """
-        self._documents[document_id] = (title, source)
+        self._documents[document_id] = (title, source, knowledge_base_id)
 
     def set_metadata(self, chunk_id: uuid.UUID, metadata: dict[str, Any]) -> None:
         """Attach metadata to an already-upserted chunk.
@@ -91,16 +97,21 @@ class FakeVectorStore(VectorStore):
         embedding: list[float],
         top_k: int = 5,
         min_score: float | None = None,
+        knowledge_base_id: uuid.UUID | None = None,
         metadata_filters: dict[str, str] | None = None,
     ) -> list[SearchResult]:
         """Return the top-k chunks closest to the given embedding by cosine distance.
 
-        Applies optional min_score and metadata_filters in memory.
+        Applies optional min_score, knowledge_base_id, and metadata_filters
+        in memory.
 
         Args:
             embedding: Query vector to search against.
             top_k: Maximum number of results to return.
             min_score: If set, exclude results with a score above this threshold.
+            knowledge_base_id: If set, only return chunks whose document
+                belongs to this knowledge base. When None, only chunks
+                whose document has no knowledge base are returned.
             metadata_filters: If set, only return chunks whose metadata contains
                 all specified key-value pairs.
 
@@ -113,8 +124,9 @@ class FakeVectorStore(VectorStore):
                 document_id=document_id,
                 chunk=chunk,
                 score=_cosine_distance(embedding, stored_embedding),
-                document_title=self._documents.get(document_id, ("", None))[0],
-                source=self._documents.get(document_id, ("", None))[1],
+                document_title=self._documents.get(document_id, ("", None, None))[0],
+                source=self._documents.get(document_id, ("", None, None))[1],
+                knowledge_base_id=self._documents.get(document_id, ("", None, None))[2],
             )
             for chunk_id, (
                 document_id,
@@ -125,6 +137,17 @@ class FakeVectorStore(VectorStore):
             if (
                 min_score is None
                 or _cosine_distance(embedding, stored_embedding) <= min_score
+            )
+            and (
+                (
+                    knowledge_base_id is None
+                    and self._documents.get(document_id, ("", None, None))[2] is None
+                )
+                or (
+                    knowledge_base_id is not None
+                    and self._documents.get(document_id, ("", None, None))[2]
+                    == knowledge_base_id
+                )
             )
             and (
                 metadata_filters is None

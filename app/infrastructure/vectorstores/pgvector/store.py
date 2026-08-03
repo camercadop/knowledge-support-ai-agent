@@ -53,13 +53,14 @@ class PgVectorStore(VectorStore):
         embedding: list[float],
         top_k: int = 5,
         min_score: float | None = None,
+        knowledge_base_id: uuid.UUID | None = None,
         metadata_filters: dict[str, str] | None = None,
     ) -> list[SearchResult]:
         """Return the top-k chunks closest to the given embedding by cosine distance.
 
-        Applies an optional maximum distance filter (min_score) and optional
-        JSONB containment filter on metadata. Results are ordered from most to
-        least similar.
+        Applies an optional maximum distance filter (min_score), optional
+        knowledge base filter, and optional JSONB containment filter on metadata.
+        Results are ordered from most to least similar.
         """
         distance = DocumentChunkORM.embedding.cosine_distance(embedding).label(
             "distance"
@@ -69,6 +70,7 @@ class PgVectorStore(VectorStore):
                 DocumentChunkORM,
                 DocumentORM.title,
                 DocumentORM.source,
+                DocumentORM.knowledge_base_id,
                 distance,
             )
             .join(DocumentORM, DocumentChunkORM.document_id == DocumentORM.id)
@@ -77,6 +79,11 @@ class PgVectorStore(VectorStore):
 
         if min_score is not None:
             query = query.filter(distance <= min_score)
+
+        if knowledge_base_id is not None:
+            query = query.filter(DocumentORM.knowledge_base_id == knowledge_base_id)
+        else:
+            query = query.filter(DocumentORM.knowledge_base_id.is_(None))
 
         if metadata_filters is not None:
             filters: dict[str, Any] = metadata_filters
@@ -93,6 +100,7 @@ class PgVectorStore(VectorStore):
                 score=float(dist),
                 document_title=title,
                 source=source,
+                knowledge_base_id=kb_id,
             )
-            for row, title, source, dist in rows
+            for row, title, source, kb_id, dist in rows
         ]

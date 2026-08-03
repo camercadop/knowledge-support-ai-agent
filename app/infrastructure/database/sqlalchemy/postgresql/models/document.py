@@ -1,3 +1,4 @@
+import uuid
 from typing import TYPE_CHECKING
 
 from sqlalchemy import Text, UniqueConstraint
@@ -34,6 +35,10 @@ class Document(Base):
     )
     embedding_model_used: Mapped[str | None] = mapped_column(
         # Identifier of the embedding model used when this document was ingested
+        nullable=True,
+    )
+    knowledge_base_id: Mapped[uuid.UUID | None] = mapped_column(
+        # Optional knowledge base this document belongs to
         nullable=True,
     )
 

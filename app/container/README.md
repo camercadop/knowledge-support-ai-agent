@@ -30,3 +30,12 @@ class SupportContainer(BaseContainer):
 
 1. Create `app/container/<domain>.py` with a class inheriting `BaseContainer`.
 2. Add the domain container as an attribute on `ApplicationContainer` in `__init__.py`.
+
+## CRUD use cases
+
+For entities backed by a `CRUDUseCase`, expose a single method returning the use case instance. Route handlers call the appropriate method on the returned object:
+
+```python
+def knowledge_base_crud(self, db: Session) -> KnowledgeBaseCRUD:
+    return KnowledgeBaseCRUD(uow=SqlAlchemyKnowledgeUnitOfWork(db))
+```

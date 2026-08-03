@@ -10,6 +10,7 @@ class DocumentIngestRequest(BaseModel):
     source: str | None = None
     content: str = Field(min_length=1)
     metadata: dict[str, str] | None = None
+    knowledge_base_id: uuid.UUID | None = None
 
     @field_validator("title")
     @classmethod
@@ -24,3 +25,4 @@ class DocumentIngestResponse(BaseModel):
     id: uuid.UUID
     title: str
     source: str | None
+    knowledge_base_id: uuid.UUID | None = None

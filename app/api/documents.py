@@ -40,8 +40,12 @@ def ingest_document(
         source=request.source,
         content=request.content,
         metadata=request.metadata,
+        knowledge_base_id=request.knowledge_base_id,
     )
     logger.info("Document %s ingested successfully", document.id)
     return DocumentIngestResponse(
-        id=document.id, title=document.title, source=document.source
+        id=document.id,
+        title=document.title,
+        source=document.source,
+        knowledge_base_id=document.knowledge_base_id,
     )

@@ -1,3 +1,5 @@
+import uuid
+
 import pytest
 from sqlalchemy.orm import Session
 
@@ -129,3 +131,26 @@ def test_stores_metadata_on_chunks_per_chunk(
     assert len(results) == 2
     for result in results:
         assert result.chunk is not None
+
+
+def test_ingest_with_knowledge_base_id(
+    uow: SqlAlchemyKnowledgeUnitOfWork, vector_store: FakeVectorStore
+) -> None:
+    kb_id = uuid.uuid4()
+    doc = _make_use_case(uow, vector_store).handle(
+        "Doc", None, "some content", knowledge_base_id=kb_id
+    )
+    assert doc.knowledge_base_id == kb_id
+    persisted = uow.documents.get_by_id(doc.id)
+    assert persisted is not None
+    assert persisted.knowledge_base_id == kb_id
+
+
+def test_ingest_without_knowledge_base_id(
+    uow: SqlAlchemyKnowledgeUnitOfWork, vector_store: FakeVectorStore
+) -> None:
+    doc = _make_use_case(uow, vector_store).handle("Doc", None, "some content")
+    assert doc.knowledge_base_id is None
+    persisted = uow.documents.get_by_id(doc.id)
+    assert persisted is not None
+    assert persisted.knowledge_base_id is None

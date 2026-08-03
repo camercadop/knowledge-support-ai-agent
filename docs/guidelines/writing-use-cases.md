@@ -62,6 +62,37 @@ self._uow.commit()
 # wrong — do not inject repositories directly into the use case
 ```
 
+## CRUD Use Cases
+
+For entities that require standard CRUD operations, extend `CRUDUseCase` from
+`app/application/shared/use_cases/crud.py` instead of writing a plain use case class.
+
+`CRUDUseCase[M]` provides default implementations of `list`, `get_by_id`, `update`,
+and `delete`. Subclasses implement `_get_repository` and `create`:
+
+```python
+from app.application.shared.use_cases.crud import CRUDUseCase
+from app.application.support.models.my_model import MyModel
+
+
+class MyModelCRUD(CRUDUseCase[MyModel]):
+    """CRUD use case for MyModel."""
+
+    def _get_repository(self) -> Repository[MyModel]:
+        """Return the repository bound to the current transaction."""
+        return self._uow.my_models
+
+    def create(self, name: str, description: str | None = None) -> MyModel:
+        """Create a new MyModel entity."""
+        entity = self._repository.create(name=name, description=description)
+        self._commit()
+        return entity
+```
+
+Use `CRUDUseCase` when the entity needs all five standard operations. Write a plain
+use case class when the operation has domain-specific logic that doesn't fit the
+CRUD pattern.
+
 ## Rules
 
 - One class per use case, named after the action (e.g. `AnswerQuestion`, `CreateDocument`).

@@ -1,4 +1,5 @@
 import logging
+import uuid
 from collections.abc import Callable
 
 from app.application.support.models.document import Document
@@ -42,6 +43,7 @@ class IngestDocument:
         source: str | None,
         content: str,
         metadata: dict[str, str] | None = None,
+        knowledge_base_id: uuid.UUID | None = None,
         on_chunk: Callable[[int, int], None] | None = None,
     ) -> Document:
         """Ingest a document by persisting it, chunking, embedding, and indexing.
@@ -54,6 +56,7 @@ class IngestDocument:
             source: Optional origin of the document (e.g. file path, URL).
             content: Full raw text content of the document.
             metadata: Optional key-value metadata attached to each chunk.
+            knowledge_base_id: Optional knowledge base this document belongs to.
             on_chunk: Optional callback invoked after each chunk is embedded and
                 indexed. Receives (current, total) chunk counts, useful for
                 reporting progress to a CLI or UI.
@@ -73,6 +76,7 @@ class IngestDocument:
                 source=source,
                 content=content,
                 embedding_model_used=self._embedding_model.model_name,
+                knowledge_base_id=knowledge_base_id,
             )
             logger.info("Persisted document id=%s", document.id)
 
@@ -121,4 +125,5 @@ class IngestDocument:
                 content=document.content,
                 chunk_count=chunk_count,
                 embedding_model_used=self._embedding_model.model_name,
+                knowledge_base_id=knowledge_base_id,
             )

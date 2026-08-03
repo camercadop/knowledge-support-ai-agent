@@ -80,20 +80,21 @@ class TokenLimitPolicy(MessageRetentionPolicy):
         protected_message_count = self._get_protected_message_count(messages)
         protected_start_index = len(messages) - protected_message_count
 
-        kept_messages = messages[:protected_start_index]
-        kept_tokens = self._calculate_total_tokens(kept_messages)
+        protected_tokens = self._calculate_total_tokens(
+            messages[protected_start_index:]
+        )
+        budget = self.max_tokens - protected_tokens
+        kept_tokens = 0
 
-        for i in range(len(kept_messages) - 1, -1, -1):
-            message = messages[i]
+        kept: list[ChatMessage] = []
+        for message in reversed(messages[:protected_start_index]):
             message_tokens = len(encoding.encode(message.content))
-
-            if kept_tokens + message_tokens > self.max_tokens:
+            if kept_tokens + message_tokens > budget:
                 break
-
-            kept_messages = messages[: i + 1]
+            kept.insert(0, message)
             kept_tokens += message_tokens
 
-        return kept_messages + messages[protected_start_index:]
+        return kept + messages[protected_start_index:]
 
     def _get_protected_message_count(self, messages: list[ChatMessage]) -> int:
         """

@@ -1,4 +1,5 @@
 import uuid
+import uuid
 from collections.abc import Generator
 from unittest.mock import MagicMock, patch
 
@@ -11,7 +12,12 @@ from app.main import app
 
 _DOCUMENT_ID = uuid.uuid4()
 _MOCK_DOCUMENT = Document(
-    id=_DOCUMENT_ID, title="My Doc", source="manual", content="...", embedding_model_used="text-embedding-3-small"
+    id=_DOCUMENT_ID,
+    title="My Doc",
+    source="manual",
+    content="...",
+    embedding_model_used="text-embedding-3-small",
+    knowledge_base_id=None,
 )
 _MOCK_USE_CASE = MagicMock()
 _MOCK_USE_CASE.handle.return_value = _MOCK_DOCUMENT
@@ -47,6 +53,39 @@ def test_ingest_document_missing_content_returns_422(client: TestClient) -> None
     """POST /documents without content returns 422."""
     response = client.post("/documents", json={"title": "My Doc"})
     assert response.status_code == 422
+
+
+def test_ingest_document_with_knowledge_base_id(
+    client: TestClient,
+) -> None:
+    """POST /documents with knowledge_base_id returns it in response."""
+    kb_id = str(uuid.uuid4())
+    mock_doc = Document(
+        id=uuid.uuid4(),
+        title="My Doc",
+        source="manual",
+        content="some content",
+        embedding_model_used="text-embedding-3-small",
+        knowledge_base_id=uuid.UUID(kb_id),
+    )
+    mock_use_case = MagicMock()
+    mock_use_case.handle.return_value = mock_doc
+    with patch(
+        "app.container.support.SupportContainer.ingest_document",
+        return_value=mock_use_case,
+    ):
+        response = client.post(
+            "/documents",
+            json={
+                "title": "My Doc",
+                "source": "manual",
+                "content": "some content",
+                "knowledge_base_id": kb_id,
+            },
+        )
+        assert response.status_code == 200
+        body = response.json()
+        assert body["knowledge_base_id"] == kb_id
 
 
 def test_ingest_document_missing_title_returns_422(client: TestClient) -> None:

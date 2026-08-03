@@ -18,6 +18,7 @@ from app.application.support.services.history_optimizer import (
 from app.application.support.use_cases.answer_question import AnswerQuestion
 from app.application.support.use_cases.clear_history import ClearHistory
 from app.application.support.use_cases.ingest_document import IngestDocument
+from app.application.support.use_cases.knowledge_base import KnowledgeBaseCRUD
 from app.config.settings import settings
 from app.container.base import BaseContainer
 from app.infrastructure.ai.chat.openai import OpenAIChatModel
@@ -182,3 +183,14 @@ class SupportContainer(BaseContainer):
             chunk_strategy=self._chunk_strategy,
             instrumentation=self._instrumentation(INGEST_DOCUMENT_INSTRUMENTATION),
         )
+
+    def knowledge_base_crud(self, db: Session) -> KnowledgeBaseCRUD:
+        """Build a fresh KnowledgeBaseCRUD use case bound to the given session.
+
+        Args:
+            db: Active database session for this request.
+
+        Returns:
+            A fully wired KnowledgeBaseCRUD instance.
+        """
+        return KnowledgeBaseCRUD(uow=SqlAlchemyKnowledgeUnitOfWork(db))

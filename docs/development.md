@@ -40,7 +40,21 @@ Ingest a document:
 ```bash
 curl -X POST http://localhost:8000/documents \
   -H "Content-Type: application/json" \
-  -d '{"title": "My Doc", "source": "manual", "content": "Your document text here...", "metadata": {"lang": "en", "dept": "HR"}}'
+  -d '{"title": "My Doc", "source": "manual", "content": "Your document text here...", "metadata": {"lang": "en", "dept": "HR"}, "knowledge_base_id": "00000000-0000-0000-0000-000000000000"}'
+```
+
+Create a knowledge base:
+
+```bash
+curl -X POST http://localhost:8000/knowledge-bases \
+  -H "Content-Type: application/json" \
+  -d '{"name": "HR Policies", "description": "Human resources policies and procedures"}'
+```
+
+List knowledge bases:
+
+```bash
+curl -X GET http://localhost:8000/knowledge-bases
 ```
 
 Or use the interactive docs at `http://localhost:8000/docs`.

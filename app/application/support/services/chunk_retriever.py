@@ -1,4 +1,5 @@
 import logging
+import uuid
 from dataclasses import dataclass
 
 import tiktoken
@@ -75,6 +76,7 @@ class ChunkRetriever:
     def retrieve(
         self,
         embedding: list[float],
+        knowledge_base_id: uuid.UUID | None = None,
         metadata_filters: dict[str, str] | None = None,
     ) -> RetrievalResult:
         """Search the vector store and return context and chunk metadata.
@@ -84,6 +86,8 @@ class ChunkRetriever:
 
         Args:
             embedding: Query vector to search against.
+            knowledge_base_id: If set, only return chunks belonging to this
+                knowledge base.
             metadata_filters: Optional key-value pairs for JSONB containment filtering.
 
         Returns:
@@ -94,6 +98,7 @@ class ChunkRetriever:
             embedding,
             top_k=self._top_k,
             min_score=self._min_score,
+            knowledge_base_id=knowledge_base_id,
             metadata_filters=metadata_filters,
         )
         logger.debug("Vector search returned %d results", len(results))

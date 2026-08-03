@@ -86,6 +86,10 @@ sequenceDiagram
     UC->>UoW: commit()
 ```
 
+### KnowledgeBaseCRUD
+
+Provides standard CRUD operations for knowledge bases: create, list, get by id, update, and delete.
+
 ### ClearHistory
 
 Deletes all messages for the conversation associated with a phone number.

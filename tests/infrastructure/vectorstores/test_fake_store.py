@@ -113,6 +113,75 @@ def test_search_filters_by_metadata() -> None:
     assert results[0].chunk == "match"
 
 
+def test_search_filters_by_knowledge_base_id() -> None:
+    store = FakeVectorStore()
+    kb_id = uuid.uuid4()
+    doc_id = _doc_id()
+    store.add_document(doc_id, "KB Doc", knowledge_base_id=kb_id)
+    cid = _chunk_id()
+    store.upsert(chunk_id=cid, document_id=doc_id, chunk="hello", embedding=[1.0, 0.0])
+    results = store.search([1.0, 0.0], knowledge_base_id=kb_id)
+    assert len(results) == 1
+    assert results[0].chunk == "hello"
+
+
+def test_search_excludes_wrong_knowledge_base_id() -> None:
+    store = FakeVectorStore()
+    kb_id = uuid.uuid4()
+    other_kb_id = uuid.uuid4()
+    doc_id = _doc_id()
+    store.add_document(doc_id, "KB Doc", knowledge_base_id=kb_id)
+    cid = _chunk_id()
+    store.upsert(chunk_id=cid, document_id=doc_id, chunk="hello", embedding=[1.0, 0.0])
+    results = store.search([1.0, 0.0], knowledge_base_id=other_kb_id)
+    assert len(results) == 0
+
+
+def test_search_returns_empty_when_knowledge_base_id_is_none_and_doc_has_kb() -> None:
+    store = FakeVectorStore()
+    kb_id = uuid.uuid4()
+    doc_id = _doc_id()
+    store.add_document(doc_id, "KB Doc", knowledge_base_id=kb_id)
+    cid = _chunk_id()
+    store.upsert(chunk_id=cid, document_id=doc_id, chunk="hello", embedding=[1.0, 0.0])
+    results = store.search([1.0, 0.0], knowledge_base_id=None)
+    assert len(results) == 0
+
+
+def test_search_returns_chunks_when_knowledge_base_id_is_none_and_doc_has_no_kb() -> None:
+    store = FakeVectorStore()
+    doc_id = _doc_id()
+    store.add_document(doc_id, "No KB Doc")
+    cid = _chunk_id()
+    store.upsert(chunk_id=cid, document_id=doc_id, chunk="hello", embedding=[1.0, 0.0])
+    results = store.search([1.0, 0.0], knowledge_base_id=None)
+    assert len(results) == 1
+    assert results[0].chunk == "hello"
+
+
+def test_search_returns_knowledge_base_id_in_result() -> None:
+    store = FakeVectorStore()
+    kb_id = uuid.uuid4()
+    doc_id = _doc_id()
+    store.add_document(doc_id, "KB Doc", knowledge_base_id=kb_id)
+    cid = _chunk_id()
+    store.upsert(chunk_id=cid, document_id=doc_id, chunk="hello", embedding=[1.0, 0.0])
+    results = store.search([1.0, 0.0], knowledge_base_id=kb_id)
+    assert len(results) == 1
+    assert results[0].knowledge_base_id == kb_id
+
+
+def test_search_returns_none_knowledge_base_id_when_doc_has_no_kb() -> None:
+    store = FakeVectorStore()
+    doc_id = _doc_id()
+    store.add_document(doc_id, "No KB Doc")
+    cid = _chunk_id()
+    store.upsert(chunk_id=cid, document_id=doc_id, chunk="hello", embedding=[1.0, 0.0])
+    results = store.search([1.0, 0.0])
+    assert len(results) == 1
+    assert results[0].knowledge_base_id is None
+
+
 # --- document metadata ---
 
 

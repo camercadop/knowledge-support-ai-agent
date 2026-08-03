@@ -42,6 +42,35 @@ from app.api.my_domain import router as my_domain_router
 app.include_router(my_domain_router)
 ```
 
+## CRUD Endpoints
+
+For resources that expose standard CRUD operations, use the `CRUDRouter` factory
+from `app/api/crud.py` instead of writing individual route handlers.
+
+`CRUDRouter` wires `POST`, `GET` (list), `GET` (by id), `PATCH`, and `DELETE`
+endpoints from a single call:
+
+```python
+from app.infrastructure.routers.crud import CRUDRouter
+
+router = CRUDRouter(
+    prefix="/my-resources",
+    response_model=MyResponse,
+    get_use_case=lambda req, db: get_container(req).my_crud(db),
+    to_response=lambda entity: MyResponse(id=entity.id, name=entity.name),
+    create_schema=MyCreateRequest,
+    update_schema=MyUpdateRequest,
+)
+```
+
+The `create_schema` and `update_schema` field names must match the use case's
+`create()` and `update()` parameter names respectively, as they are forwarded
+via `model_dump()`.
+
+Use `CRUDRouter` when the resource maps directly to a `CRUDUseCase`. Write
+individual route handlers when the endpoint has domain-specific logic, custom
+status codes, or a non-standard request/response shape.
+
 ## Rules
 
 - One file per domain, named after the domain (e.g. `chat.py`, `documents.py`).

@@ -38,6 +38,7 @@ dev = [
     "ruff>=0.6.0",
     "pre-commit>=4.6.0",
     "import-linter>=2.0",
+    "pytest-cov>=7.1.0",
 ]
 
 [tool.ruff]
@@ -46,7 +47,7 @@ line-length = 88
 exclude = ["**/sqlalchemy/migrations/", "tests/"]
 
 [tool.ruff.lint]
-select = ["E", "F", "I", "UP"]
+select = ["E", "F", "I", "UP", "W292"]
 
 [tool.mypy]
 python_version = "3.14"

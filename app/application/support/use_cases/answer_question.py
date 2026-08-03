@@ -1,4 +1,5 @@
 import logging
+import uuid
 from dataclasses import dataclass
 
 from app.application.shared.events.event_publisher import EventPublisher
@@ -73,7 +74,12 @@ class AnswerQuestion:
         self._tool_registry = tool_registry
         self._instrumentation = instrumentation
 
-    def handle(self, phone: str, user_message: str) -> AnswerResult:
+    def handle(
+        self,
+        phone: str,
+        user_message: str,
+        knowledge_base_id: uuid.UUID | None = None,
+    ) -> AnswerResult:
         """Process a user message and return the assistant reply with chunk metadata.
 
         Embeds the user query, retrieves relevant knowledge chunks, finds or
@@ -84,13 +90,14 @@ class AnswerQuestion:
         Args:
             phone: The user's phone number, used to identify the contact.
             user_message: The raw message text sent by the user.
+            knowledge_base_id: Optional knowledge base to scope retrieval to.
 
         Returns:
             AnswerResult with the assistant reply and retrieved chunk metadata.
         """
         with self._instrumentation.root_span("answer_question.handle"):
             embedding = self._embed(user_message)
-            retrieval = self._retrieve(embedding)
+            retrieval = self._retrieve(embedding, knowledge_base_id=knowledge_base_id)
 
             contact = self._uow.contacts.get_or_create_by_phone(phone)
             conversation = self._uow.conversations.get_or_create_for_contact(contact.id)
@@ -144,17 +151,25 @@ class AnswerQuestion:
         with self._instrumentation.span("embedding.embed"):
             return self._embedding_model.embed(user_message)
 
-    def _retrieve(self, embedding: list[float]) -> RetrievalResult:
+    def _retrieve(
+        self,
+        embedding: list[float],
+        knowledge_base_id: uuid.UUID | None = None,
+    ) -> RetrievalResult:
         """Retrieve relevant chunks and record retrieval latency.
 
         Args:
             embedding: Query vector to search against.
+            knowledge_base_id: If set, only return chunks belonging to this
+                knowledge base.
 
         Returns:
             RetrievalResult with context string and matched chunks.
         """
         with self._instrumentation.span("retrieval.retrieve"):
-            return self._retrieval_service.retrieve(embedding)
+            return self._retrieval_service.retrieve(
+                embedding, knowledge_base_id=knowledge_base_id
+            )
 
     def _generate(
         self, messages: list[ChatMessage], retrieval: RetrievalResult

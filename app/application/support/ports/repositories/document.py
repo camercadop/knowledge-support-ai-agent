@@ -14,6 +14,7 @@ class AbstractDocumentRepository(ABC):
         source: str | None,
         content: str,
         embedding_model_used: str | None = None,
+        knowledge_base_id: uuid.UUID | None = None,
     ) -> Document:
         """Persist a new document and return it."""
 

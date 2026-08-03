@@ -18,7 +18,9 @@ database/
             engine.py     # In-memory SQLite engine and get_db dependency for tests
 ```
 
-## sqlalchemy/postgresql
+## sqlalchemy/postgresql/repositories
+
+All concrete repositories extend `SqlAlchemyRepository[OrmT, DomainT]` from `repositories/base.py`. The base class provides session wiring, UUID generation, and default implementations of `get_by_id`, `list`, `update`, and `delete`. Subclasses declare `_orm_class` once and implement `_to_domain` to map ORM rows to domain models.
 
 `get_db` is a FastAPI dependency that opens a session, yields it to the handler, and closes it when the request is done regardless of outcome.
 
