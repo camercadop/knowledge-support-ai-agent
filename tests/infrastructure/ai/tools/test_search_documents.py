@@ -6,6 +6,36 @@ from app.application.support.ports.vector_store import SearchResult, VectorStore
 from app.infrastructure.ai.tools.search_documents import SearchDocumentsTool
 
 
+class RecordingEmbeddingModel(EmbeddingModel):
+    """Embedding model stub that records the text it receives."""
+
+    def __init__(self, vector: list[float]) -> None:
+        """Initialize with the vector to return on every embed call.
+
+        Args:
+            vector: The fixed embedding vector to return.
+        """
+        self._vector = vector
+        self.last_text: str | None = None
+
+    @property
+    def model_name(self) -> str:
+        """Return a fixed model name."""
+        return "recording"
+
+    def embed(self, text: str) -> list[float]:
+        """Record the text and return the fixed vector.
+
+        Args:
+            text: The text that was passed to embed.
+
+        Returns:
+            The fixed embedding vector.
+        """
+        self.last_text = text
+        return self._vector
+
+
 class StubEmbeddingModel(EmbeddingModel):
     """Embedding model stub that returns a fixed vector."""
 
@@ -125,3 +155,49 @@ def test_call_passes_embedded_query_to_vector_store() -> None:
     tool, store = _make_tool([])
     tool({"query": "find me"})
     assert store.last_embedding == [1.0, 0.0]
+
+
+def test_sanitize_strips_whitespace() -> None:
+    vector = [1.0, 0.0]
+    embed_model = RecordingEmbeddingModel(vector)
+    store = StubVectorStore([])
+    tool = SearchDocumentsTool(embedding_model=embed_model, vector_store=store)
+    tool({"query": "  hello world  "})
+    assert embed_model.last_text == "hello world"
+
+
+def test_sanitize_removes_newlines() -> None:
+    vector = [1.0, 0.0]
+    embed_model = RecordingEmbeddingModel(vector)
+    store = StubVectorStore([])
+    tool = SearchDocumentsTool(embedding_model=embed_model, vector_store=store)
+    tool({"query": "hello\nworld"})
+    assert embed_model.last_text == "helloworld"
+
+
+def test_sanitize_removes_null_bytes() -> None:
+    vector = [1.0, 0.0]
+    embed_model = RecordingEmbeddingModel(vector)
+    store = StubVectorStore([])
+    tool = SearchDocumentsTool(embedding_model=embed_model, vector_store=store)
+    tool({"query": "hello\x00world"})
+    assert embed_model.last_text == "helloworld"
+
+
+def test_sanitize_removes_control_characters() -> None:
+    vector = [1.0, 0.0]
+    embed_model = RecordingEmbeddingModel(vector)
+    store = StubVectorStore([])
+    tool = SearchDocumentsTool(embedding_model=embed_model, vector_store=store)
+    tool({"query": "hello\x01world"})
+    assert embed_model.last_text == "helloworld"
+
+
+def test_sanitize_truncates_long_query() -> None:
+    vector = [1.0, 0.0]
+    embed_model = RecordingEmbeddingModel(vector)
+    store = StubVectorStore([])
+    tool = SearchDocumentsTool(embedding_model=embed_model, vector_store=store)
+    long_query = "x" * 1200
+    tool({"query": long_query})
+    assert len(embed_model.last_text) == 1000

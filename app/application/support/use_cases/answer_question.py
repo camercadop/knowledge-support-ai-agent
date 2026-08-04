@@ -3,6 +3,7 @@ import uuid
 from dataclasses import dataclass
 
 from app.application.shared.events.event_publisher import EventPublisher
+from app.application.shared.security.logger import log_security_event
 from app.application.support.events.question_answered import QuestionAnswered
 from app.application.support.exceptions.message_rejected import MessageRejected
 from app.application.support.ports.chat_model import (
@@ -26,7 +27,6 @@ from app.application.support.services.history_optimizer import (
     ConversationHistoryOptimizer,
 )
 from app.config.settings import settings
-from app.infrastructure.security.logger import log_security_event
 
 logger = logging.getLogger(__name__)
 

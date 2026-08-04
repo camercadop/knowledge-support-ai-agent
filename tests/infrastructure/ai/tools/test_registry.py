@@ -1,7 +1,9 @@
+import time
+
 import pytest
 from sqlalchemy.orm import Session
 
-from app.application.support.ports.tool_registry import ToolDefinition
+from app.application.support.ports.tool_registry import ToolDefinition, ToolParameter
 from app.infrastructure.ai.tools.registry import (
     ConcreteToolRegistry,
     _validate_dependencies,
@@ -44,6 +46,63 @@ def test_register_raises_on_duplicate_tool_name() -> None:
     registry.register(definition, lambda _: "first")
     with pytest.raises(ValueError, match="my_tool"):
         registry.register(definition, lambda _: "second")
+
+
+def test_execute_raises_value_error_for_missing_required_param() -> None:
+    registry = ConcreteToolRegistry()
+    registry.register(
+        ToolDefinition(
+            name="my_tool",
+            description="",
+            parameters=[ToolParameter(name="query", type="string", description="", required=True)],
+        ),
+        lambda _: "result",
+    )
+    with pytest.raises(ValueError, match="missing required parameter"):
+        registry.execute("my_tool", {})
+
+
+def test_execute_raises_value_error_for_unexpected_param() -> None:
+    registry = ConcreteToolRegistry()
+    registry.register(
+        ToolDefinition(
+            name="my_tool",
+            description="",
+            parameters=[ToolParameter(name="query", type="string", description="", required=True)],
+        ),
+        lambda _: "result",
+    )
+    with pytest.raises(ValueError, match="unexpected parameter"):
+        registry.execute("my_tool", {"query": "test", "extra": "bad"})
+
+
+def test_execute_raises_value_error_for_wrong_type() -> None:
+    registry = ConcreteToolRegistry()
+    registry.register(
+        ToolDefinition(
+            name="my_tool",
+            description="",
+            parameters=[ToolParameter(name="count", type="integer", description="", required=True)],
+        ),
+        lambda _: "result",
+    )
+    with pytest.raises(ValueError, match="expected type"):
+        registry.execute("my_tool", {"count": "not_an_int"})
+
+
+def test_execute_returns_timeout_message_when_tool_exceeds_timeout() -> None:
+    registry = ConcreteToolRegistry(timeout=0.1)
+
+    def slow_tool(_arguments) -> str:
+        time.sleep(1)
+        return "slow result"
+
+    registry.register(
+        ToolDefinition(name="slow_tool", description="", parameters=[]),
+        slow_tool,
+    )
+    result = registry.execute("slow_tool", {})
+    assert result == "Tool execution timed out."
 
 
 # --- build_tool_registry ---

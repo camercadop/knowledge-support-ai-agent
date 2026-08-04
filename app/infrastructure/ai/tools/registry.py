@@ -1,3 +1,4 @@
+import concurrent.futures
 import importlib
 import logging
 import pkgutil
@@ -26,10 +27,23 @@ class ConcreteToolRegistry(ToolRegistry):
     injected into the chat model.
     """
 
-    def __init__(self) -> None:
-        """Initialize with empty tool and definition stores."""
+    TYPE_MAP: dict[str, type] = {
+        "string": str,
+        "integer": int,
+        "boolean": bool,
+        "number": float,
+    }
+
+    def __init__(self, timeout: float = 30.0) -> None:
+        """Initialize with empty tool and definition stores.
+
+        Args:
+            timeout: Maximum seconds to wait for a tool execution
+                before returning a timeout message.
+        """
         self._tools: dict[str, Callable[[dict[str, Any]], str]] = {}
         self._definitions: dict[str, ToolDefinition] = {}
+        self._timeout = timeout
 
     def register(
         self,
@@ -69,12 +83,73 @@ class ConcreteToolRegistry(ToolRegistry):
 
         Returns:
             The tool result as a plain string.
+            If the tool execution exceeds the configured timeout, returns
+            a fixed timeout message.
 
         Raises:
             KeyError: If no tool with the given name is registered.
+            ValueError: If argument validation fails (missing required params,
+                unexpected params, or type mismatches).
         """
         logger.info("Executing tool: %s", name)
-        return self._tools[name](arguments)
+        definition = self._definitions[name]
+        self._validate_arguments(name, definition, arguments)
+        with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
+            future = executor.submit(self._tools[name], arguments)
+            try:
+                return future.result(timeout=self._timeout)
+            except concurrent.futures.TimeoutError:
+                logger.warning(
+                    "Tool '%s' execution timed out after %.1fs", name, self._timeout
+                )
+                return "Tool execution timed out."
+
+    def _validate_arguments(
+        self,
+        tool_name: str,
+        definition: ToolDefinition,
+        arguments: dict[str, Any],
+    ) -> None:
+        """Validate that arguments match the tool's declared parameter schema.
+
+        Checks that all required parameters are present, no unexpected
+        parameters are included, and each argument's value matches the
+        declared type.
+
+        Args:
+            tool_name: Name of the tool being validated, used in error messages.
+            definition: The tool's parameter definitions.
+            arguments: The arguments dict supplied by the LLM.
+
+        Raises:
+            ValueError: On missing required params, unexpected params,
+            or type mismatches.
+        """
+        param_names = {p.name for p in definition.parameters}
+
+        for param in definition.parameters:
+            if param.required and param.name not in arguments:
+                raise ValueError(
+                    f"Tool '{tool_name}' is missing required parameter '{param.name}'."
+                )
+
+        for key in arguments:
+            if key not in param_names:
+                raise ValueError(
+                    f"Tool '{tool_name}' received unexpected parameter '{key}'."
+                )
+
+        for param in definition.parameters:
+            if param.name in arguments:
+                expected_type = self.TYPE_MAP.get(param.type)
+                if expected_type is not None and not isinstance(
+                    arguments[param.name], expected_type
+                ):
+                    param_type = type(arguments[param.name]).__name__
+                    raise ValueError(
+                        f"Tool '{tool_name}' parameter '{param.name}' expected type "
+                        f"'{param.type}' but got '{param_type}'."
+                    )
 
 
 def _validate_dependencies(tool_name: str, deps: dict[str, Any]) -> None:

@@ -1,3 +1,4 @@
+import re
 from typing import Any
 
 from sqlalchemy.orm import Session
@@ -8,6 +9,25 @@ from app.application.support.ports.vector_store import VectorStore
 from app.infrastructure.ai.embeddings.openai import OpenAIEmbeddingModel
 from app.infrastructure.ai.tools.decorators import tool
 from app.infrastructure.vectorstores.pgvector.store import PgVectorStore
+
+_MAX_QUERY_LENGTH = 1000
+
+
+def _sanitize_query(query: str) -> str:
+    """Strip whitespace, remove injection characters, and enforce max length.
+
+    Args:
+        query: The raw query string from the LLM.
+
+    Returns:
+        The sanitized query string.
+    """
+    query = query.strip()
+    query = re.sub(r"[\x00-\x1f\x7f]", "", query)
+    query = query.replace("\n", "").replace("\r", "")
+    if len(query) > _MAX_QUERY_LENGTH:
+        query = query[:_MAX_QUERY_LENGTH]
+    return query
 
 
 @tool(
@@ -69,13 +89,17 @@ class SearchDocumentsTool:
     def __call__(self, arguments: dict[str, Any]) -> str:
         """Search the knowledge base for chunks relevant to the given query.
 
+        The query is sanitized before use: whitespace is stripped,
+        injection characters (newlines, null bytes, control chars) are
+        removed, and the query is truncated to 1000 characters.
+
         Args:
             arguments: Must contain a "query" key with the search string.
 
         Returns:
             Newline-separated list of matching chunks, or a message when none found.
         """
-        query: str = arguments["query"]
+        query: str = _sanitize_query(arguments["query"])
         embedding = self._embedding_model.embed(query)
         results = self._vector_store.search(embedding)
         if not results:

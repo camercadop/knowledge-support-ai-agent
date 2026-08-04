@@ -35,6 +35,18 @@ logger.info("Processing message %s", message_id)
 logger.info(f"Processing message {message_id}")
 ```
 
+## Security Events
+
+Security-relevant events (rejected messages, rate limit hits, oversized requests) must use `log_security_event()` from `app/application/shared/security/logger.py` instead of a plain logger call. This ensures all security audit entries share a consistent structure and are routed through the `app.security` logger.
+
+```python
+from app.application.shared.security.logger import log_security_event
+
+log_security_event("support.message_rejected", phone=phone, reason=exc.reason)
+```
+
+The `level` parameter defaults to `"warning"`. Use `"info"` for informational events and `"error"` for critical failures.
+
 ## What Not to Log
 
 - Passwords, tokens, or secrets.

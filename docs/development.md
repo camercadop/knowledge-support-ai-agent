@@ -129,7 +129,7 @@ Checks all dependencies against the OSV vulnerability database.
 - Declare a module-level logger: `logger = logging.getLogger(__name__)`
 - Use `%s`-style formatting — never f-strings in log calls.
 - Never log passwords, tokens, secrets, or full request bodies.
-- For security-relevant events, use `log_security_event()` from `app/infrastructure/security/logger.py` instead of the module logger. Event names must follow the `<namespace>.<event>` convention (e.g. `support.message_rejected`, `http.rate_limit_exceeded`). See [Security Controls](security.md) for the full event reference.
+- For security-relevant events, use `log_security_event()` from `app/application/shared/security/logger.py` instead of the module logger. Event names must follow the `<namespace>.<event>` convention (e.g. `support.message_rejected`, `http.rate_limit_exceeded`). See [Security Controls](security.md) for the full event reference.
 
 ### Database
 
@@ -143,7 +143,8 @@ Checks all dependencies against the OSV vulnerability database.
 app/
     api/          # Route handlers
     application/  # Use cases and orchestration, organized by domain
-        shared/   # Cross-domain event infrastructure
+        shared/   # Cross-domain utilities: events, base ports, CRUD, and security
+            security/ # Application-layer security utilities (no infrastructure dependencies)
         <domain>/ # One sub-package per domain
             models/       # Application-layer value objects
             ports/        # Interfaces for infrastructure dependencies
@@ -165,7 +166,6 @@ app/
             sqlalchemy/ # Models, repositories, migrations, and PostgreSQL engine
             sqlite/     # In-memory SQLite engine for tests
         middleware/   # ASGI middleware (security headers, rate limiting, request size limiting)
-        security/     # Cross-cutting security infrastructure (audit logging, enforcement utilities)
         vectorstores/ # Vector store implementations (pgvector)
         observability/ # OTel instrumentation
         whatsapp/     # WhatsApp Cloud API integration

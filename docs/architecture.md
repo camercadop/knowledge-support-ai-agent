@@ -140,7 +140,8 @@ subgraph ai_impl["AI"]
 app/
     api/              # Route handlers and webhook endpoints
     application/      # Use cases and orchestration, organized by domain
-        shared/       # Cross-domain event infrastructure (DomainEvent, EventPublisher, EventHandler)
+        shared/       # Cross-domain utilities: events, base ports, CRUD, and security
+            security/ # Application-layer security utilities (no infrastructure dependencies)
         <domain>/     # One sub-package per domain
             events/       # Domain events
             models/       # Application-layer value objects

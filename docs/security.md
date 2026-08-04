@@ -118,6 +118,6 @@ Sanitization is applied at the application layer, not at the schema layer, becau
 
 **Rule:** Security-relevant events must be logged using a dedicated security logger (`app.security`) with structured, machine-parseable fields for integration with SIEM or monitoring tools.
 
-**Enforcement:** The `log_security_event()` helper in `app/infrastructure/security/logger.py` provides a consistent interface for security audit logging. It attaches structured fields to every log record via the `extra` dict, ensuring that log backends can index and filter security events independently from application logs. Security events are emitted when the message sanitizer rejects input, when rate limits are exceeded, and when request sizes exceed configured bounds.
+**Enforcement:** The `log_security_event()` helper in `app/application/shared/security/logger.py` provides a consistent interface for security audit logging. It attaches structured fields to every log record via the `extra` dict, ensuring that log backends can index and filter security events independently from application logs. Security events are emitted when the message sanitizer rejects input, when rate limits are exceeded, and when request sizes exceed configured bounds.
 
 **Verification:** Security events are logged at `WARNING` level with structured fields. With `LOG_FORMAT=json`, all security events produce structured JSON output parseable by SIEM tools.

@@ -52,4 +52,6 @@ class ToolRegistry(ABC):
 
         Raises:
             KeyError: If no tool with the given name is registered.
+            ValueError: If argument validation fails (missing required params,
+                unexpected params, or type mismatches).
         """

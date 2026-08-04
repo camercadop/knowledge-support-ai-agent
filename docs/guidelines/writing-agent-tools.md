@@ -117,3 +117,30 @@ The registry scans every module in `app.infrastructure.ai.tools` at build time. 
 - The tool class must implement `__call__(self, arguments: dict[str, Any]) -> str`.
 - Never put business logic in a tool — tools are infrastructure adapters. Query and retrieval logic belongs in `app/application/`.
 - All public methods must have docstrings.
+
+## Input Validation
+
+The `ConcreteToolRegistry.execute()` method validates all tool arguments against the declared `ToolParameter` schema before dispatching to the handler. Validation checks:
+
+- **Required parameters** — missing required params raise `ValueError`.
+- **Unexpected parameters** — params not declared in the tool definition raise `ValueError`.
+- **Type mismatches** — values that don't match the declared `ToolParameter.type` raise `ValueError`.
+
+The supported type mappings are:
+
+| `ToolParameter.type` | Python type |
+|----------------------|-------------|
+| `"string"` | `str` |
+| `"integer"` | `int` |
+| `"boolean"` | `bool` |
+| `"number"` | `float` |
+
+Validation failures are surfaced as tool execution errors to the LLM.
+
+## Query Sanitization
+
+Tools that accept user-supplied query strings should sanitize them before use. The `search_documents` tool demonstrates this pattern — it strips whitespace, removes injection characters (newlines, null bytes, control characters), and enforces a maximum query length.
+
+## Execution Timeout
+
+The `ConcreteToolRegistry` enforces a configurable execution timeout on all tool calls. If a tool exceeds the timeout, the registry returns a fixed `"Tool execution timed out."` message to the LLM instead of raising. The default timeout is 30 seconds, configurable via the `timeout` parameter to `ConcreteToolRegistry.__init__()`.

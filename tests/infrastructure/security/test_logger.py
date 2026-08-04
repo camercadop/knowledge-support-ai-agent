@@ -3,13 +3,13 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from app.infrastructure.security.logger import log_security_event
+from app.application.shared.security.logger import log_security_event
 
 
 @pytest.fixture()
 def mock_security_logger() -> Generator[MagicMock]:
     with patch(
-        "app.infrastructure.security.logger.security_logger",
+        "app.application.shared.security.logger.security_logger",
     ) as logger:
         yield logger
 

@@ -10,8 +10,8 @@ from slowapi.errors import RateLimitExceeded
 from starlette.exceptions import HTTPException
 from starlette.types import ASGIApp, Receive, Scope, Send
 
+from app.application.shared.security.logger import log_security_event
 from app.config.settings import settings
-from app.infrastructure.security.logger import log_security_event
 
 logger = logging.getLogger(__name__)
 

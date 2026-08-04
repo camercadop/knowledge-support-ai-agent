@@ -18,7 +18,7 @@ WhatsApp Cloud API is the intended communication channel, with a REST API availa
 - Conversational chat with persistent history per contact
 - RAG — knowledge chunks retrieved via semantic search on every turn
 - Document ingestion — chunking, embedding, and pgvector indexing
-- Tool calling — `search_documents` and `get_current_date` built in
+- Tool calling — `search_documents` and `get_current_date` built in, with input validation, query sanitization, and execution timeout
 - Conversation history optimization — pluggable retention policies (token limit, message count, role filter, summarization)
 - Provider independence — chat and embedding providers are swappable at config time
 - OpenTelemetry instrumentation — spans and metrics for use cases and RAG pipeline
@@ -195,7 +195,8 @@ Each agent reply includes a citations table showing the source documents and the
 app/
     api/              # Route handlers
     application/      # Use cases and orchestration, organized by domain
-        shared/       # Cross-domain event infrastructure
+        shared/       # Cross-domain utilities: events, base ports, CRUD, and security
+            security/ # Application-layer security utilities (no infrastructure dependencies)
         <domain>/     # One sub-package per domain
             models/       # Application-layer value objects
             ports/        # Abstract interfaces (ports)
