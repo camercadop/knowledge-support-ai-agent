@@ -1,9 +1,15 @@
+from unittest.mock import MagicMock
+
 import uuid
 
 import pytest
 from sqlalchemy.orm import Session
 
+from app.application.support.ports.chat_model import ChatMessage, Role
 from app.application.support.ports.observability import BaseInstrumentation
+from app.application.support.services.history_optimizer import (
+    ConversationHistoryOptimizer,
+)
 from app.application.support.use_cases.answer_question import AnswerQuestion
 from app.application.support.services.chunk_retriever import ChunkRetriever
 from app.config.settings import settings
@@ -45,6 +51,7 @@ def _make_use_case(
     reply: str = "hello",
     token_total: int = 0,
     instrumentation: BaseInstrumentation | None = None,
+    history_optimizer: ConversationHistoryOptimizer | None = None,
 ) -> AnswerQuestion:
     retrieval_service = ChunkRetriever(
         vector_store=vector_store,
@@ -69,6 +76,7 @@ def _make_use_case(
         ),
         instrumentation=instrumentation or NullInstrumentation(),
         message_sanitizer=RegexMessageSanitizer(patterns=[]),
+        history_optimizer=history_optimizer,
     )
 
 
@@ -265,3 +273,17 @@ def test_chunks_have_empty_title_when_document_not_registered(
     assert result.chunks is not None
     assert result.chunks[0].document_title == ""
     assert result.chunks[0].source is None
+
+
+def test_history_optimizer_is_called_when_provided(
+    uow: SqlAlchemyMessagingUnitOfWork, vector_store: FakeVectorStore
+) -> None:
+    optimizer = MagicMock()
+    optimizer.optimize_history.return_value = [
+        ChatMessage(role=Role.USER, content="Hi"),
+    ]
+    use_case = _make_use_case(
+        uow, vector_store, history_optimizer=optimizer
+    )
+    use_case.handle(_PHONE, "Hi")
+    optimizer.optimize_history.assert_called_once()

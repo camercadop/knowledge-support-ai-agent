@@ -54,24 +54,26 @@ flowchart TB
     end
 
     subgraph app["Application Layer"]
-        subgraph use_cases["Use Cases"]
-            uc_answer["AnswerQuestion"]
-            uc_ingest["IngestDocument"]
-            uc_export["ExportRagInteractions"]
-            retrieval_svc["ChunkRetriever"]
-        end
-        subgraph ports["Ports"]
-            port_msg_uow["MessagingUnitOfWork"]
-            port_know_uow["KnowledgeUnitOfWork"]
-            port_analytics_uow["AnalyticsUnitOfWork"]
-            port_chat["ChatModel"]
-            port_embed["EmbeddingModel"]
-            port_vs["VectorStore"]
-            port_tools["ToolRegistry"]
-            port_prompt["PromptBuilder"]
-            port_event["EventPublisher"]
-            port_obs["BaseInstrumentation"]
-        end
+subgraph use_cases["Use Cases"]
+             uc_answer["AnswerQuestion"]
+             uc_ingest["IngestDocument"]
+             uc_export["ExportRagInteractions"]
+             retrieval_svc["ChunkRetriever"]
+             history_opt["ConversationHistoryOptimizer"]
+         end
+         subgraph ports["Ports"]
+             port_msg_uow["MessagingUnitOfWork"]
+             port_know_uow["KnowledgeUnitOfWork"]
+             port_analytics_uow["AnalyticsUnitOfWork"]
+             port_chat["ChatModel"]
+             port_embed["EmbeddingModel"]
+             port_vs["VectorStore"]
+             port_tools["ToolRegistry"]
+             port_prompt["PromptBuilder"]
+             port_event["EventPublisher"]
+             port_obs["BaseInstrumentation"]
+             port_retention["MessageRetentionPolicy"]
+         end
     end
 
     subgraph infra["Infrastructure Layer"]
@@ -81,12 +83,13 @@ flowchart TB
             sql_analytics_uow["SqlAlchemyAnalyticsUoW\nRagInteractionLogRepo"]
             pgvector["PgVectorStore"]
         end
-        subgraph ai_impl["AI"]
-            openai_chat["OpenAIChatModel"]
-            openai_embed["OpenAIEmbeddingModel"]
-            default_prompt["DefaultPromptBuilder"]
-            tool_registry["ConcreteToolRegistry\nget_current_date · search_documents"]
-        end
+subgraph ai_impl["AI"]
+             openai_chat["OpenAIChatModel"]
+             openai_embed["OpenAIEmbeddingModel"]
+             default_prompt["DefaultPromptBuilder"]
+             tool_registry["ConcreteToolRegistry\nget_current_date · search_documents"]
+             history_policies["History Policies\nMessageCountPolicy · TokenLimitPolicy\nSummaryPolicy · RoleFilterPolicy"]
+         end
         subgraph events_impl["Events"]
             event_bus["InMemoryEventBus"]
             rag_handler["RagInteractionLogHandler"]
@@ -108,10 +111,11 @@ flowchart TB
     cli_main --> uc_answer
     cli_main --> uc_ingest
 
-    uc_answer --> port_msg_uow & port_chat & port_tools & port_prompt & retrieval_svc & port_event & port_obs
+    uc_answer --> port_msg_uow & port_chat & port_tools & port_prompt & retrieval_svc & port_event & port_obs & history_opt
     uc_export --> port_analytics_uow
     retrieval_svc --> port_vs
     uc_ingest --> port_know_uow & port_embed & port_vs & port_obs
+    history_opt --> port_retention
 
     port_msg_uow -.->|impl| sql_msg_uow
     port_know_uow -.->|impl| sql_know_uow
@@ -124,6 +128,7 @@ flowchart TB
     port_event -.->|impl| event_bus
     event_bus -->|dispatches| rag_handler
     port_obs -.->|impl| otel_instrumentation
+    port_retention -.->|impl| history_policies
 
     sql_msg_uow & sql_know_uow & sql_analytics_uow & pgvector --> postgres
     openai_chat & openai_embed --> openai
@@ -137,6 +142,7 @@ app/
     application/      # Use cases and orchestration, organized by domain
         shared/       # Cross-domain event infrastructure (DomainEvent, EventPublisher, EventHandler)
         <domain>/     # One sub-package per domain
+            events/       # Domain events
             models/       # Application-layer value objects
             ports/        # Interfaces for infrastructure dependencies
                 repositories/   # One abstract repo per aggregate root
@@ -152,6 +158,7 @@ app/
             chat/         # Chat completion provider implementations
             chunking/     # ChunkStrategy implementations
             embeddings/   # Embedding provider implementations
+            history_policies/ # MessageRetentionPolicy implementations
             mock/         # Mock implementations for testing
             prompt_builder/ # PromptBuilder implementations
             tools/        # Tool registry, @tool decorator, and tool implementations

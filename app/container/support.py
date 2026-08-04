@@ -143,6 +143,7 @@ class SupportContainer(BaseContainer):
             message_sanitizer=self._message_sanitizer,
             instrumentation=self._instrumentation(ANSWER_QUESTION_INSTRUMENTATION),
             tool_registry=build_tool_registry(db),
+            history_optimizer=self._conversation_history_optimizer,
         )
 
     def clear_history(self, db: Session) -> ClearHistory:

@@ -22,6 +22,9 @@ from app.application.support.services.chunk_retriever import (
     ChunkRetriever,
     RetrievalResult,
 )
+from app.application.support.services.history_optimizer import (
+    ConversationHistoryOptimizer,
+)
 from app.config.settings import settings
 from app.infrastructure.security.logger import log_security_event
 
@@ -58,6 +61,9 @@ class AnswerQuestion:
         tool_registry: Optional registry of tools the model may invoke
             during generation.
         instrumentation: Observability adapter for recording spans and metrics.
+        history_optimizer: Optional optimizer that applies retention policies
+            to conversation history before LLM calls. When provided, the
+            optimizer prunes or summarizes history before generation.
     """
 
     def __init__(
@@ -71,6 +77,7 @@ class AnswerQuestion:
         message_sanitizer: MessageSanitizer,
         instrumentation: BaseInstrumentation,
         tool_registry: ToolRegistry | None = None,
+        history_optimizer: ConversationHistoryOptimizer | None = None,
     ) -> None:
         self._uow = uow
         self._event_publisher = event_publisher
@@ -81,6 +88,7 @@ class AnswerQuestion:
         self._message_sanitizer = message_sanitizer
         self._tool_registry = tool_registry
         self._instrumentation = instrumentation
+        self._history_optimizer = history_optimizer
 
     def handle(
         self,
@@ -128,6 +136,9 @@ class AnswerQuestion:
                 ChatMessage(role=Role(m.role), content=m.content) for m in history
             ]
             messages.append(ChatMessage(role=Role.USER, content=sanitized_message))
+
+            if self._history_optimizer is not None:
+                messages = self._history_optimizer.optimize_history(messages)
 
             response = self._generate(messages, retrieval)
             self._record_metrics(retrieval, response)

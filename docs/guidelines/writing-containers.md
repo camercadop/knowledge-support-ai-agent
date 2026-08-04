@@ -75,6 +75,7 @@ class ApplicationContainer:
 | What | Lifetime | Reason |
 |------|----------|--------|
 | Infrastructure clients (chat model, embedding model, chunk strategy) | Singleton — created in `__init__` | Stateless; safe to share across requests |
+| Application services | Singleton — created in `__init__` | Stateless; safe to share across requests |
 | Use case instances | Per-request — created in the method | Receive a `Session`; must not be shared |
 | `Session`-bound objects (UoW, vector store, tool registry) | Per-request — created in the method | Tied to a single database transaction |
 

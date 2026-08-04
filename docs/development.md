@@ -218,6 +218,7 @@ sequenceDiagram
     UoW->>DB: SELECT / INSERT conversation
     UC->>UoW: messages.list_by_conversation(conversation_id)
     UoW->>DB: SELECT messages
+    UC->>UC: history_optimizer.optimize_history(messages)
     UC->>UC: prompt_builder.build(history + user_message, context)
     UC->>LLM: generate(prompt)
     LLM->>OpenAI: responses.create(model, input)

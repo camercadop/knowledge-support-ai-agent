@@ -97,7 +97,7 @@ CRUD pattern.
 
 - One class per use case, named after the action (e.g. `AnswerQuestion`, `CreateDocument`).
 - File named after the use case in snake_case: `app/application/<domain>/<use_case>.py`.
-- The constructor receives a `UnitOfWork` and all other dependencies as port abstractions — never concrete infrastructure types.
+- The constructor receives a `UnitOfWork` and all other dependencies as port abstractions or application-layer services — never concrete infrastructure types.
 - Call `uow.commit()` exactly once, at the end of the use case.
 - Never put query logic in a use case — all DB access goes through `uow.<repository>`.
 - Use cases may call infrastructure clients (e.g. LLM) through ports but must not be called by them.

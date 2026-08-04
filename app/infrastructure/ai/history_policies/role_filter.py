@@ -1,7 +1,10 @@
 from app.application.support.ports.chat_model import ChatMessage
+from app.application.support.ports.message_retention_policy import (
+    MessageRetentionPolicy,
+)
 
 
-class RoleFilterPolicy:
+class RoleFilterPolicy(MessageRetentionPolicy):
     """Role filter retention policy.
 
     Filters messages based on their roles. Only messages with roles in the
