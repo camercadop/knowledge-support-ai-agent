@@ -113,3 +113,11 @@ ERROR_HANDLING_ENABLED=false
 Sanitization is applied at the application layer, not at the schema layer, because it is a security concern tied to LLM prompt assembly rather than HTTP input formatting.
 
 **Verification:** A message containing a configured injection pattern is stripped or replaced before reaching the LLM. The raw message is persisted to the database unchanged — only the sanitized copy is passed to the prompt pipeline.
+
+## Security Logging
+
+**Rule:** Security-relevant events must be logged using a dedicated security logger (`app.security`) with structured, machine-parseable fields for integration with SIEM or monitoring tools.
+
+**Enforcement:** The `log_security_event()` helper in `app/infrastructure/security/logger.py` provides a consistent interface for security audit logging. It attaches structured fields to every log record via the `extra` dict, ensuring that log backends can index and filter security events independently from application logs. Security events are emitted when the message sanitizer rejects input, when rate limits are exceeded, and when request sizes exceed configured bounds.
+
+**Verification:** Security events are logged at `WARNING` level with structured fields. With `LOG_FORMAT=json`, all security events produce structured JSON output parseable by SIEM tools.

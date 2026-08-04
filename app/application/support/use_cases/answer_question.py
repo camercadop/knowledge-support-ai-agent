@@ -23,6 +23,7 @@ from app.application.support.services.chunk_retriever import (
     RetrievalResult,
 )
 from app.config.settings import settings
+from app.infrastructure.security.logger import log_security_event
 
 logger = logging.getLogger(__name__)
 
@@ -106,7 +107,10 @@ class AnswerQuestion:
             try:
                 sanitized_message = self._message_sanitizer.sanitize(user_message)
             except MessageRejected as exc:
-                logger.warning("Message rejected for phone %s: %s", phone, exc.reason)
+                log_security_event(
+                    "support.message_rejected", phone=phone, reason=exc.reason
+                )
+
                 return AnswerResult(
                     reply=settings.prompts_message_rejected_reply,
                     chunks=None,

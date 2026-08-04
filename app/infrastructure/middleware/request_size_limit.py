@@ -1,11 +1,8 @@
-import logging
-
 from fastapi import FastAPI
 from starlette.types import ASGIApp, Receive, Scope, Send
 
 from app.config.settings import settings
-
-logger = logging.getLogger(__name__)
+from app.infrastructure.security.logger import log_security_event
 
 
 class RequestSizeLimitMiddleware:
@@ -35,10 +32,12 @@ class RequestSizeLimitMiddleware:
 
         content_length = self._get_content_length(scope)
         if content_length is not None and content_length > self.limit:
-            logger.warning(
-                "Request body size %d bytes exceeds limit of %d bytes",
-                content_length,
-                self.limit,
+            log_security_event(
+                "http.request_size_exceeded",
+                path=scope.get("path", "unknown"),
+                content_length=content_length,
+                limit=self.limit,
+                reason="request body exceeds size limit",
             )
             await self._reject(send)
             return

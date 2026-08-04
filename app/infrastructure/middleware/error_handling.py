@@ -6,10 +6,12 @@ from typing import Any
 from fastapi import FastAPI, Request, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
+from slowapi.errors import RateLimitExceeded
 from starlette.exceptions import HTTPException
 from starlette.types import ASGIApp, Receive, Scope, Send
 
 from app.config.settings import settings
+from app.infrastructure.security.logger import log_security_event
 
 logger = logging.getLogger(__name__)
 
@@ -83,6 +85,24 @@ def setup_error_handlers(app: FastAPI) -> FastAPI:
         return app
 
     app.add_middleware(ErrorHandlingMiddleware, enabled=True)
+
+    @app.exception_handler(RateLimitExceeded)
+    async def rate_limit_exception_handler(
+        request: Request, exc: RateLimitExceeded
+    ) -> JSONResponse:
+        limit = getattr(exc, "limit", None)
+        limit_str = str(limit) if limit is not None else "unknown"
+        log_security_event(
+            "http.rate_limit_exceeded",
+            path=request.url.path,
+            ip=request.client.host if request.client else "unknown",
+            limit=limit_str,
+            reason=exc.detail,
+        )
+        return JSONResponse(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            content={"error": exc.detail},
+        )
 
     @app.exception_handler(HTTPException)
     async def http_exception_handler(
