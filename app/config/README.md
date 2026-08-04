@@ -16,6 +16,7 @@ This package centralizes all application configuration. Settings are declared as
 | `WHATSAPP_VERIFY_TOKEN` | `str` | — | Webhook verification token |
 | `LOG_LEVEL` | `str` | `INFO` | Python log level |
 | `LOG_FORMAT` | `str` | `text` | Output format: `text` for colored console, `json` for structured production logs |
+| `ERROR_HANDLING_ENABLED` | `bool` | `True` | Enable or disable error handling middleware |
 
 Values are read from the environment or a `.env` file at startup. The `settings` singleton is imported directly by other modules.
 

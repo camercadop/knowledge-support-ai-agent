@@ -45,6 +45,7 @@ class Settings(BaseSettings):
     rate_limit_default: int = 60
     request_size_limit_default: int = 1_048_576
     request_size_limit_enabled: bool = True
+    error_handling_enabled: bool = True
     retrieval_top_k: int = 5
     retrieval_min_score: float | None = 0.7
     retrieval_max_chunks: int = 5

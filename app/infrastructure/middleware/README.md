@@ -7,6 +7,7 @@ This package contains ASGI middleware that processes requests before they reach 
 - `security_headers.py` — `SecurityHeadersMiddleware` sets security headers on all HTTP responses.
 - `rate_limit.py` — `MovingWindowRateLimitMiddleware` applies rate limiting using the moving-window algorithm via slowapi.
 - `request_size_limit.py` — `RequestSizeLimitMiddleware` rejects requests exceeding a configurable body size.
+- `error_handling.py` — `ErrorHandlingMiddleware` catches unhandled exceptions and returns safe error responses without exposing stack traces or internal details.
 
 ## Security Headers
 
@@ -60,3 +61,29 @@ Request size limiting is enabled by default and rejects requests whose `Content-
 ### Disabling Request Size Limiting
 
 Set `REQUEST_SIZE_LIMIT_ENABLED=false` in the environment to disable request size limiting entirely.
+
+## Error Handling
+
+Error handling is enabled by default. The middleware intercepts all unhandled exceptions at the ASGI level and returns safe error responses without exposing stack traces or internal details. Full error details are logged server-side at `ERROR` level for debugging.
+
+### Exception Categories
+
+| Exception Type | HTTP Status | Client Response |
+|----------------|-------------|-----------------|
+| `Exception` (unhandled) | `500 Internal Server Error` | `{"error": "Internal server error"}` |
+| `HTTPException` | Status code from exception | `{"error": "<detail>"}` |
+| `RequestValidationError` | `422 Unprocessable Entity` | `{"error": "Invalid request data"}` |
+
+### Configuration
+
+| Environment Variable | Default | Description |
+|----------------------|---------|-------------|
+| `ERROR_HANDLING_ENABLED` | `true` | Enable or disable error handling middleware |
+
+### Disabling Error Handling
+
+Set `ERROR_HANDLING_ENABLED=false` in the environment to disable error handling entirely. When disabled, exceptions propagate normally and FastAPI's default error responses are returned. This is useful in development environments where detailed error information is helpful for debugging.
+
+### Verification
+
+A request to an endpoint that raises an unhandled exception returns a `500` response with `{"error": "Internal server error"}` and no stack trace or internal details. The full traceback is logged at `ERROR` level via `app.infrastructure.middleware.error_handling`.

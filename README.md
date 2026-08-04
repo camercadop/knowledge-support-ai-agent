@@ -23,6 +23,7 @@ WhatsApp Cloud API is the intended communication channel, with a REST API availa
 - Provider independence — chat and embedding providers are swappable at config time
 - OpenTelemetry instrumentation — spans and metrics for use cases and RAG pipeline
 - Rate limiting — moving-window algorithm via slowapi, configurable per environment
+- Error handling — catches unhandled exceptions and returns safe responses without stack traces
 - Security headers — CSP, HSTS, X-Frame-Options, and more, all configurable
 - WhatsApp Cloud API webhook integration (pending)
 - REST API and CLI interfaces

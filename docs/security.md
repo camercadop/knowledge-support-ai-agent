@@ -61,3 +61,29 @@ SECURITY_HEADERS_ENABLED=false
 ```
 
 **Verification:** A request to any endpoint returns all five security headers with their configured values. When `SECURITY_HEADERS_ENABLED=false`, the headers are absent from responses.
+
+## Error Handling
+
+**Rule:** Unhandled exceptions must not expose stack traces, internal implementation details, or database errors to clients. Full error details are logged server-side for debugging.
+
+**Enforcement:** `ErrorHandlingMiddleware` is mounted in `app/main.py` via `register_middlewares()` and intercepts all unhandled exceptions at the ASGI level. The middleware catches three categories of exceptions:
+
+| Exception Type | HTTP Status | Client Response |
+|----------------|-------------|-----------------|
+| `Exception` (unhandled) | `500 Internal Server Error` | `{"error": "Internal server error"}` |
+| `HTTPException` | Status code from exception | `{"error": "<detail>"}` |
+| `RequestValidationError` | `422 Unprocessable Entity` | `{"error": "Invalid request data"}` |
+
+**Configuration:**
+
+| Environment Variable | Default | Description |
+|----------------------|---------|-------------|
+| `ERROR_HANDLING_ENABLED` | `true` | Enable or disable error handling middleware |
+
+**Example:** To disable error handling in a development environment:
+
+```bash
+ERROR_HANDLING_ENABLED=false
+```
+
+**Verification:** A request to an endpoint that raises an unhandled exception returns a `500` response with `{"error": "Internal server error"}` and no stack trace. The full traceback is logged at `ERROR` level via `app.infrastructure.middleware.error_handling`. When `ERROR_HANDLING_ENABLED=false`, exceptions propagate normally and FastAPI's default error responses are returned.
