@@ -7,6 +7,8 @@ This package contains adapters for AI providers. Each sub-package implements one
 - `chat/` — `ChatModel` implementation backed by the OpenAI Responses API
 - `chunking/` — `ChunkStrategy` implementations: fixed-size, recursive, and markdown-aware
 - `embeddings/` — `EmbeddingModel` implementation backed by the OpenAI Embeddings API
+- `history_policies/` — `MessageRetentionPolicy` implementations: token limit, message count, role filter, and summarization
+- `message_sanitizer/` — `MessageSanitizer` adapters: `RegexMessageSanitizer` (`regex.py`) and `CompositeSanitizer` (`base.py`)
 - `mock/` — in-memory stubs used in tests to avoid real API calls
 - `prompt_builder/` — `PromptBuilder` implementations: assembles the provider-agnostic message list including system prompt and retrieved context
 - `tools/` — tool registry, `@tool` decorator, and all tool implementations available to the LLM

@@ -89,3 +89,21 @@ def test_chat_returns_none_chunks_when_no_retrieval(client: TestClient) -> None:
 
     assert response.status_code == 200
     assert response.json()["chunks"] is None
+
+
+def test_chat_invalid_phone_format_returns_422(client: TestClient) -> None:
+    """POST /chat with a non-E.164 phone number returns 422."""
+    response = client.post("/chat", json={"phone": "1234567890", "message": "Hi"})
+    assert response.status_code == 422
+
+
+def test_chat_phone_exceeds_max_length_returns_422(client: TestClient) -> None:
+    """POST /chat with a phone number exceeding 15 chars returns 422."""
+    response = client.post("/chat", json={"phone": "+1234567890123456", "message": "Hi"})
+    assert response.status_code == 422
+
+
+def test_chat_phone_with_newline_returns_422(client: TestClient) -> None:
+    """POST /chat with a newline-injected phone number returns 422."""
+    response = client.post("/chat", json={"phone": "+1234567890\nGET /admin", "message": "Hi"})
+    assert response.status_code == 422

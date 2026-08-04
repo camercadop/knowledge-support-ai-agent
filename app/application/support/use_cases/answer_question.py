@@ -11,6 +11,7 @@ from app.application.support.ports.chat_model import (
     Role,
 )
 from app.application.support.ports.embedding_model import EmbeddingModel
+from app.application.support.ports.message_sanitizer import MessageSanitizer
 from app.application.support.ports.observability import BaseInstrumentation
 from app.application.support.ports.prompt_builder import PromptBuilder
 from app.application.support.ports.tool_registry import ToolRegistry
@@ -49,6 +50,8 @@ class AnswerQuestion:
         retrieval_service: Handles vector search with post-retrieval quality controls.
         prompt_builder: Assembles the full message list including the system prompt
             and retrieved context before passing it to the chat model.
+        message_sanitizer: Sanitizes user messages before they enter the prompt
+            pipeline to neutralize prompt injection attempts.
         tool_registry: Optional registry of tools the model may invoke
             during generation.
         instrumentation: Observability adapter for recording spans and metrics.
@@ -62,6 +65,7 @@ class AnswerQuestion:
         embedding_model: EmbeddingModel,
         retrieval_service: ChunkRetriever,
         prompt_builder: PromptBuilder,
+        message_sanitizer: MessageSanitizer,
         instrumentation: BaseInstrumentation,
         tool_registry: ToolRegistry | None = None,
     ) -> None:
@@ -71,6 +75,7 @@ class AnswerQuestion:
         self._embedding_model = embedding_model
         self._retrieval_service = retrieval_service
         self._prompt_builder = prompt_builder
+        self._message_sanitizer = message_sanitizer
         self._tool_registry = tool_registry
         self._instrumentation = instrumentation
 
@@ -107,7 +112,8 @@ class AnswerQuestion:
             messages = [
                 ChatMessage(role=Role(m.role), content=m.content) for m in history
             ]
-            messages.append(ChatMessage(role=Role.USER, content=user_message))
+            sanitized_message = self._message_sanitizer.sanitize(user_message)
+            messages.append(ChatMessage(role=Role.USER, content=sanitized_message))
 
             response = self._generate(messages, retrieval)
             self._record_metrics(retrieval, response)

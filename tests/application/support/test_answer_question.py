@@ -7,6 +7,7 @@ from app.application.support.ports.observability import BaseInstrumentation
 from app.application.support.use_cases.answer_question import AnswerQuestion
 from app.application.support.services.chunk_retriever import ChunkRetriever
 from app.config.settings import settings
+from app.infrastructure.ai.message_sanitizer import RegexMessageSanitizer
 from app.infrastructure.ai.mock.chat import MockChatModel
 from app.infrastructure.ai.prompt_builder.default import (
     DefaultPromptBuilder,
@@ -67,6 +68,7 @@ def _make_use_case(
             )
         ),
         instrumentation=instrumentation or NullInstrumentation(),
+        message_sanitizer=RegexMessageSanitizer(patterns=[]),
     )
 
 

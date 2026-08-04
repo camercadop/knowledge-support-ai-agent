@@ -1,3 +1,4 @@
+import re
 import uuid
 
 from pydantic import BaseModel, Field, field_validator
@@ -6,13 +7,18 @@ from pydantic import BaseModel, Field, field_validator
 class ChatRequest(BaseModel):
     """Payload for sending a chat message."""
 
-    phone: str
+    phone: str = Field(max_length=15)
     message: str = Field(min_length=1, max_length=4096)
 
     @field_validator("phone")
     @classmethod
     def sanitize_phone(cls, v: str) -> str:
-        return v.replace("\n", " ").replace("\r", " ")
+        v = v.replace("\n", " ").replace("\r", " ")
+        if not re.match(r"^\+[1-9]\d{1,14}$", v):
+            raise ValueError(
+                "Phone number must be in E.164 format (e.g. +1234567890)"
+            )
+        return v
 
 
 class ChunkReference(BaseModel):

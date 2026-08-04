@@ -24,6 +24,7 @@ from app.container.base import BaseContainer
 from app.infrastructure.ai.chat.openai import OpenAIChatModel
 from app.infrastructure.ai.chunking.factory import build_chunk_strategy
 from app.infrastructure.ai.embeddings.openai import OpenAIEmbeddingModel
+from app.infrastructure.ai.message_sanitizer import RegexMessageSanitizer
 from app.infrastructure.ai.prompt_builder.default import (
     DefaultPromptBuilder,
     PromptConfig,
@@ -63,6 +64,7 @@ class SupportContainer(BaseContainer):
                 no_context_instructions=settings.prompts_no_context_instructions,
             )
         )
+        self._message_sanitizer = RegexMessageSanitizer(patterns=[])
         self._chat_model = OpenAIChatModel(prompt_builder=self._prompt_builder)
         self._embedding_model = self._resolve_embedding_model()
         self._chunk_strategy = build_chunk_strategy()
@@ -138,6 +140,7 @@ class SupportContainer(BaseContainer):
             embedding_model=self._embedding_model,
             retrieval_service=retrieval_service,
             prompt_builder=self._prompt_builder,
+            message_sanitizer=self._message_sanitizer,
             instrumentation=self._instrumentation(ANSWER_QUESTION_INSTRUMENTATION),
             tool_registry=build_tool_registry(db),
         )

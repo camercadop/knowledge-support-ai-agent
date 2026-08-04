@@ -8,7 +8,7 @@ class DocumentIngestRequest(BaseModel):
 
     title: str = Field(min_length=1, max_length=255)
     source: str | None = None
-    content: str = Field(min_length=1)
+    content: str = Field(min_length=1, max_length=100_000)
     metadata: dict[str, str] | None = None
     knowledge_base_id: uuid.UUID | None = None
 

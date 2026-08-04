@@ -112,6 +112,24 @@ def test_ingest_document_metadata_is_optional(client: TestClient) -> None:
     assert response.status_code == 200
 
 
+def test_ingest_document_content_at_max_length_returns_200(client: TestClient) -> None:
+    """POST /documents with content exactly at 100,000 chars returns 200."""
+    response = client.post(
+        "/documents",
+        json={"title": "My Doc", "content": "a" * 100_000},
+    )
+    assert response.status_code == 200
+
+
+def test_ingest_document_content_exceeds_max_length_returns_422(client: TestClient) -> None:
+    """POST /documents with content exceeding 100,000 chars returns 422."""
+    response = client.post(
+        "/documents",
+        json={"title": "My Doc", "content": "a" * 100_001},
+    )
+    assert response.status_code == 422
+
+
 def test_ingest_document_accepts_metadata(client: TestClient) -> None:
     """POST /documents with metadata returns 200."""
     response = client.post(
