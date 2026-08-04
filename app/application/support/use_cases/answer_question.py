@@ -4,6 +4,7 @@ from dataclasses import dataclass
 
 from app.application.shared.events.event_publisher import EventPublisher
 from app.application.support.events.question_answered import QuestionAnswered
+from app.application.support.exceptions.message_rejected import MessageRejected
 from app.application.support.ports.chat_model import (
     ChatMessage,
     ChatModel,
@@ -21,6 +22,7 @@ from app.application.support.services.chunk_retriever import (
     ChunkRetriever,
     RetrievalResult,
 )
+from app.config.settings import settings
 
 logger = logging.getLogger(__name__)
 
@@ -101,7 +103,16 @@ class AnswerQuestion:
             AnswerResult with the assistant reply and retrieved chunk metadata.
         """
         with self._instrumentation.root_span("answer_question.handle"):
-            embedding = self._embed(user_message)
+            try:
+                sanitized_message = self._message_sanitizer.sanitize(user_message)
+            except MessageRejected as exc:
+                logger.warning("Message rejected for phone %s: %s", phone, exc.reason)
+                return AnswerResult(
+                    reply=settings.prompts_message_rejected_reply,
+                    chunks=None,
+                )
+
+            embedding = self._embed(sanitized_message)
             retrieval = self._retrieve(embedding, knowledge_base_id=knowledge_base_id)
 
             contact = self._uow.contacts.get_or_create_by_phone(phone)
@@ -112,7 +123,6 @@ class AnswerQuestion:
             messages = [
                 ChatMessage(role=Role(m.role), content=m.content) for m in history
             ]
-            sanitized_message = self._message_sanitizer.sanitize(user_message)
             messages.append(ChatMessage(role=Role.USER, content=sanitized_message))
 
             response = self._generate(messages, retrieval)

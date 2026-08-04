@@ -65,6 +65,7 @@ class Settings(BaseSettings):
     prompts_system_instructions: str = ""
     prompts_grounded_instructions: str = ""
     prompts_no_context_instructions: str = ""
+    prompts_message_rejected_reply: str = ""
 
 
 settings = Settings()  # type: ignore[call-arg]
@@ -82,6 +83,10 @@ apply_ini_defaults(
         "prompts_no_context_instructions": (
             "prompts.ini",
             "prompts.no_context_instructions",
+        ),
+        "prompts_message_rejected_reply": (
+            "prompts.ini",
+            "prompts.message_rejected_reply",
         ),
     },
 )
