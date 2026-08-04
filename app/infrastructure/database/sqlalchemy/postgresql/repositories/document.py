@@ -54,6 +54,7 @@ class DocumentRepository(AbstractDocumentRepository):
             source=orm.source,
             content=orm.content,
             embedding_model_used=orm.embedding_model_used,
+            knowledge_base_id=orm.knowledge_base_id,
         )
 
     def get_by_title_and_source(

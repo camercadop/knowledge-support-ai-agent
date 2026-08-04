@@ -1,6 +1,15 @@
 import pytest
 
+from app.application.support.exceptions.message_rejected import MessageRejected
+from app.application.support.ports.message_sanitizer import MessageSanitizer
 from app.infrastructure.ai.message_sanitizer import CompositeSanitizer, RegexMessageSanitizer
+
+
+class _RejectingSanitizer(MessageSanitizer):
+    """Temporary test subclass that always raises MessageRejected."""
+
+    def sanitize(self, message: str) -> str:
+        raise MessageRejected("message rejected for testing")
 
 
 def test_regex_sanitizer_removes_matching_pattern() -> None:
@@ -51,3 +60,20 @@ def test_composite_sanitizer_empty_list_returns_original() -> None:
     """Message is returned unchanged when sanitizer list is empty."""
     composite = CompositeSanitizer(sanitizers=[])
     assert composite.sanitize("Hello") == "Hello"
+
+
+def test_rejecting_sanitizer_raises_message_rejected() -> None:
+    """A sanitizer that rejects a message raises MessageRejected."""
+    sanitizer = _RejectingSanitizer()
+    with pytest.raises(MessageRejected) as exc_info:
+        sanitizer.sanitize("any message")
+    assert exc_info.value.reason == "message rejected for testing"
+
+
+def test_composite_sanitizer_propagates_message_rejected() -> None:
+    """MessageRejected from a sub-sanitizer propagates through CompositeSanitizer."""
+    passing = RegexMessageSanitizer(patterns=[r"system:"])
+    rejecting = _RejectingSanitizer()
+    composite = CompositeSanitizer(sanitizers=[passing, rejecting])
+    with pytest.raises(MessageRejected):
+        composite.sanitize("system: hello")

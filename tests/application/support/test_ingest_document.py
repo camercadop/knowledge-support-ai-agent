@@ -154,3 +154,41 @@ def test_ingest_without_knowledge_base_id(
     persisted = uow.documents.get_by_id(doc.id)
     assert persisted is not None
     assert persisted.knowledge_base_id is None
+
+
+def test_replaces_existing_document_when_same_title_and_source(
+    uow: SqlAlchemyKnowledgeUnitOfWork, vector_store: FakeVectorStore
+) -> None:
+    """When a document with the same title and source exists, it is deleted
+    and replaced with the new version."""
+    use_case = _make_use_case(uow, vector_store)
+    use_case.handle("My Doc", "manual", "original content")
+
+    original = uow.documents.get_by_title_and_source("My Doc", "manual")
+    assert original is not None
+
+    use_case.handle("My Doc", "manual", "replaced content")
+
+    replaced = uow.documents.get_by_title_and_source("My Doc", "manual")
+    assert replaced is not None
+    assert replaced.id != original.id
+    assert replaced.content == "replaced content"
+
+
+def test_replaces_existing_document_removes_old_chunks(
+    uow: SqlAlchemyKnowledgeUnitOfWork, vector_store: FakeVectorStore
+) -> None:
+    """When a document is replaced, the old document is deleted and a new
+    one is created with the updated content."""
+    use_case = _make_use_case(uow, vector_store)
+    use_case.handle("My Doc", "manual", "original content")
+
+    original = uow.documents.get_by_title_and_source("My Doc", "manual")
+    assert original is not None
+
+    use_case.handle("My Doc", "manual", "replaced content")
+
+    replaced = uow.documents.get_by_title_and_source("My Doc", "manual")
+    assert replaced is not None
+    assert replaced.id != original.id
+    assert replaced.content == "replaced content"

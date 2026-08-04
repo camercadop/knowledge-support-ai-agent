@@ -20,7 +20,6 @@ class SummaryPolicy(MessageRetentionPolicy):
         max_summary_messages: int = 5,
         prefix: str = "Previous conversation summary:\n\n",
         tool_registry: ToolRegistry | None = None,
-        language: str | None = None,
     ):
         """Initialize the summary policy.
 
@@ -30,14 +29,12 @@ class SummaryPolicy(MessageRetentionPolicy):
             max_summary_messages: Maximum number of messages to summarize at once.
             prefix: Text prefix added to each summary message.
             tool_registry: Optional tool registry for tool calling during summarization.
-            language: Optional language for the summary.
         """
         self.chat_model = chat_model
         self.max_summary_tokens = max_summary_tokens
         self.max_summary_messages = max_summary_messages
         self.prefix = prefix
         self.tool_registry = tool_registry
-        self.language = language
 
     def apply(self, messages: list[ChatMessage]) -> list[ChatMessage]:
         """Apply summary policy to the message list.
@@ -104,20 +101,12 @@ class SummaryPolicy(MessageRetentionPolicy):
         try:
             context_messages = []
 
-            if self.language:
-                system_instruction = f"Provide a summary in {self.language}."
-                context_messages.append(
-                    ChatMessage(role=Role.SYSTEM, content=system_instruction)
-                )
-
             context_messages.extend(messages)
 
-            if self.language:
-                prefix_in_language = "{{.prefix_in_language}}"
-                summary_prompt = f"{prefix_in_language}\n\n{self.prefix}"
-                context_messages.append(
-                    ChatMessage(role=Role.SYSTEM, content=summary_prompt)
-                )
+            summary_prompt = self.prefix
+            context_messages.append(
+                ChatMessage(role=Role.SYSTEM, content=summary_prompt)
+            )
 
             response = self.chat_model.generate(
                 context_messages, tool_registry=self.tool_registry
