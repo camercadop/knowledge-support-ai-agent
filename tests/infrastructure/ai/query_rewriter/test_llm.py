@@ -39,7 +39,7 @@ def test_llm_rewriter_passes_correct_messages() -> None:
     assert messages[2] == ChatMessage(role=Role.ASSISTANT, content="prev user")
     assert messages[3] == ChatMessage(role=Role.USER, content="prev assistant")
     assert messages[4] == ChatMessage(role=Role.ASSISTANT, content="prev assistant")
-    assert messages[5] == ChatMessage(role=Role.USER, content="user query")
+    assert messages[-1] == ChatMessage(role=Role.USER, content="user query")
 
 
 def test_llm_rewriter_is_query_rewriter_port() -> None:
