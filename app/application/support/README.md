@@ -17,16 +17,18 @@ This sub-package contains everything belonging to the support domain: models, po
 
 ### AnswerQuestion
 
-1. Embed the user message into a query vector
-2. Retrieve relevant knowledge chunks via semantic search, applying deduplication, max-chunks cap, and token budget
-3. Resolve the contact by phone, creating one if it doesn't exist
-4. Resolve the active conversation for that contact, creating one if needed
-5. Load the conversation's message history
-6. Build the full prompt: system prompt + retrieved context + history + user message
-7. Call the LLM, optionally invoking tools during generation
-8. Persist the user turn and the assistant reply
-9. Commit the transaction
-10. Return an `AnswerResult` with the reply text and the list of retrieved chunks to the caller
+1. Sanitize the user message to neutralize prompt injection attempts
+2. Rewrite the sanitized query using the QueryRewriter (if enabled)
+3. Embed the rewritten query into a query vector
+4. Retrieve relevant knowledge chunks via semantic search, applying deduplication, max-chunks cap, and token budget
+5. Resolve the contact by phone, creating one if it doesn't exist
+6. Resolve the active conversation for that contact, creating one if needed
+7. Load the conversation's message history
+8. Build the full prompt: system prompt + retrieved context + history + rewritten user message
+9. Call the LLM, optionally invoking tools during generation
+10. Persist the user turn and the assistant reply
+11. Commit the transaction
+12. Return an `AnswerResult` with the reply text and the list of retrieved chunks to the caller
 
 ```mermaid
 sequenceDiagram
@@ -37,7 +39,9 @@ sequenceDiagram
     participant UoW as MessagingUnitOfWork
     participant LLM as ChatModel
 
-    UC->>Embed: embed(user_message)
+    UC->>Rewrite: rewrite(sanitized_message, history)
+    Rewrite-->>UC: rewritten_query
+    UC->>Embed: embed(rewritten_query)
     Embed-->>UC: query_vector
     UC->>RS: retrieve(query_vector)
     RS->>VS: search(query_vector, top_k, min_score, metadata_filters)
@@ -50,7 +54,7 @@ sequenceDiagram
     UC->>UoW: contacts.get_or_create_by_phone(phone)
     UC->>UoW: conversations.get_or_create_for_contact(contact_id)
     UC->>UoW: messages.list_by_conversation(conversation_id)
-    UC->>LLM: generate(history + user_message, context)
+    UC->>LLM: generate(history + rewritten_message, context)
     LLM-->>UC: ChatResponse
     UC->>UoW: messages.create(user turn)
     UC->>UoW: messages.create(assistant turn)

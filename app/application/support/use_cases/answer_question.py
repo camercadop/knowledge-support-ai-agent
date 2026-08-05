@@ -16,6 +16,7 @@ from app.application.support.ports.embedding_model import EmbeddingModel
 from app.application.support.ports.message_sanitizer import MessageSanitizer
 from app.application.support.ports.observability import BaseInstrumentation
 from app.application.support.ports.prompt_builder import PromptBuilder
+from app.application.support.ports.query_rewriter import QueryRewriter
 from app.application.support.ports.tool_registry import ToolRegistry
 from app.application.support.ports.unit_of_work.messaging import MessagingUnitOfWork
 from app.application.support.ports.vector_store import SearchResult
@@ -64,6 +65,9 @@ class AnswerQuestion:
         history_optimizer: Optional optimizer that applies retention policies
             to conversation history before LLM calls. When provided, the
             optimizer prunes or summarizes history before generation.
+        query_rewriter: Optional rewriter that transforms the user query
+            before embedding and retrieval. When provided, the rewritten
+            query is used for embedding instead of the sanitized message.
     """
 
     def __init__(
@@ -78,6 +82,7 @@ class AnswerQuestion:
         instrumentation: BaseInstrumentation,
         tool_registry: ToolRegistry | None = None,
         history_optimizer: ConversationHistoryOptimizer | None = None,
+        query_rewriter: QueryRewriter | None = None,
     ) -> None:
         self._uow = uow
         self._event_publisher = event_publisher
@@ -89,6 +94,7 @@ class AnswerQuestion:
         self._tool_registry = tool_registry
         self._instrumentation = instrumentation
         self._history_optimizer = history_optimizer
+        self._query_rewriter = query_rewriter
 
     def handle(
         self,
@@ -117,6 +123,12 @@ class AnswerQuestion:
         with self._instrumentation.root_span("answer_question.handle"):
             try:
                 sanitized_message = self._message_sanitizer.sanitize(user_message)
+
+                rewritten_message = (
+                    self._query_rewriter.rewrite(sanitized_message, history=[])
+                    if self._query_rewriter is not None
+                    else sanitized_message
+                )
             except MessageRejected as exc:
                 log_security_event(
                     "support.message_rejected", phone=phone, reason=exc.reason
@@ -127,7 +139,7 @@ class AnswerQuestion:
                     chunks=None,
                 )
 
-            embedding = self._embed(sanitized_message)
+            embedding = self._embed(rewritten_message)
             retrieval = self._retrieve(
                 embedding,
                 knowledge_base_id=knowledge_base_id,
@@ -142,7 +154,7 @@ class AnswerQuestion:
             messages = [
                 ChatMessage(role=Role(m.role), content=m.content) for m in history
             ]
-            messages.append(ChatMessage(role=Role.USER, content=sanitized_message))
+            messages.append(ChatMessage(role=Role.USER, content=rewritten_message))
 
             if self._history_optimizer is not None:
                 messages = self._history_optimizer.optimize_history(messages)

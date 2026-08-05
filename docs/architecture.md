@@ -54,26 +54,27 @@ flowchart TB
     end
 
     subgraph app["Application Layer"]
-subgraph use_cases["Use Cases"]
-             uc_answer["AnswerQuestion"]
-             uc_ingest["IngestDocument"]
-             uc_export["ExportRagInteractions"]
-             retrieval_svc["ChunkRetriever"]
-             history_opt["ConversationHistoryOptimizer"]
-         end
-         subgraph ports["Ports"]
-             port_msg_uow["MessagingUnitOfWork"]
-             port_know_uow["KnowledgeUnitOfWork"]
-             port_analytics_uow["AnalyticsUnitOfWork"]
-             port_chat["ChatModel"]
-             port_embed["EmbeddingModel"]
-             port_vs["VectorStore"]
-             port_tools["ToolRegistry"]
-             port_prompt["PromptBuilder"]
-             port_event["EventPublisher"]
-             port_obs["BaseInstrumentation"]
-             port_retention["MessageRetentionPolicy"]
-         end
+        subgraph use_cases["Use Cases"]
+            uc_answer["AnswerQuestion"]
+            uc_ingest["IngestDocument"]
+            uc_export["ExportRagInteractions"]
+            retrieval_svc["ChunkRetriever"]
+            history_opt["ConversationHistoryOptimizer"]
+        end
+        subgraph ports["Ports"]
+            port_msg_uow["MessagingUnitOfWork"]
+            port_know_uow["KnowledgeUnitOfWork"]
+            port_analytics_uow["AnalyticsUnitOfWork"]
+            port_chat["ChatModel"]
+            port_embed["EmbeddingModel"]
+            port_vs["VectorStore"]
+            port_tools["ToolRegistry"]
+            port_prompt["PromptBuilder"]
+            port_event["EventPublisher"]
+            port_obs["BaseInstrumentation"]
+            port_retention["MessageRetentionPolicy"]
+            port_rewrite["QueryRewriter"]
+        end
     end
 
     subgraph infra["Infrastructure Layer"]
@@ -83,13 +84,14 @@ subgraph use_cases["Use Cases"]
             sql_analytics_uow["SqlAlchemyAnalyticsUoW\nRagInteractionLogRepo"]
             pgvector["PgVectorStore"]
         end
-subgraph ai_impl["AI"]
-             openai_chat["OpenAIChatModel"]
-             openai_embed["OpenAIEmbeddingModel"]
-             default_prompt["DefaultPromptBuilder"]
-             tool_registry["ConcreteToolRegistry\nget_current_date · search_documents"]
-             history_policies["History Policies\nMessageCountPolicy · TokenLimitPolicy\nSummaryPolicy · RoleFilterPolicy"]
-         end
+        subgraph ai_impl["AI"]
+              openai_chat["OpenAIChatModel"]
+              openai_embed["OpenAIEmbeddingModel"]
+              default_prompt["DefaultPromptBuilder"]
+              tool_registry["ConcreteToolRegistry\nget_current_date · search_documents"]
+              history_policies["History Policies\nMessageCountPolicy · TokenLimitPolicy\nSummaryPolicy · RoleFilterPolicy"]
+              query_rewriter["QueryRewriter\nPassthroughQueryRewriter · LLMQueryRewriter"]
+        end
         subgraph events_impl["Events"]
             event_bus["InMemoryEventBus"]
             rag_handler["RagInteractionLogHandler"]
@@ -111,7 +113,7 @@ subgraph ai_impl["AI"]
     cli_main --> uc_answer
     cli_main --> uc_ingest
 
-    uc_answer --> port_msg_uow & port_chat & port_tools & port_prompt & retrieval_svc & port_event & port_obs & history_opt
+    uc_answer --> port_msg_uow & port_chat & port_tools & port_prompt & retrieval_svc & port_event & port_obs & history_opt & port_rewrite
     uc_export --> port_analytics_uow
     retrieval_svc --> port_vs
     uc_ingest --> port_know_uow & port_embed & port_vs & port_obs
@@ -129,6 +131,7 @@ subgraph ai_impl["AI"]
     event_bus -->|dispatches| rag_handler
     port_obs -.->|impl| otel_instrumentation
     port_retention -.->|impl| history_policies
+    port_rewrite -.->|impl| query_rewriter
 
     sql_msg_uow & sql_know_uow & sql_analytics_uow & pgvector --> postgres
     openai_chat & openai_embed --> openai
@@ -138,39 +141,51 @@ subgraph ai_impl["AI"]
 
 ```
 app/
-    api/              # Route handlers and webhook endpoints
+    api/              # Route handlers
     application/      # Use cases and orchestration, organized by domain
-        shared/       # Cross-domain utilities: events, base ports, CRUD, and security
-            security/ # Application-layer security utilities (no infrastructure dependencies)
+        shared/       # Cross-domain abstractions reused across all domains
+            security/ # Application-layer security utilities
         <domain>/     # One sub-package per domain
             events/       # Domain events
+            exceptions/   # Domain-specific exceptions
             models/       # Application-layer value objects
             ports/        # Interfaces for infrastructure dependencies
                 repositories/   # One abstract repo per aggregate root
                 unit_of_work/   # Domain-scoped transactional boundaries
-            services/     # Shared application-layer services (collaborators, not entry points)
+            services/     # Shared application-layer services
             use_cases/    # One module per user-facing action
     cli/              # Typer CLI entry point
+        commands/     # One module per command group
     config/           # Settings and environment configuration
-    container/        # Composition Root — ApplicationContainer composes domain-scoped containers
+    container/        # Composition root
     domain/           # Domain models and business logic
-    infrastructure/   # External integrations (DB, LLM, WhatsApp)
+    infrastructure/   # Adapters for all external systems
         ai/
-            chat/         # Chat completion provider implementations
-            chunking/     # ChunkStrategy implementations
-            embeddings/   # Embedding provider implementations
-            history_policies/ # MessageRetentionPolicy implementations
-            mock/         # Mock implementations for testing
-            prompt_builder/ # PromptBuilder implementations
-            tools/        # Tool registry, @tool decorator, and tool implementations
-        analytics/        # Infrastructure handlers for the analytics domain
-        database/         # ORM adapters, repositories, and migrations
-        events/           # Event bus implementations
+            chat/             # Chat completion adapters
+            chunking/         # Chunking strategy adapters
+            embeddings/       # Embedding adapters
+            history_policies/ # Message retention policy adapters
+            message_sanitizer/ # Message sanitizer adapters
+            mock/             # In-process test doubles
+            prompt_builder/   # Prompt builder adapters
+            query_rewriter/   # Query rewriter adapters
+            tools/            # Tool registry and built-in tool implementations
+        analytics/        # Event handlers for the analytics domain
+        database/
+            sqlalchemy/
+                migrations/   # Alembic migrations
+                postgresql/   # PostgreSQL ORM models, repositories, and units of work
+                sqlite/       # SQLite engine for lightweight environments
+        events/           # Event bus adapters
+        middleware/       # ASGI middleware
         observability/    # OTel instrumentation
-            definitions/   # InstrumentationConfig constants grouped by domain
+            definitions/  # Instrumentation config constants grouped by domain
+        routers/          # Reusable router utilities
+        security/         # Infrastructure-layer security adapters
         vectorstores/
-            pgvector/   # PgVectorStore — cosine similarity search via pgvector
-    schemas/          # Pydantic schemas
+            fake/       # In-process vector store for testing
+            pgvector/   # pgvector adapter
+    schemas/          # Pydantic request and response schemas
 
 tests/
 ```

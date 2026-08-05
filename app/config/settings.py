@@ -66,6 +66,8 @@ class Settings(BaseSettings):
     prompts_grounded_instructions: str = ""
     prompts_no_context_instructions: str = ""
     prompts_message_rejected_reply: str = ""
+    query_rewriting_enabled: bool = False
+    query_rewrite_prompt: str = ""
 
 
 settings = Settings()  # type: ignore[call-arg]
@@ -87,6 +89,10 @@ apply_ini_defaults(
         "prompts_message_rejected_reply": (
             "prompts.ini",
             "prompts.message_rejected_reply",
+        ),
+        "query_rewrite_prompt": (
+            "prompts.ini",
+            "query_rewriter.query_rewrite",
         ),
     },
 )

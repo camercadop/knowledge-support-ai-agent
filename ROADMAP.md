@@ -33,7 +33,7 @@
 
 ### Knowledge Bases
 
-- Multiple Knowledge Bases
+- ✅ Multiple Knowledge Bases
 - Departments
 - Collections
 - ✅ Metadata
@@ -41,8 +41,8 @@
 ### Retrieval
 
 - Hybrid Search
-- 🔄 Metadata Filters
-- Query Rewriting
+- ✅ Metadata Filters
+- ✅ Query Rewriting
 - Context Compression
 
 ### Responses

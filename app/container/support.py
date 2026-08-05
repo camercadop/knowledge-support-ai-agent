@@ -11,6 +11,7 @@ from app.application.support.ports.embedding_model import EmbeddingModel
 from app.application.support.ports.message_retention_policy import (
     MessageRetentionPolicy,
 )
+from app.application.support.ports.query_rewriter import QueryRewriter
 from app.application.support.services.chunk_retriever import ChunkRetriever
 from app.application.support.services.history_optimizer import (
     ConversationHistoryOptimizer,
@@ -28,6 +29,10 @@ from app.infrastructure.ai.message_sanitizer import RegexMessageSanitizer
 from app.infrastructure.ai.prompt_builder.default import (
     DefaultPromptBuilder,
     PromptConfig,
+)
+from app.infrastructure.ai.query_rewriter import (
+    LLMQueryRewriter,
+    PassthroughQueryRewriter,
 )
 from app.infrastructure.ai.tools.registry import build_tool_registry
 from app.infrastructure.analytics.event_handlers import RagInteractionLogHandler
@@ -69,6 +74,15 @@ class SupportContainer(BaseContainer):
         self._embedding_model = self._resolve_embedding_model()
         self._chunk_strategy = build_chunk_strategy()
         self._conversation_history_optimizer = self._create_history_optimizer()
+        self._query_rewriter = self._create_query_rewriter()
+
+    def _create_query_rewriter(self) -> QueryRewriter:
+        if settings.query_rewriting_enabled:
+            return LLMQueryRewriter(
+                chat_model=self._chat_model,
+                prompt=settings.query_rewrite_prompt,
+            )
+        return PassthroughQueryRewriter()
 
     def _resolve_embedding_model(self) -> EmbeddingModel:
         if settings.embedding_provider == "mock":
@@ -146,6 +160,7 @@ class SupportContainer(BaseContainer):
             instrumentation=self._instrumentation(ANSWER_QUESTION_INSTRUMENTATION),
             tool_registry=build_tool_registry(db, metadata_filters=metadata_filters),
             history_optimizer=self._conversation_history_optimizer,
+            query_rewriter=self._query_rewriter,
         )
 
     def clear_history(self, db: Session) -> ClearHistory:
