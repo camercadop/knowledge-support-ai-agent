@@ -109,7 +109,9 @@ class SupportContainer(BaseContainer):
 
         return ConversationHistoryOptimizer(policies)
 
-    def answer_question(self, db: Session) -> AnswerQuestion:
+    def answer_question(
+        self, db: Session, metadata_filters: dict[str, str] | None = None
+    ) -> AnswerQuestion:
         """Build a fresh AnswerQuestion use case bound to the given session.
 
         Args:
@@ -142,7 +144,7 @@ class SupportContainer(BaseContainer):
             prompt_builder=self._prompt_builder,
             message_sanitizer=self._message_sanitizer,
             instrumentation=self._instrumentation(ANSWER_QUESTION_INSTRUMENTATION),
-            tool_registry=build_tool_registry(db),
+            tool_registry=build_tool_registry(db, metadata_filters=metadata_filters),
             history_optimizer=self._conversation_history_optimizer,
         )
 

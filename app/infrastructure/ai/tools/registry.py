@@ -170,7 +170,9 @@ def _validate_dependencies(tool_name: str, deps: dict[str, Any]) -> None:
         )
 
 
-def build_tool_registry(db: Session) -> ConcreteToolRegistry:
+def build_tool_registry(
+    db: Session, metadata_filters: dict[str, str] | None = None
+) -> ConcreteToolRegistry:
     """Discover and register all @tool-decorated callables in the tools package.
 
     Scans every module in app.infrastructure.ai.tools for callables decorated
@@ -215,6 +217,7 @@ def build_tool_registry(db: Session) -> ConcreteToolRegistry:
                 for key, factory in deps.items()
                 if factory is not None or key == DB_DEPENDENCY_KEY
             }
+            resolved["metadata_filters"] = metadata_filters
             registry.register(definition, obj(**resolved))
 
     return registry

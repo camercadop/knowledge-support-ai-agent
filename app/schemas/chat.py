@@ -9,6 +9,7 @@ class ChatRequest(BaseModel):
 
     phone: str = Field(max_length=15)
     message: str = Field(min_length=1, max_length=4096)
+    metadata_filters: dict[str, str] | None = None
 
     @field_validator("phone")
     @classmethod

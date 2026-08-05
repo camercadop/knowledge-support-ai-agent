@@ -95,6 +95,7 @@ class AnswerQuestion:
         phone: str,
         user_message: str,
         knowledge_base_id: uuid.UUID | None = None,
+        metadata_filters: dict[str, str] | None = None,
     ) -> AnswerResult:
         """Process a user message and return the assistant reply with chunk metadata.
 
@@ -107,6 +108,8 @@ class AnswerQuestion:
             phone: The user's phone number, used to identify the contact.
             user_message: The raw message text sent by the user.
             knowledge_base_id: Optional knowledge base to scope retrieval to.
+            metadata_filters: Optional key-value pairs for JSONB containment
+                filtering on document metadata.
 
         Returns:
             AnswerResult with the assistant reply and retrieved chunk metadata.
@@ -125,7 +128,11 @@ class AnswerQuestion:
                 )
 
             embedding = self._embed(sanitized_message)
-            retrieval = self._retrieve(embedding, knowledge_base_id=knowledge_base_id)
+            retrieval = self._retrieve(
+                embedding,
+                knowledge_base_id=knowledge_base_id,
+                metadata_filters=metadata_filters,
+            )
 
             contact = self._uow.contacts.get_or_create_by_phone(phone)
             conversation = self._uow.conversations.get_or_create_for_contact(contact.id)
@@ -186,6 +193,7 @@ class AnswerQuestion:
         self,
         embedding: list[float],
         knowledge_base_id: uuid.UUID | None = None,
+        metadata_filters: dict[str, str] | None = None,
     ) -> RetrievalResult:
         """Retrieve relevant chunks and record retrieval latency.
 
@@ -193,13 +201,17 @@ class AnswerQuestion:
             embedding: Query vector to search against.
             knowledge_base_id: If set, only return chunks belonging to this
                 knowledge base.
+            metadata_filters: Optional key-value pairs for JSONB containment
+                filtering on document metadata.
 
         Returns:
             RetrievalResult with context string and matched chunks.
         """
         with self._instrumentation.span("retrieval.retrieve"):
             return self._retrieval_service.retrieve(
-                embedding, knowledge_base_id=knowledge_base_id
+                embedding,
+                knowledge_base_id=knowledge_base_id,
+                metadata_filters=metadata_filters,
             )
 
     def _generate(

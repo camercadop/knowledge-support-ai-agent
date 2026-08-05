@@ -75,6 +75,7 @@ class StubVectorStore(VectorStore):
         """
         self._results = results
         self.last_embedding: list[float] | None = None
+        self.last_metadata_filters: dict[str, str] | None = None
 
     def upsert(
         self,
@@ -107,6 +108,7 @@ class StubVectorStore(VectorStore):
             The fixed list of search results.
         """
         self.last_embedding = embedding
+        self.last_metadata_filters = metadata_filters
         return self._results
 
 
@@ -201,3 +203,29 @@ def test_sanitize_truncates_long_query() -> None:
     long_query = "x" * 1200
     tool({"query": long_query})
     assert len(embed_model.last_text) == 1000
+
+
+def test_metadata_filters_passed_to_vector_store() -> None:
+    vector = [1.0, 0.0]
+    store = StubVectorStore([])
+    tool = SearchDocumentsTool(
+        embedding_model=StubEmbeddingModel(vector),
+        vector_store=store,
+        metadata_filters={"department": "engineering", "language": "en"},
+    )
+    tool({"query": "test"})
+    assert store.last_metadata_filters == {
+        "department": "engineering",
+        "language": "en",
+    }
+
+
+def test_metadata_filters_none_when_not_provided() -> None:
+    vector = [1.0, 0.0]
+    store = StubVectorStore([])
+    tool = SearchDocumentsTool(
+        embedding_model=StubEmbeddingModel(vector),
+        vector_store=store,
+    )
+    tool({"query": "test"})
+    assert store.last_metadata_filters is None

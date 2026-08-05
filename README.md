@@ -66,7 +66,7 @@ flowchart TB
 
 ## Prerequisites
 
-- [Python 3.13+](https://www.python.org/downloads/)
+- [Python 3.14+](https://www.python.org/downloads/)
 - [uv](https://docs.astral.sh/uv/getting-started/installation/)
 - [Docker & Docker Compose](https://docs.docker.com/get-docker/)
 - An OpenAI API key
@@ -276,7 +276,7 @@ uv audit --preview-features audit-command
 - [Development Guide](docs/development.md) — conventions, local setup, testing, linting, and code style rules
 - [Security](docs/security.md) — implemented security controls and rules
 - [Data Model](docs/data-model.md) — database conventions, base model fields, and migration rules
-- [Architecture Decision Records](docs/adr/) — formal, binding decisions that shaped the system design
+- [Architecture Decision Records](docs/adr/) — formal, binding design decisions
 - [Guidelines](docs/guidelines/) — how-to references for implementing common patterns correctly
 - [Roadmap](Roadmap.md) — product roadmap and implementation status
 - [Vision](docs/vision.md) — product vision and strategic direction

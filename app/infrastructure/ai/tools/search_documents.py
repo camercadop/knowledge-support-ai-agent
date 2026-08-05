@@ -46,7 +46,9 @@ def _sanitize_query(query: str) -> str:
     },
 )
 def search_documents_factory(
-    db: Session, embedding_model: EmbeddingModel
+    db: Session,
+    embedding_model: EmbeddingModel,
+    metadata_filters: dict[str, str] | None = None,
 ) -> SearchDocumentsTool:
     """Construct a SearchDocumentsTool for the given database session
     and embedding model.
@@ -54,6 +56,8 @@ def search_documents_factory(
     Args:
         db: The active database session used to back the vector store.
         embedding_model: The embedding model used to embed search queries.
+        metadata_filters: Optional key-value pairs for JSONB containment
+            filtering on document metadata.
 
     Returns:
         A SearchDocumentsTool ready to handle tool call arguments.
@@ -61,6 +65,7 @@ def search_documents_factory(
     return SearchDocumentsTool(
         embedding_model=embedding_model,
         vector_store=PgVectorStore(db),
+        metadata_filters=metadata_filters,
     )
 
 
@@ -76,15 +81,19 @@ class SearchDocumentsTool:
         self,
         embedding_model: EmbeddingModel,
         vector_store: VectorStore,
+        metadata_filters: dict[str, str] | None = None,
     ) -> None:
         """Initialize with the embedding model and vector store to use for retrieval.
 
         Args:
             embedding_model: Provider used to embed the search query.
             vector_store: Store used to retrieve relevant knowledge chunks.
+            metadata_filters: Optional key-value pairs for JSONB containment
+                filtering on document metadata.
         """
         self._embedding_model = embedding_model
         self._vector_store = vector_store
+        self._metadata_filters = metadata_filters
 
     def __call__(self, arguments: dict[str, Any]) -> str:
         """Search the knowledge base for chunks relevant to the given query.
@@ -101,7 +110,10 @@ class SearchDocumentsTool:
         """
         query: str = _sanitize_query(arguments["query"])
         embedding = self._embedding_model.embed(query)
-        results = self._vector_store.search(embedding)
+        results = self._vector_store.search(
+            embedding,
+            metadata_filters=self._metadata_filters,
+        )
         if not results:
             return "No relevant documents found."
         return "\n\n".join(r.chunk for r in results)

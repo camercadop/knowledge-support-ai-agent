@@ -141,45 +141,58 @@ Checks all dependencies against the OSV vulnerability database.
 
 ```
 app/
-    api/          # Route handlers
-    application/  # Use cases and orchestration, organized by domain
-        shared/   # Cross-domain utilities: events, base ports, CRUD, and security
-            security/ # Application-layer security utilities (no infrastructure dependencies)
-        <domain>/ # One sub-package per domain
+    api/          # HTTP request handlers and response mapping
+    application/  # Use cases, ports, and domain services
+        shared/   # Cross-cutting concerns: events, ports, security, base use cases
+            security/ # Application-layer security utilities
+        <domain>/ # One sub-package per business domain
             models/       # Application-layer value objects
-            ports/        # Interfaces for infrastructure dependencies
+            ports/        # Abstract interfaces for infrastructure dependencies
                 repositories/  # One abstract repo per aggregate root
                 unit_of_work/  # Domain-scoped transactional boundaries
             services/     # Shared application-layer services
             use_cases/    # One module per user-facing action
-    cli/          # Typer CLI entry point
-        commands/   # One module per command group
-        context.py  # Request context manager (container + session lifecycle)
-    config/       # Settings and environment configuration
-    container/    # Composition Root — ApplicationContainer composes domain-scoped containers
+    cli/          # CLI entry point and command definitions
+        commands/   # Command group modules
+        context.py  # Request context (container + session lifecycle)
+    config/       # Settings, logging, and telemetry configuration
+    container/    # Composition Root — wires domain containers together
     domain/       # Domain models and business logic
     infrastructure/
-        ai/           # Chat and embedding provider implementations
-            prompt_builder/ # PromptBuilder implementations
-            tools/    # Tool registry, @tool decorator, and tool implementations
+        ai/           # LLM and embedding provider implementations
+            chat/         # Chat model providers
+            chunking/     # Text chunking strategies
+            embeddings/   # Embedding provider implementations
+            history_policies/ # Conversation retention policies
+            message_sanitizer/ # User input sanitization
+            mock/         # Mock providers for testing
+            prompt_builder/ # Prompt assembly from history and context
+            tools/    Tool registry, decorator, and tool implementations
+        analytics/    Analytics event handlers
         database/
-            sqlalchemy/ # Models, repositories, migrations, and PostgreSQL engine
-            sqlite/     # In-memory SQLite engine for tests
-        middleware/   # ASGI middleware (security headers, rate limiting, request size limiting)
-        vectorstores/ # Vector store implementations (pgvector)
-        observability/ # OTel instrumentation
-        whatsapp/     # WhatsApp Cloud API integration
-    schemas/      # Pydantic schemas
+            sqlalchemy/ # SQLAlchemy models, repositories, migrations, engines
+                migrations/ # Alembic migration scripts
+                postgresql/ # PostgreSQL engine, models, repositories, UoW
+                sqlite/     # SQLite engine for tests
+        events/       # Domain event publishing
+        middleware/   # ASGI middleware (security, rate limiting, request sizing)
+        observability/ # OpenTelemetry instrumentation
+        routers/      # CRUD router implementations
+        security/     # Security infrastructure
+        vectorstores/ # Vector store implementations
+    schemas/      # Pydantic request/response validation schemas
 
 tests/
-    api/              # mirrors app/api/
-    application/      # mirrors app/application/
-    infrastructure/   # mirrors app/infrastructure/
-        middleware/   # mirrors app/infrastructure/middleware/
-    conftest.py       # shared fixtures
+    api/              # Endpoint and integration tests
+    application/      # Pure logic tests for use cases and services
+    infrastructure/   # Adapter and tool tests
+        middleware/   # Middleware tests
+    conftest.py       # Shared test fixtures
 
 docs/
     adr/          # Architecture Decision Records
+    guidelines/   # Pattern reference guides
+    vision.md       # Product vision and strategic direction
 ```
 
 ## Request Flows
@@ -199,12 +212,12 @@ sequenceDiagram
     participant LLM as OpenAIChatModel
     participant OpenAI as OpenAI API
 
-    Client->>Router: POST /chat {phone, message}
-    Router->>UC: handle(phone, message)
+    Client->>Router: POST /chat {phone, message, metadata_filters}
+    Router->>UC: handle(phone, message, metadata_filters)
     UC->>Embed: embed(user_message)
     Embed->>OpenAI: embeddings.create(...)
     OpenAI-->>Embed: query_vector
-    UC->>RS: retrieve(query_vector)
+    UC->>RS: retrieve(query_vector, metadata_filters)
     RS->>VS: search(query_vector, top_k, min_score, metadata_filters)
     VS->>DB: SELECT chunks JOIN documents ORDER BY cosine_distance
     DB-->>VS: top-k chunks with document title and source

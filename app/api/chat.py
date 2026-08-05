@@ -32,7 +32,9 @@ def chat(
 ) -> ChatResponse:
     """Receive a user message and return the assistant reply."""
     logger.info("Received chat request from %s", request.phone)
-    result = container.answer_question(db).handle(request.phone, request.message)
+    result = container.answer_question(db).handle(
+        request.phone, request.message, metadata_filters=request.metadata_filters
+    )
     logger.info("Replied to %s", request.phone)
     chunks = (
         [
