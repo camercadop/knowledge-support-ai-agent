@@ -94,6 +94,7 @@ class StubVectorStore(VectorStore):
         min_score: float | None = None,
         knowledge_base_id: uuid.UUID | None = None,
         metadata_filters: dict[str, str] | None = None,
+        params: dict[str, Any] | None = None,
     ) -> list[SearchResult]:
         """Record the received embedding and return the pre-configured results.
 
@@ -103,6 +104,7 @@ class StubVectorStore(VectorStore):
             min_score: Ignored.
             knowledge_base_id: Ignored.
             metadata_filters: Ignored.
+            params: Ignored.
 
         Returns:
             The fixed list of search results.

@@ -17,9 +17,11 @@ WhatsApp Cloud API is the intended communication channel, with a REST API availa
 
 - Conversational chat with persistent history per contact
 - RAG — knowledge chunks retrieved via semantic search on every turn
+- Hybrid search — combines vector similarity with PostgreSQL full-text search, fused via Reciprocal Rank Fusion (RRF), controlled by `RETRIEVAL_MODE`
 - Document ingestion — chunking, embedding, and pgvector indexing
 - Tool calling — `search_documents` and `get_current_date` built in, with input validation, query sanitization, and execution timeout
 - Conversation history optimization — pluggable retention policies (token limit, message count, role filter, summarization)
+- Query rewriting — rewrites user queries before embedding to improve retrieval quality, controlled by `QUERY_REWRITING_ENABLED`
 - Provider independence — chat and embedding providers are swappable at config time
 - OpenTelemetry instrumentation — spans and metrics for use cases and RAG pipeline
 - Rate limiting — moving-window algorithm via slowapi, configurable per environment
@@ -105,6 +107,9 @@ uv run alembic upgrade head
 | `RETRIEVAL_MAX_CHUNKS` | Maximum deduplicated chunks included in context (default: `5`) |
 | `RETRIEVAL_MAX_CONTEXT_TOKENS` | Token budget for assembled context (default: `2000`) |
 | `RETRIEVAL_ENCODING` | tiktoken encoding for token counting (default: `cl100k_base`) |
+| `RETRIEVAL_MODE` | Retrieval strategy: `vector` for pure cosine similarity, `hybrid` for vector + full-text search fused via RRF (default: `vector`) |
+| `RETRIEVAL_HYBRID_FTS_LANGUAGE` | PostgreSQL FTS language configuration used in hybrid mode (default: `english`) |
+| `RETRIEVAL_HYBRID_RRF_K` | RRF smoothing constant used in hybrid mode — higher values reduce the impact of rank differences (default: `60`) |
 | `CHUNK_STRATEGY` | Chunking strategy: `fixed`, `recursive`, `markdown` (default: `fixed`) |
 | `CHUNK_SIZE` | Target chunk size in characters (default: `500`) |
 | `CHUNK_OVERLAP` | Overlap between consecutive chunks in characters (default: `50`) |
@@ -234,7 +239,11 @@ tests/
 
 ## Retrieval & Similarity Scoring
 
-The RAG pipeline uses **cosine distance** to measure how relevant a knowledge chunk is to the user's query.
+The RAG pipeline supports two retrieval modes, controlled by `RETRIEVAL_MODE`.
+
+### Vector mode (default)
+
+Uses **cosine distance** to rank chunks by semantic similarity to the query embedding.
 
 - Range: `0.0` to `1.0` — lower means more similar
 - `0.0` = identical vectors (perfect match)
@@ -249,6 +258,14 @@ Citations shown after each agent reply display a **Similarity %**, which is `(1 
 | OpenAI | `0.4` – `0.5` |
 | Nvidia | `0.6` – `0.8` |
 | Ollama (nomic-embed-text) | `0.5` – `0.7` |
+
+### Hybrid mode
+
+Combines vector similarity with PostgreSQL full-text search (`tsvector`/`tsquery`), then fuses the two ranked lists using **Reciprocal Rank Fusion (RRF)**. This improves retrieval for exact-match queries such as product names, error codes, and identifiers that semantic search alone handles poorly.
+
+Enable it by setting `RETRIEVAL_MODE=hybrid`. The score on each citation is the RRF score (higher is better) rather than cosine distance.
+
+RRF formula: `score = 1 / (k + vector_rank) + 1 / (k + fts_rank)`, where `k` is `RETRIEVAL_HYBRID_RRF_K`.
 
 ## Testing
 

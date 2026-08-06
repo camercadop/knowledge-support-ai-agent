@@ -49,6 +49,7 @@ class VectorStore(ABC):
         min_score: float | None = None,
         knowledge_base_id: uuid.UUID | None = None,
         metadata_filters: dict[str, str] | None = None,
+        query: str | None = None,
     ) -> list[SearchResult]:
         """Return the top-k chunks closest to the given embedding.
 
@@ -61,6 +62,7 @@ class VectorStore(ABC):
                 knowledge base (filtered via the documents table).
             metadata_filters: If set, only return chunks whose metadata contains
                 all specified key-value pairs (JSONB containment).
+            query: Raw query text forwarded to the active SearchStrategy.
 
         Returns:
             List of SearchResult ordered from most to least similar.

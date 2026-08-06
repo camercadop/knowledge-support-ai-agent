@@ -6,9 +6,13 @@ from sqlalchemy.orm import Session
 from app.application.support.ports.embedding_model import EmbeddingModel
 from app.application.support.ports.tool_registry import ToolParameter
 from app.application.support.ports.vector_store import VectorStore
+from app.config.settings import settings
 from app.infrastructure.ai.embeddings.openai import OpenAIEmbeddingModel
 from app.infrastructure.ai.tools.decorators import tool
 from app.infrastructure.vectorstores.pgvector.store import PgVectorStore
+from app.infrastructure.vectorstores.search_strategies.registry import (
+    get_search_strategy,
+)
 
 _MAX_QUERY_LENGTH = 1000
 
@@ -62,9 +66,10 @@ def search_documents_factory(
     Returns:
         A SearchDocumentsTool ready to handle tool call arguments.
     """
+    strategy = get_search_strategy(settings.retrieval_mode, settings)
     return SearchDocumentsTool(
         embedding_model=embedding_model,
-        vector_store=PgVectorStore(db),
+        vector_store=PgVectorStore(db, strategy),
         metadata_filters=metadata_filters,
     )
 

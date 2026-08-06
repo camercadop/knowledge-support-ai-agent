@@ -8,7 +8,7 @@ This sub-package contains everything belonging to the support domain: models, po
 - `ports/` — abstract interfaces the use cases depend on
   - `repositories/` — one abstract repository per aggregate root
   - `unit_of_work/` — domain-scoped transactional boundaries (`MessagingUnitOfWork`, `KnowledgeUnitOfWork`)
-  - `chat_model.py`, `embedding_model.py`, `prompt_builder.py`, `tool_registry.py`, `observability.py`, `chunk_strategy.py`, `vector_store.py`
+  - `chat_model.py`, `embedding_model.py`, `prompt_builder.py`, `tool_registry.py`, `observability.py`, `chunk_strategy.py`, `vector_store.py`, `search_params_builder.py`
 - `services/` — shared application-layer logic consumed by multiple use cases
   - `chunk_retriever.py` — wraps vector store search with deduplication, capping, and token budget enforcement
 - `use_cases/` — one module per user-facing action
@@ -20,7 +20,7 @@ This sub-package contains everything belonging to the support domain: models, po
 1. Sanitize the user message to neutralize prompt injection attempts
 2. Rewrite the sanitized query using the QueryRewriter (if enabled)
 3. Embed the rewritten query into a query vector
-4. Retrieve relevant knowledge chunks via semantic search, applying deduplication, max-chunks cap, and token budget
+4. Retrieve relevant knowledge chunks via semantic or hybrid search, applying deduplication, max-chunks cap, and token budget
 5. Resolve the contact by phone, creating one if it doesn't exist
 6. Resolve the active conversation for that contact, creating one if needed
 7. Load the conversation's message history
@@ -43,8 +43,8 @@ sequenceDiagram
     Rewrite-->>UC: rewritten_query
     UC->>Embed: embed(rewritten_query)
     Embed-->>UC: query_vector
-    UC->>RS: retrieve(query_vector)
-    RS->>VS: search(query_vector, top_k, min_score, metadata_filters)
+    UC->>RS: retrieve(query_vector, query)
+    RS->>VS: search(query_vector, top_k, min_score, metadata_filters, params)
     VS-->>RS: SearchResult list (with document_title, source)
     RS->>RS: deduplicate by chunk text
     RS->>RS: cap at max_chunks

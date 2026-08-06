@@ -31,6 +31,7 @@ from app.infrastructure.observability.instrumentation import (
     SpyInstrumentation,
 )
 from app.infrastructure.vectorstores.fake.store import FakeVectorStore
+from app.infrastructure.vectorstores.search_strategies.strategies import VectorSearchStrategy
 
 _PHONE = "+1234567890"
 
@@ -59,6 +60,7 @@ def _make_use_case(
 ) -> AnswerQuestion:
     retrieval_service = ChunkRetriever(
         vector_store=vector_store,
+        strategy=VectorSearchStrategy(settings),
         top_k=5,
         min_score=None,
         max_chunks=5,

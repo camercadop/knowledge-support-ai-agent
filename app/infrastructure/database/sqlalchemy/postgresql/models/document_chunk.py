@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING, Any
 
 from pgvector.sqlalchemy import Vector
 from sqlalchemy import ForeignKey, Text
-from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.dialects.postgresql import JSONB, TSVECTOR
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.config.settings import settings
@@ -40,6 +40,11 @@ class DocumentChunk(Base):
         JSONB,
         nullable=False,
         server_default="{}",
+    )
+    search_vector: Mapped[str | None] = mapped_column(
+        # tsvector generated column for full-text search, populated by PostgreSQL
+        TSVECTOR,
+        nullable=True,
     )
 
     document: Mapped[Document] = relationship(back_populates="chunks")

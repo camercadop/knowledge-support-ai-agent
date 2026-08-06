@@ -11,6 +11,7 @@ from app.infrastructure.database.sqlalchemy.postgresql.models.document_chunk imp
     DocumentChunk as DocumentChunkORM,
 )
 from app.infrastructure.vectorstores.pgvector.store import PgVectorStore
+from app.infrastructure.vectorstores.search_strategies.strategies import VectorSearchStrategy
 
 _DIMS = settings.embedding_dimensions or 1536
 _EMBEDDING = [0.0] * _DIMS
@@ -19,7 +20,7 @@ _EMBEDDING = [0.0] * _DIMS
 @pytest.fixture()
 def store(pg_db: Session) -> PgVectorStore:
     """Return a PgVectorStore backed by the PostgreSQL session."""
-    return PgVectorStore(pg_db)
+    return PgVectorStore(pg_db, VectorSearchStrategy(settings))
 
 
 def _seed(

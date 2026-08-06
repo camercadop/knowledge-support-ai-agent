@@ -4,6 +4,7 @@ from dataclasses import dataclass
 
 import tiktoken
 
+from app.application.support.ports.search_strategy import SearchStrategy
 from app.application.support.ports.vector_store import SearchResult, VectorStore
 
 logger = logging.getLogger(__name__)
@@ -50,6 +51,8 @@ class ChunkRetriever:
 
     Args:
         vector_store: Store used to retrieve relevant knowledge chunks.
+        strategy: SearchStrategy that controls retrieval mode and context
+            construction.
         top_k: Maximum number of results to request from the vector store.
         min_score: If set, exclude chunks with a cosine distance above this value.
         max_chunks: Maximum number of deduplicated chunks to include in context.
@@ -60,6 +63,7 @@ class ChunkRetriever:
     def __init__(
         self,
         vector_store: VectorStore,
+        strategy: SearchStrategy,
         top_k: int,
         min_score: float | None,
         max_chunks: int,
@@ -67,6 +71,7 @@ class ChunkRetriever:
         encoding_name: str,
     ) -> None:
         self._vector_store = vector_store
+        self._strategy = strategy
         self._top_k = top_k
         self._min_score = min_score
         self._max_chunks = max_chunks
@@ -76,6 +81,7 @@ class ChunkRetriever:
     def retrieve(
         self,
         embedding: list[float],
+        query: str | None = None,
         knowledge_base_id: uuid.UUID | None = None,
         metadata_filters: dict[str, str] | None = None,
     ) -> RetrievalResult:
@@ -86,6 +92,7 @@ class ChunkRetriever:
 
         Args:
             embedding: Query vector to search against.
+            query: Raw query text forwarded to the active search strategy.
             knowledge_base_id: If set, only return chunks belonging to this
                 knowledge base.
             metadata_filters: Optional key-value pairs for JSONB containment filtering.
@@ -100,12 +107,15 @@ class ChunkRetriever:
             min_score=self._min_score,
             knowledge_base_id=knowledge_base_id,
             metadata_filters=metadata_filters,
+            query=query,
         )
         logger.debug("Vector search returned %d results", len(results))
         for r in results:
             logger.debug(
                 "chunk score=%.4f document=%r source=%r",
-                r.score, r.document_title, r.source,
+                r.score,
+                r.document_title,
+                r.source,
             )
 
         seen: set[str] = set()

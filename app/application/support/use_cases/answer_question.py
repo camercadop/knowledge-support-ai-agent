@@ -142,6 +142,7 @@ class AnswerQuestion:
             embedding = self._embed(rewritten_message)
             retrieval = self._retrieve(
                 embedding,
+                query=rewritten_message,
                 knowledge_base_id=knowledge_base_id,
                 metadata_filters=metadata_filters,
             )
@@ -204,6 +205,7 @@ class AnswerQuestion:
     def _retrieve(
         self,
         embedding: list[float],
+        query: str | None = None,
         knowledge_base_id: uuid.UUID | None = None,
         metadata_filters: dict[str, str] | None = None,
     ) -> RetrievalResult:
@@ -211,6 +213,8 @@ class AnswerQuestion:
 
         Args:
             embedding: Query vector to search against.
+            query: Raw query text forwarded to the retrieval service for
+                hybrid search implementations.
             knowledge_base_id: If set, only return chunks belonging to this
                 knowledge base.
             metadata_filters: Optional key-value pairs for JSONB containment
@@ -222,6 +226,7 @@ class AnswerQuestion:
         with self._instrumentation.span("retrieval.retrieve"):
             return self._retrieval_service.retrieve(
                 embedding,
+                query=query,
                 knowledge_base_id=knowledge_base_id,
                 metadata_filters=metadata_filters,
             )

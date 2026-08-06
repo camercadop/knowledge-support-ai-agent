@@ -1,6 +1,5 @@
 import math
 import uuid
-from typing import Any
 
 from app.application.support.ports.vector_store import SearchResult, VectorStore
 
@@ -33,7 +32,7 @@ class FakeVectorStore(VectorStore):
     def __init__(self) -> None:
         """Initialize with an empty in-memory store."""
         self._store: dict[
-            uuid.UUID, tuple[uuid.UUID, str, list[float], dict[str, Any]]
+            uuid.UUID, tuple[uuid.UUID, str, list[float], dict[str, str]]
         ] = {}
         self._documents: dict[uuid.UUID, tuple[str, str | None, uuid.UUID | None]] = {}
 
@@ -59,7 +58,7 @@ class FakeVectorStore(VectorStore):
         """
         self._documents[document_id] = (title, source, knowledge_base_id)
 
-    def set_metadata(self, chunk_id: uuid.UUID, metadata: dict[str, Any]) -> None:
+    def set_metadata(self, chunk_id: uuid.UUID, metadata: dict[str, str]) -> None:
         """Attach metadata to an already-upserted chunk.
 
         This is a test-only helper that mirrors the metadata column stored on
@@ -99,11 +98,12 @@ class FakeVectorStore(VectorStore):
         min_score: float | None = None,
         knowledge_base_id: uuid.UUID | None = None,
         metadata_filters: dict[str, str] | None = None,
+        query: str | None = None,
     ) -> list[SearchResult]:
         """Return the top-k chunks closest to the given embedding by cosine distance.
 
         Applies optional min_score, knowledge_base_id, and metadata_filters
-        in memory.
+        in memory. query is accepted for interface compatibility but ignored.
 
         Args:
             embedding: Query vector to search against.
@@ -114,6 +114,7 @@ class FakeVectorStore(VectorStore):
                 whose document has no knowledge base are returned.
             metadata_filters: If set, only return chunks whose metadata contains
                 all specified key-value pairs.
+            query: Ignored by FakeVectorStore.
 
         Returns:
             List of SearchResult ordered from most to least similar.

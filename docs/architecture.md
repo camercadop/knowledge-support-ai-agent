@@ -74,6 +74,7 @@ flowchart TB
             port_obs["BaseInstrumentation"]
             port_retention["MessageRetentionPolicy"]
             port_rewrite["QueryRewriter"]
+            port_strategy["SearchStrategy"]
         end
     end
 
@@ -91,6 +92,7 @@ flowchart TB
               tool_registry["ConcreteToolRegistry\nget_current_date · search_documents"]
               history_policies["History Policies\nMessageCountPolicy · TokenLimitPolicy\nSummaryPolicy · RoleFilterPolicy"]
               query_rewriter["QueryRewriter\nPassthroughQueryRewriter · LLMQueryRewriter"]
+              search_strategies["SearchStrategies\nVectorSearchStrategy · HybridSearchStrategy"]
         end
         subgraph events_impl["Events"]
             event_bus["InMemoryEventBus"]
@@ -116,6 +118,7 @@ flowchart TB
     uc_answer --> port_msg_uow & port_chat & port_tools & port_prompt & retrieval_svc & port_event & port_obs & history_opt & port_rewrite
     uc_export --> port_analytics_uow
     retrieval_svc --> port_vs
+    retrieval_svc --> port_strategy
     uc_ingest --> port_know_uow & port_embed & port_vs & port_obs
     history_opt --> port_retention
 
@@ -132,6 +135,7 @@ flowchart TB
     port_obs -.->|impl| otel_instrumentation
     port_retention -.->|impl| history_policies
     port_rewrite -.->|impl| query_rewriter
+    port_strategy -.->|impl| search_strategies
 
     sql_msg_uow & sql_know_uow & sql_analytics_uow & pgvector --> postgres
     openai_chat & openai_embed --> openai
@@ -183,8 +187,9 @@ app/
         routers/          # Reusable router utilities
         security/         # Infrastructure-layer security adapters
         vectorstores/
-            fake/       # In-process vector store for testing
-            pgvector/   # pgvector adapter
+            fake/           # In-process vector store for testing
+            pgvector/       # pgvector adapter
+            search_strategies/ # SearchStrategy implementations and registry
     schemas/          # Pydantic request and response schemas
 
 tests/

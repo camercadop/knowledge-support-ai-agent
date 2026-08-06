@@ -51,6 +51,9 @@ class Settings(BaseSettings):
     retrieval_max_chunks: int = 5
     retrieval_max_context_tokens: int = 2000
     retrieval_encoding: str = "cl100k_base"
+    retrieval_mode: str = "vector"
+    retrieval_hybrid_fts_language: str = "english"
+    retrieval_hybrid_rrf_k: int = 60
     otel_enabled: bool = False
     otel_endpoint: str = "http://localhost:4318"
     otel_service_name: str = "knowledge-support-ai-agent"

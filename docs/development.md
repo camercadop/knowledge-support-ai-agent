@@ -78,6 +78,9 @@ Or use the interactive docs at `http://localhost:8000/docs`.
 | `RETRIEVAL_MAX_CHUNKS` | Maximum deduplicated chunks included in context (default: `5`) |
 | `RETRIEVAL_MAX_CONTEXT_TOKENS` | Token budget for assembled context (default: `2000`) |
 | `RETRIEVAL_ENCODING` | tiktoken encoding for token counting (default: `cl100k_base`) |
+| `RETRIEVAL_MODE` | Retrieval strategy: `vector` for pure cosine similarity, `hybrid` for vector + full-text search fused via RRF (default: `vector`) |
+| `RETRIEVAL_HYBRID_FTS_LANGUAGE` | PostgreSQL FTS language configuration used in hybrid mode (default: `english`) |
+| `RETRIEVAL_HYBRID_RRF_K` | RRF smoothing constant used in hybrid mode — higher values reduce the impact of rank differences (default: `60`) |
 | `WHATSAPP_TOKEN` | WhatsApp Cloud API token |
 | `WHATSAPP_VERIFY_TOKEN` | Webhook verification token |
 | `CORS_ORIGINS` | Comma-separated list of allowed CORS origins (default: empty, which denies all) |
@@ -180,6 +183,9 @@ app/
         routers/      # CRUD router implementations
         security/     # Security infrastructure
         vectorstores/ # Vector store implementations
+            fake/           # In-process vector store for testing
+            pgvector/       # pgvector adapter
+            params_builders/ # SearchParamsBuilder implementations and registry
     schemas/      # Pydantic request/response validation schemas
 
 tests/
@@ -214,7 +220,10 @@ sequenceDiagram
 
     Client->>Router: POST /chat {phone, message, metadata_filters}
     Router->>UC: handle(phone, message, metadata_filters)
-    UC->>Embed: embed(user_message)
+    UC->>UC: sanitize(user_message)
+    UC->>Rewrite: rewrite(sanitized_message, history)
+    Rewrite-->>UC: rewritten_query
+    UC->>Embed: embed(rewritten_query)
     Embed->>OpenAI: embeddings.create(...)
     OpenAI-->>Embed: query_vector
     UC->>RS: retrieve(query_vector, metadata_filters)

@@ -1,7 +1,9 @@
 import uuid
+from typing import Any
 
 from sqlalchemy.orm import Session
 
+from app.application.support.ports.search_strategy import SearchStrategy
 from app.application.support.ports.vector_store import SearchResult, VectorStore
 from app.infrastructure.database.sqlalchemy.postgresql.models.document import (
     Document as DocumentORM,
@@ -14,9 +16,15 @@ from app.infrastructure.database.sqlalchemy.postgresql.models.document_chunk imp
 class PgVectorStore(VectorStore):
     """VectorStore implementation backed by pgvector via SQLAlchemy."""
 
-    def __init__(self, db: Session) -> None:
-        """Initialize with an active database session."""
+    def __init__(self, db: Session, strategy: SearchStrategy) -> None:
+        """Initialize with an active database session and a search strategy.
+
+        Args:
+            db: Active SQLAlchemy session for this request.
+            strategy: SearchStrategy implementation that controls retrieval mode.
+        """
         self._db = db
+        self._strategy = strategy
 
     def upsert(
         self,
@@ -54,49 +62,70 @@ class PgVectorStore(VectorStore):
         min_score: float | None = None,
         knowledge_base_id: uuid.UUID | None = None,
         metadata_filters: dict[str, str] | None = None,
+        query: str | None = None,
     ) -> list[SearchResult]:
-        """Return the top-k chunks closest to the given embedding by cosine distance.
+        """Return chunks ranked by the active search strategy.
 
-        Applies an optional maximum distance filter (min_score), optional
-        knowledge base filter, and optional JSONB containment filter on metadata.
-        Results are ordered from most to least similar.
+        Delegates entirely to the injected SearchStrategy. The strategy
+        controls both context construction and query execution.
+
+        Args:
+            embedding: Query vector to search against.
+            top_k: Maximum number of results to return.
+            min_score: If set, exclude results with a score above this threshold.
+            knowledge_base_id: If set, only return chunks belonging to this
+                knowledge base. When None, only chunks whose document has no
+                knowledge base are returned.
+            metadata_filters: If set, only return chunks whose metadata contains
+                all specified key-value pairs.
+            query: Raw query text forwarded to the strategy.
+
+        Returns:
+            List of SearchResult ordered from most to least relevant.
         """
-        distance = DocumentChunkORM.embedding.cosine_distance(embedding).label(
-            "distance"
+        ctx = self._strategy.build_context(
+            embedding=embedding,
+            top_k=top_k,
+            min_score=min_score,
+            knowledge_base_id=knowledge_base_id,
+            metadata_filters=metadata_filters,
+            query=query,
         )
-        query = (
-            self._db.query(
-                DocumentChunkORM,
-                DocumentORM.title,
-                DocumentORM.source,
-                DocumentORM.knowledge_base_id,
-                distance,
-            )
-            .join(DocumentORM, DocumentChunkORM.document_id == DocumentORM.id)
-            .order_by(distance)
-        )
+        return self._strategy.execute(self._base_query, ctx)
 
-        if min_score is not None:
-            query = query.filter(distance <= min_score)
+    def _base_query(
+        self,
+        knowledge_base_id: uuid.UUID | None,
+        metadata_filters: dict[str, str] | None,
+    ) -> Any:
+        """Build a base SQLAlchemy query with common JOIN and filters applied.
+
+        Joins document_chunks to documents and applies knowledge_base_id and
+        metadata_filters. Callers add their own column expressions and ordering
+        on top of this.
+
+        Args:
+            knowledge_base_id: If set, filter to chunks whose document belongs
+                to this knowledge base. When None, only chunks with no knowledge
+                base are returned.
+            metadata_filters: If set, apply JSONB containment filter on metadata.
+
+        Returns:
+            A SQLAlchemy Query object with JOIN and filters applied.
+        """
+        q = self._db.query(
+            DocumentChunkORM,
+            DocumentORM.title,
+            DocumentORM.source,
+            DocumentORM.knowledge_base_id,
+        ).join(DocumentORM, DocumentChunkORM.document_id == DocumentORM.id)
 
         if knowledge_base_id is not None:
-            query = query.filter(DocumentORM.knowledge_base_id == knowledge_base_id)
+            q = q.filter(DocumentORM.knowledge_base_id == knowledge_base_id)
         else:
-            query = query.filter(DocumentORM.knowledge_base_id.is_(None))
+            q = q.filter(DocumentORM.knowledge_base_id.is_(None))
 
         if metadata_filters is not None:
-            query = query.filter(DocumentChunkORM.metadata_.op("@>")(metadata_filters))
+            q = q.filter(DocumentChunkORM.metadata_.op("@>")(metadata_filters))
 
-        rows = query.limit(top_k).all()
-        return [
-            SearchResult(
-                chunk_id=row.id,
-                document_id=row.document_id,
-                chunk=row.chunk,
-                score=float(dist),
-                document_title=title,
-                source=source,
-                knowledge_base_id=kb_id,
-            )
-            for row, title, source, kb_id, dist in rows
-        ]
+        return q

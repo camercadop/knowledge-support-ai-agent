@@ -40,7 +40,7 @@
 
 ### Retrieval
 
-- Hybrid Search
+- ✅ Hybrid Search
 - ✅ Metadata Filters
 - ✅ Query Rewriting
 - Context Compression
@@ -49,7 +49,7 @@
 
 - ✅ Citations
 - ✅ Source Attribution
-- Confidence Score
+- ✅ Confidence Score
 
 ### Conversations
 

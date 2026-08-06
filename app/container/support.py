@@ -52,6 +52,9 @@ from app.infrastructure.observability.definitions.support import (
 )
 from app.infrastructure.observability.instrumentation import InstrumentationConfig
 from app.infrastructure.vectorstores.pgvector.store import PgVectorStore
+from app.infrastructure.vectorstores.search_strategies.registry import (
+    get_search_strategy,
+)
 
 
 class SupportContainer(BaseContainer):
@@ -75,6 +78,8 @@ class SupportContainer(BaseContainer):
         self._chunk_strategy = build_chunk_strategy()
         self._conversation_history_optimizer = self._create_history_optimizer()
         self._query_rewriter = self._create_query_rewriter()
+
+        self._search_strategy = get_search_strategy(settings.retrieval_mode, settings)
 
     def _create_query_rewriter(self) -> QueryRewriter:
         if settings.query_rewriting_enabled:
@@ -135,7 +140,8 @@ class SupportContainer(BaseContainer):
             A fully wired AnswerQuestion instance.
         """
         retrieval_service = ChunkRetriever(
-            vector_store=PgVectorStore(db),
+            vector_store=PgVectorStore(db, self._search_strategy),
+            strategy=self._search_strategy,
             top_k=settings.retrieval_top_k,
             min_score=settings.retrieval_min_score,
             max_chunks=settings.retrieval_max_chunks,
@@ -200,7 +206,7 @@ class SupportContainer(BaseContainer):
         return IngestDocument(
             uow=SqlAlchemyKnowledgeUnitOfWork(db),
             embedding_model=self._embedding_model,
-            vector_store=PgVectorStore(db),
+            vector_store=PgVectorStore(db, self._search_strategy),
             chunk_strategy=self._chunk_strategy,
             instrumentation=self._instrumentation(INGEST_DOCUMENT_INSTRUMENTATION),
         )
