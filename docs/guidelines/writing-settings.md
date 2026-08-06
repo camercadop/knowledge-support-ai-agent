@@ -25,6 +25,39 @@ Then add the corresponding entry to `.env.example`:
 MY_NEW_SETTING=
 ```
 
+## INI-backed Settings
+
+Some settings — primarily long prompt strings — are loaded from `.ini` files in `app/config/` rather than environment variables. This avoids embedding multi-line strings in `.env`.
+
+To add an INI-backed setting:
+
+1. Add the field to `Settings` with a default of `""` (it will be populated at startup):
+
+```python
+my_prompt: str = ""
+```
+
+2. Add the value to the relevant `.ini` file under the appropriate section:
+
+```ini
+[my_section]
+my_prompt = Your prompt text here.
+```
+
+3. Register the mapping in the `apply_ini_defaults` call at the bottom of `settings.py`:
+
+```python
+apply_ini_defaults(
+    settings,
+    {
+        # existing entries ...
+        "my_prompt": ("prompts.ini", "my_section.my_prompt"),
+    },
+)
+```
+
+`apply_ini_defaults` only populates fields not already set via env var or `.env`, so environment variables always take precedence.
+
 ## Accessing Settings
 
 Import the module-level singleton from anywhere in the application:

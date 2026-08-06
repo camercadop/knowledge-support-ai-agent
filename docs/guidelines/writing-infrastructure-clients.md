@@ -8,34 +8,40 @@ Infrastructure clients live in `app/infrastructure/` and wrap external SDKs or s
 
 ## Structure
 
+Infrastructure clients implement a port defined in `app/application/<domain>/ports/`. They receive their dependencies via constructor injection — never by reading settings or instantiating SDKs at module level.
+
 ```python
+from app.application.<domain>.ports.my_port import MyPort
 from app.config.settings import settings
 
-_client = ExternalSDK(api_key=settings.external_api_key)
 
+class ExternalServiceClient(MyPort):
+    """MyPort implementation backed by ExternalService."""
 
-class ExternalResponse:
-    """Holds the typed result of an external API call."""
+    def __init__(self) -> None:
+        """Initialize the SDK client from application settings."""
+        self._client = ExternalSDK(api_key=settings.external_api_key)
 
-    def __init__(self, content: str) -> None:
-        """Initialize with the response content."""
-        self.content = content
+    def do_something(self, payload: str) -> MyResult:
+        """Send a request to the external service and return the typed result.
 
+        Args:
+            payload: The input to send.
 
-def call(payload: str) -> ExternalResponse:
-    """Send a request to the external service and return the typed result.
-
-    Expects a plain string payload and wraps the SDK response.
-    """
-    raw = _client.some_method(payload)
-    return ExternalResponse(content=raw.text)
+        Returns:
+            A typed result wrapping the SDK response.
+        """
+        raw = self._client.some_method(payload)
+        return MyResult(content=raw.text)
 ```
+
+The client is instantiated by the domain container in `_setup` and injected into use cases. Route handlers never import or instantiate infrastructure clients directly.
 
 ## Rules
 
 - One module per external integration, under `app/infrastructure/<integration>/`.
 - Every infrastructure client that the application layer depends on must implement a port defined in `app/application/<domain>/ports/` — the application layer must never import the concrete client directly.
-- Instantiate the SDK client at module level using settings.
+- Receive SDK configuration via constructor injection from settings — never read settings at module level outside of `__init__`.
 - Wrap SDK responses in a typed dataclass or class — never return raw SDK objects to the application layer.
 - Infrastructure clients must not import from `app/application/` except for the port they implement.
-- All public functions must have docstrings describing what they expect and what they return.
+- All public methods must have docstrings describing what they expect and what they return.

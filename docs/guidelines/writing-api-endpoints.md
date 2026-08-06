@@ -11,26 +11,40 @@ Route handlers live in `app/api/` and are the entry point for all HTTP requests.
 ```python
 import logging
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 from sqlalchemy.orm import Session
 
-from app.application.my_domain.do_something import DoSomething
-from app.infrastructure.database.engine import get_db
-from app.infrastructure.database.unit_of_work import SqlAlchemyUnitOfWork
+from app.container.my_domain import MyDomainContainer
+from app.infrastructure.database.sqlalchemy.postgresql.engine import get_db
 from app.schemas.my_domain import MyRequest, MyResponse
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
 
-_my_client = MyInfrastructureClient()
+
+def get_container(request: Request) -> MyDomainContainer:
+    """Return the domain container from request state.
+
+    Args:
+        request: The current FastAPI request.
+
+    Returns:
+        The MyDomainContainer instance stored on app.state.container.my_domain.
+    """
+    container: MyDomainContainer = request.app.state.container.my_domain
+    return container
 
 
 @router.post("/my-resource", response_model=MyResponse)
-def my_endpoint(request: MyRequest, db: Session = Depends(get_db)) -> MyResponse:
+def my_endpoint(
+    request: MyRequest,
+    container: MyDomainContainer = Depends(get_container),
+    db: Session = Depends(get_db),
+) -> MyResponse:
     """Receive a request and return the result."""
     logger.info("Received request for %s", request.some_identifier)
-    use_case = DoSomething(uow=SqlAlchemyUnitOfWork(db), client=_my_client)
-    result = use_case.handle(request.some_identifier, request.some_field)
+    result = container.my_use_case(db).handle(request.some_identifier, request.some_field)
+    logger.info("Completed request for %s", request.some_identifier)
     return MyResponse(field=result)
 ```
 
@@ -74,10 +88,10 @@ status codes, or a non-standard request/response shape.
 ## Rules
 
 - One file per domain, named after the domain (e.g. `chat.py`, `documents.py`).
-- The handler must only parse the request, wire the use case, and return the response — no business logic.
-- API files must not contain factory functions, infrastructure wiring helpers, or any logic beyond request parsing and response mapping. Move any such logic to `app/infrastructure/`.
+- The handler must only parse the request, call the container, and return the response — no business logic.
+- API files must not contain factory functions, infrastructure wiring helpers, or any logic beyond request parsing and response mapping.
 - Always declare `response_model` on the route decorator.
-- Infrastructure clients that are stateless and thread-safe (e.g. `OpenAIChatModel`) are instantiated once at module level.
 - The database session is always injected via `Depends(get_db)` — never instantiated directly.
+- The domain container is always injected via `Depends(get_container)` — never instantiated directly in the handler.
 - Log at the start and end of each handler using `%s`-style formatting. See [Writing Logs](writing-logs.md).
-- Never call repositories or infrastructure clients directly from a handler — always go through a use case.
+- Never call repositories or infrastructure clients directly from a handler — always go through a use case via the container.

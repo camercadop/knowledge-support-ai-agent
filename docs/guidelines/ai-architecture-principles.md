@@ -56,9 +56,7 @@ class OpenAIChatModel(ChatModel):
 
 ## Provider Selection
 
-The active provider is selected at the router level by instantiating the appropriate implementation. Provider switching requires only a code change in the router — no changes to the use case or port.
-
-For future env-var-driven selection, a factory function in `app/infrastructure/ai/` is the right place.
+The active provider is selected at the composition root. The domain container reads `settings` and instantiates the appropriate implementation in `_setup`. Switching providers requires only a settings change — no changes to use cases or ports.
 
 ## Mock Implementations
 

@@ -52,25 +52,21 @@ Target: `app/infrastructure/` — adapters, vector stores, pure utility logic.
 Target: `app/api/` — route handlers.
 
 - Use FastAPI's `TestClient`.
-- Override infrastructure dependencies via `app.dependency_overrides` or by replacing module-level singletons with mocks.
+- Override the container on `app.state` with a fake before creating the test client.
 - Test HTTP contract: status codes, response shape, and error responses.
 - Do not assert on business logic outcomes — that belongs in application tests.
 
 ```python
 @pytest.fixture()
-def client() -> Generator[TestClient]:
-    app.dependency_overrides[get_db] = lambda: None
-    chat_module._chat_model = MockChatModel(reply="mock reply")
-    chat_module._embedding_model = MockEmbeddingModel()
-    with patch("app.api.chat.AnswerQuestion.handle", return_value="mock reply"):
-        yield TestClient(app)
-    app.dependency_overrides.clear()
+def client() -> Generator[TestClient, None, None]:
+    app.state.container = FakeApplicationContainer()
+    yield TestClient(app)
 
 
 def test_chat_returns_reply(client: TestClient) -> None:
     response = client.post("/chat", json={"phone": "+1234567890", "message": "Hi"})
     assert response.status_code == 200
-    assert response.json() == {"reply": "mock reply"}
+    assert response.json()["reply"] == "mock reply"
 ```
 
 ## Naming

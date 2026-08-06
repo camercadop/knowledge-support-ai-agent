@@ -72,6 +72,7 @@ Inject `EventPublisher` as a constructor dependency and call `publish` after `uo
 ```python
 from app.application.shared.events.event_publisher import EventPublisher
 
+
 class CreateUser:
     def __init__(self, uow: UserUnitOfWork, event_publisher: EventPublisher, ...) -> None:
         self._event_publisher = event_publisher
@@ -83,7 +84,7 @@ class CreateUser:
         self._event_publisher.publish(UserCreated(...))
 ```
 
-Always publish after commit — never before. The event signals that the state change is durable.
+Always publish after commit — never before. The event signals that the state change is durable. See [Writing Use Cases](writing-use-cases.md) for the full use case structure.
 
 ## Wiring the Bus
 

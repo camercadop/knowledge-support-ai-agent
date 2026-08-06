@@ -99,6 +99,7 @@ CRUD pattern.
 - File named after the use case in snake_case: `app/application/<domain>/<use_case>.py`.
 - The constructor receives a `UnitOfWork` and all other dependencies as port abstractions or application-layer services — never concrete infrastructure types.
 - Call `uow.commit()` exactly once, at the end of the use case.
+- If the use case raises a domain event, inject `EventPublisher` as a constructor dependency and call `publish` after `uow.commit()`. See [Writing Events](writing-events.md).
 - Never put query logic in a use case — all DB access goes through `uow.<repository>`.
 - Use cases may call infrastructure clients (e.g. LLM) through ports but must not be called by them.
 - A use case must not import from another use case — shared logic belongs in `app/domain/` or a dedicated service in `app/application/<domain>/services/`.

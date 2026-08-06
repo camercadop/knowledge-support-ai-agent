@@ -13,6 +13,8 @@ There are two levels:
 - `ApplicationContainer` — top-level, application-scoped. Created once at startup and stored on `app.state`. Composes all domain-scoped containers.
 - Domain container (e.g. `SupportContainer`) — one per domain. Holds shared infrastructure singletons and builds fresh use case instances per request.
 
+All domain containers extend `BaseContainer`, which provides a generic singleton cache and an instrumentation helper. Subclasses override `_setup` instead of `__init__` to ensure the cache is initialized before any singleton or instrumentation call.
+
 ### Domain container
 
 ```python
@@ -20,22 +22,26 @@ from sqlalchemy.orm import Session
 
 from app.application.<domain>.<use_case> import MyUseCase
 from app.config.settings import settings
+from app.container.base import BaseContainer
 from app.infrastructure.ai.chat.openai import OpenAIChatModel
 from app.infrastructure.database.sqlalchemy.postgresql.unit_of_work.<domain> import (
     SqlAlchemy<Domain>UnitOfWork,
 )
+from app.infrastructure.observability.definitions.<domain> import (
+    MY_USE_CASE_INSTRUMENTATION,
+)
 
 
-class MyDomainContainer:
+class MyDomainContainer(BaseContainer):
     """Lazy provider for all <domain> use cases.
 
     Holds shared infrastructure singletons and builds fresh use case instances
     on every call. Nothing is instantiated until a method is called.
     """
 
-    def __init__(self) -> None:
+    def _setup(self) -> None:
         """Initialize shared singletons."""
-        self._chat_model = OpenAIChatModel()
+        self._chat_model = self._singleton(OpenAIChatModel)
 
     def my_use_case(self, db: Session) -> MyUseCase:
         """Build a fresh MyUseCase bound to the given session.
@@ -49,6 +55,7 @@ class MyDomainContainer:
         return MyUseCase(
             uow=SqlAlchemy<Domain>UnitOfWork(db),
             chat_model=self._chat_model,
+            instrumentation=self._instrumentation(MY_USE_CASE_INSTRUMENTATION),
         )
 ```
 
@@ -74,8 +81,8 @@ class ApplicationContainer:
 
 | What | Lifetime | Reason |
 |------|----------|--------|
-| Infrastructure clients (chat model, embedding model, chunk strategy) | Singleton — created in `__init__` | Stateless; safe to share across requests |
-| Application services | Singleton — created in `__init__` | Stateless; safe to share across requests |
+| Infrastructure clients (chat model, embedding model, chunk strategy) | Singleton — created in `_setup` via `_singleton` | Stateless; safe to share across requests |
+| Application services | Singleton — created in `_setup` via `_singleton` | Stateless; safe to share across requests |
 | Use case instances | Per-request — created in the method | Receive a `Session`; must not be shared |
 | `Session`-bound objects (UoW, vector store, tool registry) | Per-request — created in the method | Tied to a single database transaction |
 
@@ -87,8 +94,12 @@ class ApplicationContainer:
 
 ## Rules
 
+- All domain containers must extend `BaseContainer`.
+- Subclasses must override `_setup` instead of defining `__init__` — this guarantees the cache is available before any `_singleton` or `_instrumentation` call.
+- Use `_singleton(factory)` for shared stateless dependencies; never assign them directly in `_setup` unless the factory pattern does not apply.
+- Use `_instrumentation(config)` to wire observability into use cases — never instantiate `OtelDefaultInstrumentation` directly in a container method.
 - Containers must not contain business logic — only wiring.
-- Shared singletons are instantiated in `__init__`; per-request objects are instantiated inside the method.
+- Shared singletons are initialized in `_setup`; per-request objects are instantiated inside the use case method.
 - Every method on a domain container must accept a `Session` and return a fully wired use case instance.
 - Route handlers and CLI commands must never import concrete infrastructure classes — they access use cases only through the container.
 - All public methods must have docstrings.

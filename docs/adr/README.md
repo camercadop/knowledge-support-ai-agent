@@ -105,6 +105,9 @@ Known triggers that would cause this decision to be revisited. Written as condit
 | [ADR-005](005-repository-pattern.md) | Repository Pattern | Accepted |
 | [ADR-006](006-unit-of-work.md) | Unit of Work | Accepted |
 | [ADR-007](007-provider-independence.md) | Provider Independence | Accepted |
+| [ADR-008](008-open-for-extension.md) | Open for Extension | Accepted |
+| [ADR-009](009-explicit-over-implicit.md) | Explicit over Implicit | Accepted |
+| [ADR-010](010-domain-event-bus.md) | Domain Event Bus | Accepted |
 
 ## Template
 

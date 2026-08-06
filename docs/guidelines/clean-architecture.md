@@ -46,15 +46,26 @@ flowchart LR
 Create a route handler in `app/api/`. The handler must:
 
 1. Parse and validate the request using a schema from `app/schemas/`.
-2. Call the application layer to execute the use case.
-3. Return the response.
+2. Retrieve the domain container and database session via `Depends`.
+3. Delegate to the use case through the container.
+4. Return the response.
 
 ```python
 # app/api/my_resource.py
+def get_container(request: Request) -> MyDomainContainer:
+    """Return the domain container from request state."""
+    container: MyDomainContainer = request.app.state.container.my_domain
+    return container
+
+
 @router.post("/my-resource", response_model=MyResponseSchema)
-def create(payload: MySchema, db: Session = Depends(get_db)) -> MyResponseSchema:
-    use_case = MyUseCase(uow=SqlAlchemyUnitOfWork(db), client=_my_client)
-    return MyResponseSchema(field=use_case.handle(payload.field))
+def create(
+    payload: MySchema,
+    container: MyDomainContainer = Depends(get_container),
+    db: Session = Depends(get_db),
+) -> MyResponseSchema:
+    result = container.my_use_case(db).handle(payload.field)
+    return MyResponseSchema(field=result)
 ```
 
 ### Adding a new use case
@@ -92,9 +103,10 @@ When adding a full new domain, follow these steps in order:
 2. Generate and apply the migration: `uv run alembic revision --autogenerate -m "create <domain> table" && uv run alembic upgrade head`.
 3. Create the repository in `app/infrastructure/database/repositories/<domain>.py` — see [Writing Repositories](writing-repositories.md).
 4. Create the use case in `app/application/<domain>/<use_case>.py` — see [Writing Use Cases](writing-use-cases.md).
-5. Create the schemas in `app/schemas/<domain>.py` — see [Writing Request Schemas](writing-request-schemas.md).
-6. Create the endpoint in `app/api/<domain>.py`.
-7. Register the router in `app/main.py`:
+5. Create the domain container in `app/container/<domain>.py` and register it on `ApplicationContainer` — see [Writing Containers](writing-containers.md).
+6. Create the schemas in `app/schemas/<domain>.py` — see [Writing Request Schemas](writing-request-schemas.md).
+7. Create the endpoint in `app/api/<domain>.py`.
+8. Register the router in `app/main.py`:
 
 ```python
 from app.api.<domain> import router as <domain>_router
@@ -107,6 +119,7 @@ app.include_router(<domain>_router)
 - Do not call `db.commit()` inside a repository — only the use case commits.
 - Do not put query logic in `app/api/` or `app/application/` — all DB access goes through repositories.
 - Do not import from `app/api/` or `app/application/` inside `app/infrastructure/`.
+- Do not instantiate use cases or infrastructure clients directly in route handlers — always go through the container.
 
 ## Rules
 
@@ -114,4 +127,4 @@ app.include_router(<domain>_router)
 - `app/application/` must only import from `app/domain/` and `app/application/` — never from `app/infrastructure/` or `app/api/`.
 - `app/infrastructure/` must not import from `app/api/`.
 - Every external dependency used by the application layer must have a port defined in `app/application/<domain>/ports/` before any infrastructure code is written.
-- Dependencies are injected at the composition root (`app/api/` route handlers) — never instantiated inside use cases or domain objects.
+- Dependencies are injected through the container — never instantiated inside use cases, domain objects, or route handlers.

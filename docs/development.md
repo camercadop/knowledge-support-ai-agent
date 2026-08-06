@@ -183,9 +183,9 @@ app/
         routers/      # CRUD router implementations
         security/     # Security infrastructure
         vectorstores/ # Vector store implementations
-            fake/           # In-process vector store for testing
-            pgvector/       # pgvector adapter
-            params_builders/ # SearchParamsBuilder implementations and registry
+            fake/             # In-process vector store for testing
+            pgvector/         # pgvector adapter
+            search_strategies/ # SearchStrategy implementations and registry
     schemas/      # Pydantic request/response validation schemas
 
 tests/
