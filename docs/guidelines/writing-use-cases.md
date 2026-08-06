@@ -30,12 +30,12 @@ class DoSomething:
 
         Persists the outcome and commits the transaction.
         """
-        entity = self._uow.my_entities.get_or_create(identifier)
+        entity = self._uow.get(AbstractMyEntityRepository).get_or_create(identifier)
         logger.info("Handling use case for entity %s", entity.id)
 
         result = self._chat_model.generate(...)
 
-        self._uow.my_entities.create(entity.id, value)
+        self._uow.get(AbstractMyEntityRepository).create(entity.id, value)
         self._uow.commit()
         return result.message.content
 ```
@@ -52,11 +52,11 @@ use_case = DoSomething(uow=FakeUnitOfWork(), chat_model=FakeChatModel())
 
 ## Unit of Work
 
-Repositories are accessed through the `UnitOfWork` port, not injected individually. This keeps the transaction boundary explicit and testable.
+Repositories are accessed through the `UnitOfWork` port via `uow.get(AbstractXRepository)`, not injected individually. This keeps the transaction boundary explicit and testable.
 
 ```python
 # correct
-self._uow.contacts.get_or_create_by_phone(phone)
+self._uow.get(AbstractContactRepository).get_or_create_by_phone(phone)
 self._uow.commit()
 
 # wrong — do not inject repositories directly into the use case
@@ -80,7 +80,7 @@ class MyModelCRUD(CRUDUseCase[MyModel]):
 
     def _get_repository(self) -> Repository[MyModel]:
         """Return the repository bound to the current transaction."""
-        return self._uow.my_models
+        return self._uow.get(AbstractMyModelRepository)
 
     def create(self, name: str, description: str | None = None) -> MyModel:
         """Create a new MyModel entity."""

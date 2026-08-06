@@ -8,7 +8,6 @@ This sub-package contains everything belonging to the analytics domain: models, 
   - `rag_interaction_log.py` — `RagInteractionLog`
 - `ports/` — abstract interfaces the use cases depend on
   - `repositories/rag_interaction_log.py` — `AbstractRagInteractionLogRepository`
-  - `unit_of_work/analytics.py` — `AnalyticsUnitOfWork`
 - `use_cases/` — one module per user-facing action
   - `export_rag_interactions.py` — `ExportRagInteractions`
 
@@ -16,4 +15,4 @@ This sub-package contains everything belonging to the analytics domain: models, 
 
 ### ExportRagInteractions
 
-Returns all recorded RAG interaction logs for export. Delegates directly to the repository via `AnalyticsUnitOfWork`.
+Returns all recorded RAG interaction logs for export. Delegates directly to the repository via `UnitOfWork`.

@@ -9,8 +9,12 @@ from app.application.support.ports.repositories.document import (
 from app.infrastructure.database.sqlalchemy.postgresql.models.document import (
     Document as DocumentORM,
 )
+from app.infrastructure.database.sqlalchemy.postgresql.repositories.registry import (
+    repository,
+)
 
 
+@repository(AbstractDocumentRepository)
 class DocumentRepository(AbstractDocumentRepository):
     """Handles persistence operations for Document entities."""
 

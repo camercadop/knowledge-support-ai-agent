@@ -6,6 +6,20 @@ from app.infrastructure.database.sqlalchemy.postgresql.models.document import Do
 from app.infrastructure.database.sqlalchemy.postgresql.models.document_chunk import (
     DocumentChunk,
 )
+from app.infrastructure.database.sqlalchemy.postgresql.models.knowledge_base import (
+    KnowledgeBase,
+)
+from app.infrastructure.database.sqlalchemy.postgresql.models.knowledge_base_config import (
+    KnowledgeBaseConfig,
+)
 from app.infrastructure.database.sqlalchemy.postgresql.models.message import Message
 
-__all__ = ["Contact", "Conversation", "Document", "DocumentChunk", "Message"]
+__all__ = [
+    "Contact",
+    "Conversation",
+    "Document",
+    "DocumentChunk",
+    "KnowledgeBase",
+    "KnowledgeBaseConfig",
+    "Message",
+]

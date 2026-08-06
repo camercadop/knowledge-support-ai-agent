@@ -9,8 +9,12 @@ from app.application.support.ports.repositories.document_chunk import (
 from app.infrastructure.database.sqlalchemy.postgresql.models.document_chunk import (
     DocumentChunk as DocumentChunkORM,
 )
+from app.infrastructure.database.sqlalchemy.postgresql.repositories.registry import (
+    repository,
+)
 
 
+@repository(AbstractDocumentChunkRepository)
 class DocumentChunkRepository(AbstractDocumentChunkRepository):
     """Handles persistence operations for DocumentChunk entities."""
 

@@ -62,9 +62,7 @@ flowchart TB
             history_opt["ConversationHistoryOptimizer"]
         end
         subgraph ports["Ports"]
-            port_msg_uow["MessagingUnitOfWork"]
-            port_know_uow["KnowledgeUnitOfWork"]
-            port_analytics_uow["AnalyticsUnitOfWork"]
+            port_uow["UnitOfWork"]
             port_chat["ChatModel"]
             port_embed["EmbeddingModel"]
             port_vs["VectorStore"]
@@ -115,16 +113,16 @@ flowchart TB
     cli_main --> uc_answer
     cli_main --> uc_ingest
 
-    uc_answer --> port_msg_uow & port_chat & port_tools & port_prompt & retrieval_svc & port_event & port_obs & history_opt & port_rewrite
-    uc_export --> port_analytics_uow
+    uc_answer --> port_uow & port_chat & port_tools & port_prompt & retrieval_svc & port_event & port_obs & history_opt & port_rewrite
+    uc_export --> port_uow
     retrieval_svc --> port_vs
     retrieval_svc --> port_strategy
-    uc_ingest --> port_know_uow & port_embed & port_vs & port_obs
+    uc_ingest --> port_uow & port_embed & port_vs & port_obs
     history_opt --> port_retention
 
-    port_msg_uow -.->|impl| sql_msg_uow
-    port_know_uow -.->|impl| sql_know_uow
-    port_analytics_uow -.->|impl| sql_analytics_uow
+    port_uow -.->|impl| sql_msg_uow
+    port_uow -.->|impl| sql_know_uow
+    port_uow -.->|impl| sql_analytics_uow
     port_chat -.->|impl| openai_chat
     port_embed -.->|impl| openai_embed
     port_vs -.->|impl| pgvector
@@ -155,7 +153,6 @@ app/
             models/       # Application-layer value objects
             ports/        # Interfaces for infrastructure dependencies
                 repositories/   # One abstract repo per aggregate root
-                unit_of_work/   # Domain-scoped transactional boundaries
             services/     # Shared application-layer services
             use_cases/    # One module per user-facing action
     cli/              # Typer CLI entry point

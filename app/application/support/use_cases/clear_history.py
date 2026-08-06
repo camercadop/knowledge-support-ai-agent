@@ -1,7 +1,12 @@
 import logging
 
+from app.application.shared.ports.unit_of_work import UnitOfWork
 from app.application.support.ports.observability import BaseInstrumentation
-from app.application.support.ports.unit_of_work.messaging import MessagingUnitOfWork
+from app.application.support.ports.repositories.contact import AbstractContactRepository
+from app.application.support.ports.repositories.conversation import (
+    AbstractConversationRepository,
+)
+from app.application.support.ports.repositories.message import AbstractMessageRepository
 
 logger = logging.getLogger(__name__)
 
@@ -16,7 +21,7 @@ class ClearHistory:
 
     def __init__(
         self,
-        uow: MessagingUnitOfWork,
+        uow: UnitOfWork,
         instrumentation: BaseInstrumentation,
     ) -> None:
         self._uow = uow
@@ -32,8 +37,14 @@ class ClearHistory:
             phone: The contact's phone number used to identify the conversation.
         """
         with self._instrumentation.root_span("clear_history.handle"):
-            contact = self._uow.contacts.get_or_create_by_phone(phone)
-            conversation = self._uow.conversations.get_or_create_for_contact(contact.id)
-            self._uow.messages.delete_by_conversation(conversation.id)
+            contact = self._uow.get(AbstractContactRepository).get_or_create_by_phone(
+                phone
+            )
+            conversation = self._uow.get(
+                AbstractConversationRepository
+            ).get_or_create_for_contact(contact.id)
+            self._uow.get(AbstractMessageRepository).delete_by_conversation(
+                conversation.id
+            )
             self._uow.commit()
             logger.info("Cleared history for conversation %s", conversation.id)

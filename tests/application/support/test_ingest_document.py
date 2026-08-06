@@ -4,24 +4,30 @@ import pytest
 from sqlalchemy.orm import Session
 
 from app.application.support.ports.observability import BaseInstrumentation
+from app.application.support.ports.repositories.document import (
+    AbstractDocumentRepository,
+)
 from app.application.support.use_cases.ingest_document import IngestDocument
 from app.config.settings import settings
 from app.infrastructure.ai.chunking.fixed_size import FixedSizeChunkStrategy
 from app.infrastructure.ai.mock.embeddings import MockEmbeddingModel
-from app.infrastructure.database.sqlalchemy.postgresql.unit_of_work.knowledge import (
-    SqlAlchemyKnowledgeUnitOfWork,
+from app.infrastructure.database.sqlalchemy.postgresql.unit_of_work.base import (
+    SqlAlchemyUnitOfWork,
 )
 from app.infrastructure.vectorstores.fake.store import FakeVectorStore
 
-from app.infrastructure.observability.instrumentation import NullInstrumentation, SpyInstrumentation
+from app.infrastructure.observability.instrumentation import (
+    NullInstrumentation,
+    SpyInstrumentation,
+)
 
 _DIMS = settings.embedding_dimensions or 1536
 
 
 @pytest.fixture()
-def uow(pg_db: Session) -> SqlAlchemyKnowledgeUnitOfWork:
+def uow(pg_db: Session) -> SqlAlchemyUnitOfWork:
     """Return a KnowledgeUnitOfWork backed by the PostgreSQL session."""
-    return SqlAlchemyKnowledgeUnitOfWork(pg_db)
+    return SqlAlchemyUnitOfWork(pg_db)
 
 
 @pytest.fixture()
@@ -31,7 +37,7 @@ def vector_store() -> FakeVectorStore:
 
 
 def _make_use_case(
-    uow: SqlAlchemyKnowledgeUnitOfWork,
+    uow: SqlAlchemyUnitOfWork,
     vector_store: FakeVectorStore,
     instrumentation: BaseInstrumentation | None = None,
 ) -> IngestDocument:
@@ -48,7 +54,7 @@ def _make_use_case(
 
 
 def test_returns_document_with_correct_title_and_source(
-    uow: SqlAlchemyKnowledgeUnitOfWork, vector_store: FakeVectorStore
+    uow: SqlAlchemyUnitOfWork, vector_store: FakeVectorStore
 ) -> None:
     doc = _make_use_case(uow, vector_store).handle("My Doc", "manual", "some content")
     assert doc.title == "My Doc"
@@ -56,23 +62,23 @@ def test_returns_document_with_correct_title_and_source(
 
 
 def test_returns_document_with_none_source(
-    uow: SqlAlchemyKnowledgeUnitOfWork, vector_store: FakeVectorStore
+    uow: SqlAlchemyUnitOfWork, vector_store: FakeVectorStore
 ) -> None:
     doc = _make_use_case(uow, vector_store).handle("My Doc", None, "some content")
     assert doc.source is None
 
 
 def test_persists_document_retrievable_by_id(
-    uow: SqlAlchemyKnowledgeUnitOfWork, vector_store: FakeVectorStore
+    uow: SqlAlchemyUnitOfWork, vector_store: FakeVectorStore
 ) -> None:
     doc = _make_use_case(uow, vector_store).handle("My Doc", "manual", "some content")
-    persisted = uow.documents.get_by_id(doc.id)
+    persisted = uow.get(AbstractDocumentRepository).get_by_id(doc.id)
     assert persisted is not None
     assert persisted.id == doc.id
 
 
 def test_upserts_chunks_into_vector_store(
-    uow: SqlAlchemyKnowledgeUnitOfWork, vector_store: FakeVectorStore
+    uow: SqlAlchemyUnitOfWork, vector_store: FakeVectorStore
 ) -> None:
     content = "a" * 600  # produces 2 chunks
     _make_use_case(uow, vector_store).handle("Doc", None, content)
@@ -80,7 +86,7 @@ def test_upserts_chunks_into_vector_store(
 
 
 def test_single_chunk_for_short_content(
-    uow: SqlAlchemyKnowledgeUnitOfWork, vector_store: FakeVectorStore
+    uow: SqlAlchemyUnitOfWork, vector_store: FakeVectorStore
 ) -> None:
     _make_use_case(uow, vector_store).handle("Doc", None, "short content")
     results = vector_store.search([0.0] * _DIMS)
@@ -91,7 +97,7 @@ def test_single_chunk_for_short_content(
 
 
 def test_embed_span_called_once_per_chunk(
-    uow: SqlAlchemyKnowledgeUnitOfWork, vector_store: FakeVectorStore
+    uow: SqlAlchemyUnitOfWork, vector_store: FakeVectorStore
 ) -> None:
     spy = SpyInstrumentation()
     content = "a" * 600  # produces 2 chunks
@@ -100,7 +106,7 @@ def test_embed_span_called_once_per_chunk(
 
 
 def test_record_metrics_includes_chunk_count(
-    uow: SqlAlchemyKnowledgeUnitOfWork, vector_store: FakeVectorStore
+    uow: SqlAlchemyUnitOfWork, vector_store: FakeVectorStore
 ) -> None:
     spy = SpyInstrumentation()
     content = "a" * 600  # produces 2 chunks
@@ -110,7 +116,7 @@ def test_record_metrics_includes_chunk_count(
 
 
 def test_stores_metadata_on_chunks(
-    uow: SqlAlchemyKnowledgeUnitOfWork, vector_store: FakeVectorStore
+    uow: SqlAlchemyUnitOfWork, vector_store: FakeVectorStore
 ) -> None:
     content = "a" * 600  # produces 2 chunks
     _make_use_case(uow, vector_store).handle(
@@ -121,7 +127,7 @@ def test_stores_metadata_on_chunks(
 
 
 def test_stores_metadata_on_chunks_per_chunk(
-    uow: SqlAlchemyKnowledgeUnitOfWork, vector_store: FakeVectorStore
+    uow: SqlAlchemyUnitOfWork, vector_store: FakeVectorStore
 ) -> None:
     content = "a" * 600  # produces 2 chunks
     _make_use_case(uow, vector_store).handle(
@@ -134,61 +140,69 @@ def test_stores_metadata_on_chunks_per_chunk(
 
 
 def test_ingest_with_knowledge_base_id(
-    uow: SqlAlchemyKnowledgeUnitOfWork, vector_store: FakeVectorStore
+    uow: SqlAlchemyUnitOfWork, vector_store: FakeVectorStore
 ) -> None:
     kb_id = uuid.uuid4()
     doc = _make_use_case(uow, vector_store).handle(
         "Doc", None, "some content", knowledge_base_id=kb_id
     )
     assert doc.knowledge_base_id == kb_id
-    persisted = uow.documents.get_by_id(doc.id)
+    persisted = uow.get(AbstractDocumentRepository).get_by_id(doc.id)
     assert persisted is not None
     assert persisted.knowledge_base_id == kb_id
 
 
 def test_ingest_without_knowledge_base_id(
-    uow: SqlAlchemyKnowledgeUnitOfWork, vector_store: FakeVectorStore
+    uow: SqlAlchemyUnitOfWork, vector_store: FakeVectorStore
 ) -> None:
     doc = _make_use_case(uow, vector_store).handle("Doc", None, "some content")
     assert doc.knowledge_base_id is None
-    persisted = uow.documents.get_by_id(doc.id)
+    persisted = uow.get(AbstractDocumentRepository).get_by_id(doc.id)
     assert persisted is not None
     assert persisted.knowledge_base_id is None
 
 
 def test_replaces_existing_document_when_same_title_and_source(
-    uow: SqlAlchemyKnowledgeUnitOfWork, vector_store: FakeVectorStore
+    uow: SqlAlchemyUnitOfWork, vector_store: FakeVectorStore
 ) -> None:
     """When a document with the same title and source exists, it is deleted
     and replaced with the new version."""
     use_case = _make_use_case(uow, vector_store)
     use_case.handle("My Doc", "manual", "original content")
 
-    original = uow.documents.get_by_title_and_source("My Doc", "manual")
+    original = uow.get(AbstractDocumentRepository).get_by_title_and_source(
+        "My Doc", "manual"
+    )
     assert original is not None
 
     use_case.handle("My Doc", "manual", "replaced content")
 
-    replaced = uow.documents.get_by_title_and_source("My Doc", "manual")
+    replaced = uow.get(AbstractDocumentRepository).get_by_title_and_source(
+        "My Doc", "manual"
+    )
     assert replaced is not None
     assert replaced.id != original.id
     assert replaced.content == "replaced content"
 
 
 def test_replaces_existing_document_removes_old_chunks(
-    uow: SqlAlchemyKnowledgeUnitOfWork, vector_store: FakeVectorStore
+    uow: SqlAlchemyUnitOfWork, vector_store: FakeVectorStore
 ) -> None:
     """When a document is replaced, the old document is deleted and a new
     one is created with the updated content."""
     use_case = _make_use_case(uow, vector_store)
     use_case.handle("My Doc", "manual", "original content")
 
-    original = uow.documents.get_by_title_and_source("My Doc", "manual")
+    original = uow.get(AbstractDocumentRepository).get_by_title_and_source(
+        "My Doc", "manual"
+    )
     assert original is not None
 
     use_case.handle("My Doc", "manual", "replaced content")
 
-    replaced = uow.documents.get_by_title_and_source("My Doc", "manual")
+    replaced = uow.get(AbstractDocumentRepository).get_by_title_and_source(
+        "My Doc", "manual"
+    )
     assert replaced is not None
     assert replaced.id != original.id
     assert replaced.content == "replaced content"

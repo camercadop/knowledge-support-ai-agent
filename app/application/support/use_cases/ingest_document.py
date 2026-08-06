@@ -2,11 +2,17 @@ import logging
 import uuid
 from collections.abc import Callable
 
+from app.application.shared.ports.unit_of_work import UnitOfWork
 from app.application.support.models.document import Document
 from app.application.support.ports.chunk_strategy import ChunkStrategy
 from app.application.support.ports.embedding_model import EmbeddingModel
 from app.application.support.ports.observability import BaseInstrumentation
-from app.application.support.ports.unit_of_work.knowledge import KnowledgeUnitOfWork
+from app.application.support.ports.repositories.document import (
+    AbstractDocumentRepository,
+)
+from app.application.support.ports.repositories.document_chunk import (
+    AbstractDocumentChunkRepository,
+)
 from app.application.support.ports.vector_store import VectorStore
 
 logger = logging.getLogger(__name__)
@@ -25,7 +31,7 @@ class IngestDocument:
 
     def __init__(
         self,
-        uow: KnowledgeUnitOfWork,
+        uow: UnitOfWork,
         embedding_model: EmbeddingModel,
         vector_store: VectorStore,
         chunk_strategy: ChunkStrategy,
@@ -65,13 +71,15 @@ class IngestDocument:
             The persisted Document with chunk_count populated.
         """
         with self._instrumentation.root_span("ingest_document.handle"):
-            existing = self._uow.documents.get_by_title_and_source(title, source)
+            existing = self._uow.get(
+                AbstractDocumentRepository
+            ).get_by_title_and_source(title, source)
             if existing is not None:
                 logger.info("Replacing existing document id=%s", existing.id)
-                self._uow.documents.delete(existing.id)
+                self._uow.get(AbstractDocumentRepository).delete(existing.id)
 
             logger.debug("Persisting document title=%r source=%r", title, source)
-            document = self._uow.documents.create(
+            document = self._uow.get(AbstractDocumentRepository).create(
                 title=title,
                 source=source,
                 content=content,
@@ -90,7 +98,7 @@ class IngestDocument:
                 )
                 with self._instrumentation.span("ingest.embedding.embed"):
                     embedding = self._embedding_model.embed(chunk_text)
-                chunk = self._uow.document_chunks.create(
+                chunk = self._uow.get(AbstractDocumentChunkRepository).create(
                     document_id=document.id,
                     chunk=chunk_text,
                     embedding=embedding,

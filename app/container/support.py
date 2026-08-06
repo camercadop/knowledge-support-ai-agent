@@ -36,14 +36,8 @@ from app.infrastructure.ai.query_rewriter import (
 )
 from app.infrastructure.ai.tools.registry import build_tool_registry
 from app.infrastructure.analytics.event_handlers import RagInteractionLogHandler
-from app.infrastructure.database.sqlalchemy.postgresql.unit_of_work.analytics import (
-    SqlAlchemyAnalyticsUnitOfWork,
-)
-from app.infrastructure.database.sqlalchemy.postgresql.unit_of_work.knowledge import (
-    SqlAlchemyKnowledgeUnitOfWork,
-)
-from app.infrastructure.database.sqlalchemy.postgresql.unit_of_work.messaging import (
-    SqlAlchemyMessagingUnitOfWork,
+from app.infrastructure.database.sqlalchemy.postgresql.unit_of_work.base import (
+    SqlAlchemyUnitOfWork,
 )
 from app.infrastructure.events.in_memory_event_bus import InMemoryEventBus
 from app.infrastructure.observability.definitions.support import (
@@ -152,11 +146,11 @@ class SupportContainer(BaseContainer):
         event_bus.subscribe(
             QuestionAnswered,
             RagInteractionLogHandler(
-                RecordRagInteraction(SqlAlchemyAnalyticsUnitOfWork(db))
+                RecordRagInteraction(SqlAlchemyUnitOfWork(db))
             ),
         )
         return AnswerQuestion(
-            uow=SqlAlchemyMessagingUnitOfWork(db),
+            uow=SqlAlchemyUnitOfWork(db),
             event_publisher=event_bus,
             chat_model=self._chat_model,
             embedding_model=self._embedding_model,
@@ -179,7 +173,7 @@ class SupportContainer(BaseContainer):
             A fully wired ClearHistory instance.
         """
         return ClearHistory(
-            uow=SqlAlchemyMessagingUnitOfWork(db),
+            uow=SqlAlchemyUnitOfWork(db),
             instrumentation=self._instrumentation(InstrumentationConfig()),
         )
 
@@ -192,7 +186,7 @@ class SupportContainer(BaseContainer):
         Returns:
             A fully wired ExportRagInteractions instance.
         """
-        return ExportRagInteractions(uow=SqlAlchemyAnalyticsUnitOfWork(db))
+        return ExportRagInteractions(uow=SqlAlchemyUnitOfWork(db))
 
     def ingest_document(self, db: Session) -> IngestDocument:
         """Build a fresh IngestDocument use case bound to the given session.
@@ -204,7 +198,7 @@ class SupportContainer(BaseContainer):
             A fully wired IngestDocument instance.
         """
         return IngestDocument(
-            uow=SqlAlchemyKnowledgeUnitOfWork(db),
+            uow=SqlAlchemyUnitOfWork(db),
             embedding_model=self._embedding_model,
             vector_store=PgVectorStore(db, self._search_strategy),
             chunk_strategy=self._chunk_strategy,
@@ -220,4 +214,4 @@ class SupportContainer(BaseContainer):
         Returns:
             A fully wired KnowledgeBaseCRUD instance.
         """
-        return KnowledgeBaseCRUD(uow=SqlAlchemyKnowledgeUnitOfWork(db))
+        return KnowledgeBaseCRUD(uow=SqlAlchemyUnitOfWork(db))

@@ -3,6 +3,7 @@ import uuid
 from dataclasses import dataclass
 
 from app.application.shared.events.event_publisher import EventPublisher
+from app.application.shared.ports.unit_of_work import UnitOfWork
 from app.application.shared.security.logger import log_security_event
 from app.application.support.events.question_answered import QuestionAnswered
 from app.application.support.exceptions.message_rejected import MessageRejected
@@ -17,8 +18,12 @@ from app.application.support.ports.message_sanitizer import MessageSanitizer
 from app.application.support.ports.observability import BaseInstrumentation
 from app.application.support.ports.prompt_builder import PromptBuilder
 from app.application.support.ports.query_rewriter import QueryRewriter
+from app.application.support.ports.repositories.contact import AbstractContactRepository
+from app.application.support.ports.repositories.conversation import (
+    AbstractConversationRepository,
+)
+from app.application.support.ports.repositories.message import AbstractMessageRepository
 from app.application.support.ports.tool_registry import ToolRegistry
-from app.application.support.ports.unit_of_work.messaging import MessagingUnitOfWork
 from app.application.support.ports.vector_store import SearchResult
 from app.application.support.services.chunk_retriever import (
     ChunkRetriever,
@@ -72,7 +77,7 @@ class AnswerQuestion:
 
     def __init__(
         self,
-        uow: MessagingUnitOfWork,
+        uow: UnitOfWork,
         event_publisher: EventPublisher,
         chat_model: ChatModel,
         embedding_model: EmbeddingModel,
@@ -147,11 +152,17 @@ class AnswerQuestion:
                 metadata_filters=metadata_filters,
             )
 
-            contact = self._uow.contacts.get_or_create_by_phone(phone)
-            conversation = self._uow.conversations.get_or_create_for_contact(contact.id)
+            contact = self._uow.get(AbstractContactRepository).get_or_create_by_phone(
+                phone
+            )
+            conversation = self._uow.get(
+                AbstractConversationRepository
+            ).get_or_create_for_contact(contact.id)
             logger.debug("Handling chat turn for conversation %s", conversation.id)
 
-            history = self._uow.messages.list_by_conversation(conversation.id)
+            history = self._uow.get(AbstractMessageRepository).list_by_conversation(
+                conversation.id
+            )
             messages = [
                 ChatMessage(role=Role(m.role), content=m.content) for m in history
             ]
@@ -163,8 +174,10 @@ class AnswerQuestion:
             response = self._generate(messages, retrieval)
             self._record_metrics(retrieval, response)
 
-            self._uow.messages.create(conversation.id, "user", user_message)
-            self._uow.messages.create(
+            self._uow.get(AbstractMessageRepository).create(
+                conversation.id, "user", user_message
+            )
+            self._uow.get(AbstractMessageRepository).create(
                 conversation.id,
                 "assistant",
                 response.message.content,

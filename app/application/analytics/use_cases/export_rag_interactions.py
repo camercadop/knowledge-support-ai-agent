@@ -1,5 +1,8 @@
 from app.application.analytics.models.rag_interaction_log import RagInteractionLog
-from app.application.analytics.ports.unit_of_work.analytics import AnalyticsUnitOfWork
+from app.application.analytics.ports.repositories.rag_interaction_log import (
+    AbstractRagInteractionLogRepository,
+)
+from app.application.shared.ports.unit_of_work import UnitOfWork
 
 
 class ExportRagInteractions:
@@ -9,7 +12,7 @@ class ExportRagInteractions:
         uow: Transactional boundary for the analytics domain.
     """
 
-    def __init__(self, uow: AnalyticsUnitOfWork) -> None:
+    def __init__(self, uow: UnitOfWork) -> None:
         self._uow = uow
 
     def handle(self) -> list[RagInteractionLog]:
@@ -18,4 +21,4 @@ class ExportRagInteractions:
         Returns:
             List of all RagInteractionLog entries.
         """
-        return self._uow.rag_interaction_logs.list_all()
+        return self._uow.get(AbstractRagInteractionLogRepository).list_all()

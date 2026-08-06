@@ -42,6 +42,7 @@ The order follows the natural dependency chain: start with the data layer, move 
 | [Clean Architecture](clean-architecture.md) | How to work within the Clean Architecture, including adding a new domain |
 | [Writing Database Models](writing-database-models.md) | How to create a new SQLAlchemy model |
 | [Writing Repositories](writing-repositories.md) | How to implement a repository |
+| [Writing Unit of Work](writing-unit-of-work.md) | How to implement and extend the Unit of Work |
 | [Writing Use Cases](writing-use-cases.md) | How to implement a use case |
 | [Writing Events](writing-events.md) | How to define domain events, implement handlers, and wire the event bus |
 | [Writing Request Schemas](writing-request-schemas.md) | How to define Pydantic request/response schemas |

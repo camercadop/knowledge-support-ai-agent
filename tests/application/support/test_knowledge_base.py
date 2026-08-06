@@ -2,19 +2,19 @@ import pytest
 from sqlalchemy.orm import Session
 
 from app.application.support.use_cases.knowledge_base import KnowledgeBaseCRUD
-from app.infrastructure.database.sqlalchemy.postgresql.unit_of_work.knowledge import (
-    SqlAlchemyKnowledgeUnitOfWork,
+from app.infrastructure.database.sqlalchemy.postgresql.unit_of_work.base import (
+    SqlAlchemyUnitOfWork,
 )
 
 
 @pytest.fixture()
-def uow(pg_db: Session) -> SqlAlchemyKnowledgeUnitOfWork:
+def uow(pg_db: Session) -> SqlAlchemyUnitOfWork:
     """Return a KnowledgeUnitOfWork backed by the PostgreSQL session."""
-    return SqlAlchemyKnowledgeUnitOfWork(pg_db)
+    return SqlAlchemyUnitOfWork(pg_db)
 
 
 @pytest.fixture()
-def use_case(uow: SqlAlchemyKnowledgeUnitOfWork) -> KnowledgeBaseCRUD:
+def use_case(uow: SqlAlchemyUnitOfWork) -> KnowledgeBaseCRUD:
     """Return a KnowledgeBaseCRUD bound to the test session."""
     return KnowledgeBaseCRUD(uow=uow)
 

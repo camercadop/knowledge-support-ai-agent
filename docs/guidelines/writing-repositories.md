@@ -85,12 +85,31 @@ need to be re-implemented unless the behaviour differs.
 - One repository per model.
 - Never return ORM model instances to the application layer — always map to the corresponding application model in `app/application/<domain>/models/`.
 
+## Registration
+
+Every concrete repository must register itself against its abstract port using the `@repository` decorator from `app/infrastructure/database/sqlalchemy/postgresql/repositories/registry.py`:
+
+```python
+from app.infrastructure.database.sqlalchemy.postgresql.repositories.registry import (
+    repository,
+)
+
+@repository(AbstractMyModelRepository)
+class MyModelRepository(
+    SqlAlchemyRepository[MyModelORM, MyModel],
+    AbstractMyModelRepository,
+):
+    ...
+```
+
+No manual registration in `__init__.py` is needed — all modules in the repositories package are auto-imported at startup via `pkgutil.iter_modules`, so the decorator runs automatically as long as the module is placed in `app/infrastructure/database/sqlalchemy/postgresql/repositories/`.
+
 ## Transaction Boundary
 
-Repositories flush changes to make them visible within the current transaction (e.g. to get the generated `id`), but they never commit. The use case commits once at the end via the `UnitOfWork`:
+Repositories flush changes to make them visible within the current transaction (e.g. to get the generated `id`), but they never commit. The use case resolves repositories via `uow.get()` and commits once at the end:
 
 ```python
 # use case
-self._uow.my_entities.create(...)  # flush only
-self._uow.commit()                 # commit owned by the use case
+self._uow.get(AbstractMyModelRepository).create(...)  # flush only
+self._uow.commit()                                    # commit owned by the use case
 ```

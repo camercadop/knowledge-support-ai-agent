@@ -15,6 +15,7 @@ class Settings(BaseSettings):
     chat_api_key: str
     chat_base_url: str | None = None
     chat_max_tokens: int = 1024
+    chat_temperature: float = 1.0
     embedding_provider: str = "openai"
     embedding_model: str = "text-embedding-3-small"
     embedding_api_key: str

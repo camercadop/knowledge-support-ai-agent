@@ -34,9 +34,27 @@ class MyModel(Base):
 
 ## Adding a Migration
 
-After creating or modifying a model, generate a migration:
+Never write migration files manually. Always autogenerate them.
+
+1. Import the new model in `app/infrastructure/database/sqlalchemy/postgresql/models/__init__.py` and add it to `__all__`. This registers it with `Base.metadata` so autogenerate can detect it.
+
+2. Confirm the current DB state:
+
+```bash
+uv run alembic current
+```
+
+3. Generate the migration:
 
 ```bash
 uv run alembic revision --autogenerate -m "describe the change"
+```
+
+4. Inspect the generated file and remove any operations unrelated to the current change.
+
+5. Apply and confirm:
+
+```bash
 uv run alembic upgrade head
+uv run alembic current
 ```

@@ -5,8 +5,12 @@ from app.application.support.ports.repositories.contact import AbstractContactRe
 from app.infrastructure.database.sqlalchemy.postgresql.models.contact import (
     Contact as ContactORM,
 )
+from app.infrastructure.database.sqlalchemy.postgresql.repositories.registry import (
+    repository,
+)
 
 
+@repository(AbstractContactRepository)
 class ContactRepository(AbstractContactRepository):
     """Handles persistence operations for Contact entities."""
 

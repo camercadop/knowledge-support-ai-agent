@@ -6,8 +6,8 @@ from app.application.analytics.models.rag_interaction_log import RagInteractionL
 from app.application.analytics.ports.repositories.rag_interaction_log import (
     AbstractRagInteractionLogRepository,
 )
-from app.application.analytics.ports.unit_of_work.analytics import AnalyticsUnitOfWork
 from app.application.analytics.use_cases.export_rag_interactions import ExportRagInteractions
+from app.application.shared.ports.unit_of_work import UnitOfWork
 from app.application.support.ports.vector_store import SearchResult
 
 
@@ -59,18 +59,19 @@ class FakeRagInteractionLogRepository(AbstractRagInteractionLogRepository):
         return list(self._logs)
 
 
-class FakeAnalyticsUnitOfWork(AnalyticsUnitOfWork):
+class FakeUnitOfWork(UnitOfWork):
     """In-memory fake UoW for testing."""
 
     def __init__(self) -> None:
         self._repo = FakeRagInteractionLogRepository()
         self.committed = False
 
-    @property
-    def rag_interaction_logs(self) -> FakeRagInteractionLogRepository:
-        return self._repo
+    def get[R](self, repo_type: type[R]) -> R:
+        """Return the repository instance for the given port type."""
+        return self._repo  # type: ignore[return-value]
 
     def commit(self) -> None:
+        """Mark the unit of work as committed."""
         self.committed = True
 
 
@@ -78,16 +79,16 @@ class FakeAnalyticsUnitOfWork(AnalyticsUnitOfWork):
 
 
 def test_returns_empty_list_when_no_logs() -> None:
-    uow = FakeAnalyticsUnitOfWork()
+    uow = FakeUnitOfWork()
     result = ExportRagInteractions(uow=uow).handle()
     assert result == []
 
 
 def test_returns_all_persisted_logs() -> None:
-    uow = FakeAnalyticsUnitOfWork()
+    uow = FakeUnitOfWork()
     log_a = _make_log(question="first")
     log_b = _make_log(question="second")
-    uow.rag_interaction_logs._logs = [log_a, log_b]
+    uow._repo._logs = [log_a, log_b]
 
     result = ExportRagInteractions(uow=uow).handle()
 
@@ -97,7 +98,7 @@ def test_returns_all_persisted_logs() -> None:
 
 
 def test_returns_logs_with_correct_fields() -> None:
-    uow = FakeAnalyticsUnitOfWork()
+    uow = FakeUnitOfWork()
     conv_id = uuid.uuid4()
     log = _make_log(
         conversation_id=conv_id,
@@ -107,7 +108,7 @@ def test_returns_logs_with_correct_fields() -> None:
         prompt_tokens=10,
         completion_tokens=5,
     )
-    uow.rag_interaction_logs._logs = [log]
+    uow._repo._logs = [log]
 
     result = ExportRagInteractions(uow=uow).handle()
 
@@ -120,7 +121,7 @@ def test_returns_logs_with_correct_fields() -> None:
 
 
 def test_returns_logs_with_chunks() -> None:
-    uow = FakeAnalyticsUnitOfWork()
+    uow = FakeUnitOfWork()
     chunk = SearchResult(
         chunk_id=uuid.uuid4(),
         document_id=uuid.uuid4(),
@@ -130,7 +131,7 @@ def test_returns_logs_with_chunks() -> None:
         source=None,
     )
     log = _make_log(chunks=[chunk])
-    uow.rag_interaction_logs._logs = [log]
+    uow._repo._logs = [log]
 
     result = ExportRagInteractions(uow=uow).handle()
 

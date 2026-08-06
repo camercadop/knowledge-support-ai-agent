@@ -9,8 +9,12 @@ from app.application.support.ports.repositories.conversation import (
 from app.infrastructure.database.sqlalchemy.postgresql.models.conversation import (
     Conversation as ConversationORM,
 )
+from app.infrastructure.database.sqlalchemy.postgresql.repositories.registry import (
+    repository,
+)
 
 
+@repository(AbstractConversationRepository)
 class ConversationRepository(AbstractConversationRepository):
     """Handles persistence operations for Conversation entities."""
 

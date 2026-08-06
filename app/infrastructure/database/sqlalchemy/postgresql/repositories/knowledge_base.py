@@ -8,8 +8,12 @@ from app.infrastructure.database.sqlalchemy.postgresql.models.knowledge_base imp
 from app.infrastructure.database.sqlalchemy.postgresql.repositories.base import (
     SqlAlchemyRepository,
 )
+from app.infrastructure.database.sqlalchemy.postgresql.repositories.registry import (
+    repository,
+)
 
 
+@repository(AbstractKnowledgeBaseRepository)
 class KnowledgeBaseRepository(
     SqlAlchemyRepository[KnowledgeBaseORM, KnowledgeBase],
     AbstractKnowledgeBaseRepository,

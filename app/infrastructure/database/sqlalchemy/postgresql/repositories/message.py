@@ -7,8 +7,12 @@ from app.application.support.ports.repositories.message import AbstractMessageRe
 from app.infrastructure.database.sqlalchemy.postgresql.models.message import (
     Message as MessageORM,
 )
+from app.infrastructure.database.sqlalchemy.postgresql.repositories.registry import (
+    repository,
+)
 
 
+@repository(AbstractMessageRepository)
 class MessageRepository(AbstractMessageRepository):
     """Handles persistence operations for Message entities."""
 

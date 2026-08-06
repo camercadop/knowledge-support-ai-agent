@@ -1,17 +1,15 @@
+from app.application.shared.ports.unit_of_work import UnitOfWork
 from app.application.shared.use_cases.crud import CRUDUseCase
 from app.application.support.models.knowledge_base import KnowledgeBase
 from app.application.support.ports.repositories.knowledge_base import (
     AbstractKnowledgeBaseRepository,
 )
-from app.application.support.ports.unit_of_work.knowledge import KnowledgeUnitOfWork
 
 
 class KnowledgeBaseCRUD(CRUDUseCase[KnowledgeBase]):
     """CRUD use case for knowledge bases."""
 
-    _uow: KnowledgeUnitOfWork
-
-    def __init__(self, uow: KnowledgeUnitOfWork) -> None:
+    def __init__(self, uow: UnitOfWork) -> None:
         """Initialize with a knowledge-scoped unit of work.
 
         Args:
@@ -22,7 +20,7 @@ class KnowledgeBaseCRUD(CRUDUseCase[KnowledgeBase]):
 
     def _get_repository(self) -> AbstractKnowledgeBaseRepository:
         """Return the knowledge base repository bound to the current transaction."""
-        return self._uow.knowledge_bases
+        return self._uow.get(AbstractKnowledgeBaseRepository)
 
     def create(self, name: str, description: str | None = None) -> KnowledgeBase:
         """Create a new knowledge base.

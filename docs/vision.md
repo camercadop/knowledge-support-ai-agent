@@ -8,4 +8,3 @@ Its mission is to transform structured and unstructured information into accessi
 
 Unlike traditional chatbots, EKAP focuses on the entire enterprise AI lifecycle, including ingestion, retrieval, AI safety, analytics, evaluation, and operational excellence.
 
-The platform is data-source agnostic and can consume information from any supported connector.

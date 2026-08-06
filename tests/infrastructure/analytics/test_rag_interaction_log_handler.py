@@ -7,10 +7,10 @@ from app.application.analytics.models.rag_interaction_log import RagInteractionL
 from app.application.analytics.ports.repositories.rag_interaction_log import (
     AbstractRagInteractionLogRepository,
 )
-from app.application.analytics.ports.unit_of_work.analytics import AnalyticsUnitOfWork
 from app.application.analytics.use_cases.record_rag_interaction import (
     RecordRagInteraction,
 )
+from app.application.shared.ports.unit_of_work import UnitOfWork
 from app.application.support.events.question_answered import QuestionAnswered
 from app.application.support.ports.vector_store import SearchResult
 from app.infrastructure.analytics.event_handlers import RagInteractionLogHandler
@@ -48,16 +48,19 @@ class FakeRagInteractionLogRepository(AbstractRagInteractionLogRepository):
         return list(self._logs)
 
 
-class FakeAnalyticsUnitOfWork(AnalyticsUnitOfWork):
+class FakeUnitOfWork(UnitOfWork):
+    """In-memory fake UoW for testing."""
+
     def __init__(self) -> None:
         self._repo = FakeRagInteractionLogRepository()
         self.committed = False
 
-    @property
-    def rag_interaction_logs(self) -> FakeRagInteractionLogRepository:
-        return self._repo
+    def get[R](self, repo_type: type[R]) -> R:
+        """Return the repository instance for the given port type."""
+        return self._repo  # type: ignore[return-value]
 
     def commit(self) -> None:
+        """Mark the unit of work as committed."""
         self.committed = True
 
 
@@ -92,19 +95,19 @@ def test_handler_delegates_to_use_case() -> None:
 
 
 def test_persists_log_from_event() -> None:
-    uow = FakeAnalyticsUnitOfWork()
+    uow = FakeUnitOfWork()
     use_case = RecordRagInteraction(uow=uow)
 
     use_case.handle(_make_event(question="what is rag?", answer="rag answer"))
 
-    assert len(uow.rag_interaction_logs._logs) == 1
-    log = uow.rag_interaction_logs._logs[0]
+    assert len(uow._repo._logs) == 1
+    log = uow._repo._logs[0]
     assert log.question == "what is rag?"
     assert log.answer == "rag answer"
 
 
 def test_commits_after_persisting() -> None:
-    uow = FakeAnalyticsUnitOfWork()
+    uow = FakeUnitOfWork()
     use_case = RecordRagInteraction(uow=uow)
 
     use_case.handle(_make_event())
@@ -113,27 +116,27 @@ def test_commits_after_persisting() -> None:
 
 
 def test_persists_model_used_from_event() -> None:
-    uow = FakeAnalyticsUnitOfWork()
+    uow = FakeUnitOfWork()
     use_case = RecordRagInteraction(uow=uow)
 
     use_case.handle(_make_event(model_used="gpt-4o"))
 
-    assert uow.rag_interaction_logs._logs[0].model_used == "gpt-4o"
+    assert uow._repo._logs[0].model_used == "gpt-4o"
 
 
 def test_persists_token_counts_from_event() -> None:
-    uow = FakeAnalyticsUnitOfWork()
+    uow = FakeUnitOfWork()
     use_case = RecordRagInteraction(uow=uow)
 
     use_case.handle(_make_event(prompt_tokens=20, completion_tokens=8))
 
-    log = uow.rag_interaction_logs._logs[0]
+    log = uow._repo._logs[0]
     assert log.prompt_tokens == 20
     assert log.completion_tokens == 8
 
 
 def test_persists_chunks_from_event() -> None:
-    uow = FakeAnalyticsUnitOfWork()
+    uow = FakeUnitOfWork()
     use_case = RecordRagInteraction(uow=uow)
     chunk = SearchResult(
         chunk_id=uuid.uuid4(),
@@ -146,15 +149,15 @@ def test_persists_chunks_from_event() -> None:
 
     use_case.handle(_make_event(chunks=[chunk]))
 
-    log = uow.rag_interaction_logs._logs[0]
+    log = uow._repo._logs[0]
     assert log.chunks is not None
     assert log.chunks[0].chunk == "some context"
 
 
 def test_persists_none_chunks_when_no_context() -> None:
-    uow = FakeAnalyticsUnitOfWork()
+    uow = FakeUnitOfWork()
     use_case = RecordRagInteraction(uow=uow)
 
     use_case.handle(_make_event(chunks=None))
 
-    assert uow.rag_interaction_logs._logs[0].chunks is None
+    assert uow._repo._logs[0].chunks is None
