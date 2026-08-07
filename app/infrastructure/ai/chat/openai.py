@@ -1,6 +1,5 @@
 import json
 import logging
-from dataclasses import dataclass
 from typing import Any
 
 from openai import OpenAI
@@ -10,12 +9,14 @@ from app.application.support.ports.chat_model import (
     ChatMessage,
     ChatModel,
     ChatModelOverrides,
+    ChatModelSettings,
     ChatResponse,
     Role,
     TokenUsage,
 )
 from app.application.support.ports.prompt_builder import PromptBuilder
 from app.application.support.ports.tool_registry import ToolDefinition, ToolRegistry
+from app.infrastructure.ai.registry import llm_provider
 
 logger = logging.getLogger(__name__)
 
@@ -65,32 +66,44 @@ def _to_function_tool(definition: ToolDefinition) -> FunctionToolParam:
     )
 
 
-@dataclass(frozen=True)
-class ChatModelSettings:
-    """Configuration options for the OpenAI chat model."""
-
-    api_key: str
-    model: str
-    max_tokens: int
-    temperature: float
-    base_url: str | None = None
-
-
+@llm_provider("openai", "chat")
 class OpenAIChatModel(ChatModel):
     """ChatModel implementation backed by the OpenAI Responses API."""
 
+    @classmethod
+    def build_settings(cls, settings: object) -> ChatModelSettings:
+        """Build ChatModelSettings from application config for the OpenAI provider.
+
+        Args:
+            settings: The application Settings instance.
+
+        Returns:
+            A ChatModelSettings instance populated from application settings.
+        """
+        from app.config.settings import Settings
+
+        assert isinstance(settings, Settings)
+        return ChatModelSettings(
+            model=settings.chat_model,
+            max_tokens=settings.chat_max_tokens,
+            temperature=settings.chat_temperature,
+            api_key=settings.chat_api_key,
+            base_url=settings.chat_base_url,
+            provider_options=settings.chat_provider_options,
+        )
+
     def __init__(
-        self, prompt_builder: PromptBuilder, settings: ChatModelSettings
+        self, prompt_builder: PromptBuilder, settings: ChatModelSettings | None
     ) -> None:
         """Initialize the OpenAI client and prompt builder.
 
         Args:
             prompt_builder: Assembles the full message list before each API call.
-            settings: Configuration options for the OpenAI client and model.
+            settings: Configuration for the OpenAI client and model.
         """
         self._client = OpenAI(
-            api_key=settings.api_key,
-            base_url=settings.base_url,
+            api_key=settings.api_key if settings else None,
+            base_url=settings.base_url if settings else None,
         )
         self._settings = settings
         self._prompt_builder = prompt_builder
@@ -114,9 +127,13 @@ class OpenAIChatModel(ChatModel):
             A ChatResponse with the assistant reply and token usage.
         """
         _overrides: ChatModelOverrides = overrides or {}
-        model = _overrides.get("model", self._settings.model)
-        max_tokens = _overrides.get("max_tokens", self._settings.max_tokens)
-        temperature = _overrides.get("temperature", self._settings.temperature)
+        model = _overrides.get("model", self._settings.model if self._settings else "")
+        max_tokens = _overrides.get(
+            "max_tokens", self._settings.max_tokens if self._settings else 1024
+        )
+        temperature = _overrides.get(
+            "temperature", self._settings.temperature if self._settings else 1.0
+        )
         input_messages: list[Any] = list(_to_input(messages))
         tools = (
             [_to_function_tool(d) for d in tool_registry.list_definitions()]

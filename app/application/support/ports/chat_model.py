@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import StrEnum
 from typing import TYPE_CHECKING, TypedDict
 
@@ -55,12 +55,44 @@ class ChatModelOverrides(TypedDict, total=False):
     temperature: float
 
 
+@dataclass(frozen=True)
+class ChatModelSettings:
+    """Configuration for a chat model provider.
+
+    Shared by all ChatModel implementations. Provider-specific options
+    (e.g. AWS region) are passed via ``provider_options``.
+    """
+
+    model: str
+    max_tokens: int
+    temperature: float
+    api_key: str | None = None
+    base_url: str | None = None
+    provider_options: dict[str, str] = field(default_factory=dict)
+
+
 class ChatModel(ABC):
     """Port that defines the contract for chat completion providers.
 
     Implementations live in infrastructure/ai/chat/. Use this interface
     in application-layer use cases to remain decoupled from any specific provider.
     """
+
+    @classmethod
+    def build_settings(cls, settings: object) -> ChatModelSettings | None:
+        """Build the settings object for this provider from application config.
+
+        Override in concrete implementations that require configuration.
+        Returns None for providers that need no settings (e.g. mock).
+
+        Args:
+            settings: The application settings object. Concrete implementations
+                cast this to the expected Settings type.
+
+        Returns:
+            A ChatModelSettings instance, or None.
+        """
+        return None
 
     @abstractmethod
     def generate(

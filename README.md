@@ -38,6 +38,8 @@ flowchart TB
     user["User"]
     whatsapp["WhatsApp\n[External]"]
     openai["OpenAI\n[External]"]
+    ollama["Ollama\n[External]"]
+    bedrock["AWS Bedrock\n[External]"]
 
     subgraph agent["Knowledge Support AI Agent"]
         api["API Layer\nFastAPI"]
@@ -54,6 +56,8 @@ flowchart TB
     cli --> app
     app --> infra
     infra -->|"Chat & Embeddings"| openai
+    infra -->|"Chat & Embeddings"| ollama
+    infra -->|"Converse & Embed"| bedrock
     infra -->|"Reads / writes"| db
 ```
 
@@ -63,7 +67,7 @@ flowchart TB
 
 - Python 3.13+, FastAPI, Typer, SQLAlchemy, Alembic
 - PostgreSQL, pgvector
-- OpenAI Responses API
+- OpenAI Responses API, Ollama, AWS Bedrock
 - Docker, Docker Compose
 - uv, Pytest, Ruff, MyPy, import-linter
 
@@ -93,11 +97,11 @@ uv run alembic upgrade head
 | Variable | Description |
 |----------|-------------|
 | `DATABASE_URL` | PostgreSQL connection string |
-| `CHAT_PROVIDER` | Chat provider: `openai`, `ollama`, `openrouter`, `mock` |
+| `CHAT_PROVIDER` | Chat provider: `openai`, `ollama`, `bedrock`, `mock` |
 | `CHAT_API_KEY` | API key for the chat provider |
 | `CHAT_MODEL` | Model name (e.g. `gpt-4o-mini`) |
 | `CHAT_BASE_URL` | Optional base URL override for the chat provider |
-| `EMBEDDING_PROVIDER` | Embedding provider: `openai`, `ollama`, `mock` |
+| `EMBEDDING_PROVIDER` | Embedding provider: `openai`, `ollama`, `bedrock`, `mock` |
 | `EMBEDDING_API_KEY` | API key for the embedding provider |
 | `EMBEDDING_MODEL` | Embedding model name (default: `text-embedding-3-small`) |
 | `EMBEDDING_DIMENSIONS` | Embedding vector dimensions — omit or leave empty to let the provider decide (default: `1536`) |
@@ -265,6 +269,7 @@ Citations shown after each agent reply display a **Similarity %**, which is `(1 
 | OpenAI | `0.4` – `0.5` |
 | Nvidia | `0.6` – `0.8` |
 | Ollama (nomic-embed-text) | `0.5` – `0.7` |
+| Bedrock (Titan Embed) | `0.5` – `0.7` |
 
 ### Hybrid mode
 

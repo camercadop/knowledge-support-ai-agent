@@ -11,10 +11,14 @@ flowchart TB
     user["User\n[Person]\nSends chat messages via HTTP or CLI"]
     agent["Knowledge Support AI Agent\n[System]\nConversational AI platform with\nRAG and persistent chat history"]
     openai["OpenAI\n[External System]\nLLM and embedding provider"]
+    ollama["Ollama\n[External System]\nLocal LLM and embedding provider"]
+    bedrock["AWS Bedrock\n[External System]\nManaged LLM and embedding provider"]
     postgres["PostgreSQL + pgvector\n[External System]\nPersistent storage and vector search"]
 
     user -->|"POST /chat or CLI"| agent
     agent -->|"Chat & Embeddings API"| openai
+    agent -->|"Chat & Embeddings API"| ollama
+    agent -->|"Converse & Embed API"| bedrock
     agent -->|"Reads/writes data"| postgres
 ```
 
@@ -24,6 +28,8 @@ flowchart TB
 flowchart TB
     user["User\n[Person]"]
     openai["OpenAI\n[External System]"]
+    ollama["Ollama\n[External System]"]
+    bedrock["AWS Bedrock\n[External System]"]
 
     subgraph agent["Knowledge Support AI Agent"]
         api["API Layer\n[FastAPI]\nExposes HTTP endpoints"]
@@ -39,6 +45,8 @@ flowchart TB
     cli --> app
     app --> infra
     infra -->|"Chat & Embeddings API"| openai
+    infra -->|"Chat & Embeddings API"| ollama
+    infra -->|"Converse & Embed API"| bedrock
     infra -->|"Reads/writes"| db
 ```
 
@@ -85,7 +93,11 @@ flowchart TB
         end
         subgraph ai_impl["AI"]
               openai_chat["OpenAIChatModel"]
+              ollama_chat["OllamaChatModel"]
+              bedrock_chat["BedrockChatModel"]
               openai_embed["OpenAIEmbeddingModel"]
+              ollama_embed["OllamaEmbeddingModel"]
+              bedrock_embed["BedrockEmbeddingModel"]
               default_prompt["DefaultPromptBuilder"]
               tool_registry["ConcreteToolRegistry\nget_current_date · search_documents"]
               history_policies["History Policies\nMessageCountPolicy · TokenLimitPolicy\nSummaryPolicy · RoleFilterPolicy"]
@@ -105,6 +117,8 @@ flowchart TB
     subgraph external["External"]
         postgres[("PostgreSQL + pgvector")]
         openai["OpenAI API"]
+        ollama["Ollama"]
+        bedrock["AWS Bedrock"]
     end
 
     chat_router --> uc_answer
@@ -124,7 +138,11 @@ flowchart TB
     port_uow -.->|impl| sql_know_uow
     port_uow -.->|impl| sql_analytics_uow
     port_chat -.->|impl| openai_chat
+    port_chat -.->|impl| ollama_chat
+    port_chat -.->|impl| bedrock_chat
     port_embed -.->|impl| openai_embed
+    port_embed -.->|impl| ollama_embed
+    port_embed -.->|impl| bedrock_embed
     port_vs -.->|impl| pgvector
     port_tools -.->|impl| tool_registry
     port_prompt -.->|impl| default_prompt
@@ -137,6 +155,8 @@ flowchart TB
 
     sql_msg_uow & sql_know_uow & sql_analytics_uow & pgvector --> postgres
     openai_chat & openai_embed --> openai
+    ollama_chat & ollama_embed --> ollama
+    bedrock_chat & bedrock_embed --> bedrock
 ```
 
 ## Code Structure

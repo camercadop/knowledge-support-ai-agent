@@ -8,6 +8,7 @@ from app.application.analytics.use_cases.record_rag_interaction import (
 )
 from app.application.support.events.context_compressed import ContextCompressed
 from app.application.support.events.question_answered import QuestionAnswered
+from app.application.support.ports.chat_model import ChatModel
 from app.application.support.ports.embedding_model import EmbeddingModel
 from app.application.support.ports.message_retention_policy import (
     MessageRetentionPolicy,
@@ -23,9 +24,7 @@ from app.application.support.use_cases.ingest_document import IngestDocument
 from app.application.support.use_cases.knowledge_base import KnowledgeBaseCRUD
 from app.config.settings import settings
 from app.container.base import BaseContainer
-from app.infrastructure.ai.chat.openai import ChatModelSettings, OpenAIChatModel
 from app.infrastructure.ai.chunking.factory import build_chunk_strategy
-from app.infrastructure.ai.embeddings.openai import OpenAIEmbeddingModel
 from app.infrastructure.ai.message_sanitizer import RegexMessageSanitizer
 from app.infrastructure.ai.prompt_builder.default import (
     DefaultPromptBuilder,
@@ -35,6 +34,7 @@ from app.infrastructure.ai.query_rewriter import (
     LLMQueryRewriter,
     PassthroughQueryRewriter,
 )
+from app.infrastructure.ai.registry import get_chat_model, get_embedding_model
 from app.infrastructure.ai.tools.registry import build_tool_registry
 from app.infrastructure.analytics.event_handlers import (
     CompressionAnalyticsHandler,
@@ -72,16 +72,7 @@ class SupportContainer(BaseContainer):
             )
         )
         self._message_sanitizer = RegexMessageSanitizer(patterns=[])
-        self._chat_model = OpenAIChatModel(
-            prompt_builder=self._prompt_builder,
-            settings=ChatModelSettings(
-                api_key=settings.chat_api_key,
-                base_url=settings.chat_base_url,
-                model=settings.chat_model,
-                max_tokens=settings.chat_max_tokens,
-                temperature=settings.chat_temperature,
-            ),
-        )
+        self._chat_model = self._resolve_chat_model()
         self._embedding_model = self._resolve_embedding_model()
         self._chunk_strategy = build_chunk_strategy()
         self._conversation_history_optimizer = self._create_history_optimizer()
@@ -98,12 +89,23 @@ class SupportContainer(BaseContainer):
             )
         return PassthroughQueryRewriter()
 
-    def _resolve_embedding_model(self) -> EmbeddingModel:
-        if settings.embedding_provider == "mock":
-            from app.infrastructure.ai.mock.embeddings import MockEmbeddingModel
+    def _resolve_chat_model(self) -> ChatModel:
+        """Instantiate the chat model selected by ``settings.chat_provider``.
 
-            return MockEmbeddingModel()
-        return OpenAIEmbeddingModel()
+        Returns:
+            A ChatModel implementation for the configured provider.
+        """
+        cls = get_chat_model(settings.chat_provider)
+        return cls(self._prompt_builder, cls.build_settings(settings))  # type: ignore[call-arg]
+
+    def _resolve_embedding_model(self) -> EmbeddingModel:
+        """Instantiate the embedding model selected by ``settings.embedding_provider``.
+
+        Returns:
+            An EmbeddingModel implementation for the configured provider.
+        """
+        cls = get_embedding_model(settings.embedding_provider)
+        return cls(cls.build_settings(settings))  # type: ignore[call-arg]
 
     def _create_history_optimizer(self) -> ConversationHistoryOptimizer:
         """Create the conversation history optimizer with enabled policies.

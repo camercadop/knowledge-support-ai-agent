@@ -1,22 +1,35 @@
-from app.application.support.ports.embedding_model import EmbeddingModel
+from app.application.support.ports.embedding_model import (
+    EmbeddingModel,
+    EmbeddingModelSettings,
+)
+from app.infrastructure.ai.registry import llm_provider
 
 
+@llm_provider("mock", "embedding")
 class MockEmbeddingModel(EmbeddingModel):
-    """Stub embedding model that returns a unit vector without making API calls.
+    """Stub embedding model that returns a zero vector without making API calls.
 
     Use in tests to avoid real provider calls and keep the suite deterministic.
-    Pass custom dimensions to match the expected vector size.
+    Accepts an optional ``dimensions`` argument to control the vector length.
     """
 
-    def __init__(self, dimensions: int = 3, model_name: str = "mock-embedding") -> None:
-        """Initialize with the number of dimensions for the returned vector."""
+    def __init__(
+        self,
+        settings: EmbeddingModelSettings | None = None,
+        dimensions: int = 3,
+    ) -> None:
+        """Store the vector dimensions to use in embed.
+
+        Args:
+            settings: Ignored. Accepted to satisfy the EmbeddingModel contract.
+            dimensions: Length of the zero vector returned by embed.
+        """
         self._dimensions = dimensions
-        self._model_name = model_name
 
     @property
     def model_name(self) -> str:
         """Return the mock model identifier."""
-        return self._model_name
+        return "mock-embedding"
 
     def embed(self, text: str) -> list[float]:
         """Return a unit vector of the configured dimensions.
@@ -28,6 +41,6 @@ class MockEmbeddingModel(EmbeddingModel):
             text: Ignored.
 
         Returns:
-            A unit vector with length equal to the configured dimensions.
+            A unit vector with ``dimensions`` elements.
         """
         return [1.0] + [0.0] * (self._dimensions - 1)

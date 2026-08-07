@@ -12,14 +12,16 @@ class Settings(BaseSettings):
     database_url: str
     chat_provider: str = "openai"
     chat_model: str = "gpt-4o-mini"
-    chat_api_key: str
+    chat_api_key: str | None = None
     chat_base_url: str | None = None
+    chat_provider_options: dict[str, str] = {}
     chat_max_tokens: int = 1024
     chat_temperature: float = 1.0
     embedding_provider: str = "openai"
     embedding_model: str = "text-embedding-3-small"
-    embedding_api_key: str
+    embedding_api_key: str | None = None
     embedding_base_url: str | None = None
+    embedding_provider_options: dict[str, str] = {}
     embedding_dimensions: int | None = 1536
     embedding_encoding_format: str = "float"
 
