@@ -152,15 +152,15 @@ class AnswerQuestion:
                 metadata_filters=metadata_filters,
             )
 
-            contact = self._uow.get(AbstractContactRepository).get_or_create_by_phone(
+            contact = self._uow.get(AbstractContactRepository).get_or_create_by_phone(  # type: ignore[type-abstract]
                 phone
             )
             conversation = self._uow.get(
-                AbstractConversationRepository
+                AbstractConversationRepository  # type: ignore[type-abstract]
             ).get_or_create_for_contact(contact.id)
             logger.debug("Handling chat turn for conversation %s", conversation.id)
 
-            history = self._uow.get(AbstractMessageRepository).list_by_conversation(
+            history = self._uow.get(AbstractMessageRepository).list_by_conversation(  # type: ignore[type-abstract]
                 conversation.id
             )
             messages = [
@@ -174,10 +174,10 @@ class AnswerQuestion:
             response = self._generate(messages, retrieval)
             self._record_metrics(retrieval, response)
 
-            self._uow.get(AbstractMessageRepository).create(
+            self._uow.get(AbstractMessageRepository).create(  # type: ignore[type-abstract]
                 conversation.id, "user", user_message
             )
-            self._uow.get(AbstractMessageRepository).create(
+            self._uow.get(AbstractMessageRepository).create(  # type: ignore[type-abstract]
                 conversation.id,
                 "assistant",
                 response.message.content,

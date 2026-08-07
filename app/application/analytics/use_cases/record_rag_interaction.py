@@ -25,7 +25,7 @@ class RecordRagInteraction:
         Returns:
             The persisted RagInteractionLog entry.
         """
-        log = self._uow.get(AbstractRagInteractionLogRepository).create(
+        log = self._uow.get(AbstractRagInteractionLogRepository).create(  # type: ignore[type-abstract]
             conversation_id=event.conversation_id,
             question=event.question,
             answer=event.answer,

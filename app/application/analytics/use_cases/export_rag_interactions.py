@@ -21,4 +21,4 @@ class ExportRagInteractions:
         Returns:
             List of all RagInteractionLog entries.
         """
-        return self._uow.get(AbstractRagInteractionLogRepository).list_all()
+        return self._uow.get(AbstractRagInteractionLogRepository).list_all()  # type: ignore[type-abstract]

@@ -72,14 +72,14 @@ class IngestDocument:
         """
         with self._instrumentation.root_span("ingest_document.handle"):
             existing = self._uow.get(
-                AbstractDocumentRepository
+                AbstractDocumentRepository  # type: ignore[type-abstract]
             ).get_by_title_and_source(title, source)
             if existing is not None:
                 logger.info("Replacing existing document id=%s", existing.id)
-                self._uow.get(AbstractDocumentRepository).delete(existing.id)
+                self._uow.get(AbstractDocumentRepository).delete(existing.id)  # type: ignore[type-abstract]
 
             logger.debug("Persisting document title=%r source=%r", title, source)
-            document = self._uow.get(AbstractDocumentRepository).create(
+            document = self._uow.get(AbstractDocumentRepository).create(  # type: ignore[type-abstract]
                 title=title,
                 source=source,
                 content=content,
@@ -98,7 +98,7 @@ class IngestDocument:
                 )
                 with self._instrumentation.span("ingest.embedding.embed"):
                     embedding = self._embedding_model.embed(chunk_text)
-                chunk = self._uow.get(AbstractDocumentChunkRepository).create(
+                chunk = self._uow.get(AbstractDocumentChunkRepository).create(  # type: ignore[type-abstract]
                     document_id=document.id,
                     chunk=chunk_text,
                     embedding=embedding,

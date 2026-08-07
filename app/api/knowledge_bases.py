@@ -48,7 +48,7 @@ def _get_config_repo(
     db: Session = Depends(get_db),
 ) -> AbstractKnowledgeBaseConfigRepository:
     """Resolve the config repository from the current session."""
-    return SqlAlchemyUnitOfWork(db).get(AbstractKnowledgeBaseConfigRepository)
+    return SqlAlchemyUnitOfWork(db).get(AbstractKnowledgeBaseConfigRepository)  # type: ignore[type-abstract]
 
 
 router = CRUDRouter(

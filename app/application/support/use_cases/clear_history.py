@@ -37,13 +37,13 @@ class ClearHistory:
             phone: The contact's phone number used to identify the conversation.
         """
         with self._instrumentation.root_span("clear_history.handle"):
-            contact = self._uow.get(AbstractContactRepository).get_or_create_by_phone(
+            contact = self._uow.get(AbstractContactRepository).get_or_create_by_phone(  # type: ignore[type-abstract]
                 phone
             )
             conversation = self._uow.get(
-                AbstractConversationRepository
+                AbstractConversationRepository  # type: ignore[type-abstract]
             ).get_or_create_for_contact(contact.id)
-            self._uow.get(AbstractMessageRepository).delete_by_conversation(
+            self._uow.get(AbstractMessageRepository).delete_by_conversation(  # type: ignore[type-abstract]
                 conversation.id
             )
             self._uow.commit()

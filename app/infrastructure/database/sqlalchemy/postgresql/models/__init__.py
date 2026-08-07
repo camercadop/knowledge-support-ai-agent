@@ -9,7 +9,7 @@ from app.infrastructure.database.sqlalchemy.postgresql.models.document_chunk imp
 from app.infrastructure.database.sqlalchemy.postgresql.models.knowledge_base import (
     KnowledgeBase,
 )
-from app.infrastructure.database.sqlalchemy.postgresql.models.knowledge_base_config import (
+from app.infrastructure.database.sqlalchemy.postgresql.models.knowledge_base_config import (  # noqa: E501
     KnowledgeBaseConfig,
 )
 from app.infrastructure.database.sqlalchemy.postgresql.models.message import Message

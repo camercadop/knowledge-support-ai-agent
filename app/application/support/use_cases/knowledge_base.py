@@ -20,7 +20,7 @@ class KnowledgeBaseCRUD(CRUDUseCase[KnowledgeBase]):
 
     def _get_repository(self) -> AbstractKnowledgeBaseRepository:
         """Return the knowledge base repository bound to the current transaction."""
-        return self._uow.get(AbstractKnowledgeBaseRepository)
+        return self._uow.get(AbstractKnowledgeBaseRepository)  # type: ignore[type-abstract]
 
     def create(self, name: str, description: str | None = None) -> KnowledgeBase:
         """Create a new knowledge base.
