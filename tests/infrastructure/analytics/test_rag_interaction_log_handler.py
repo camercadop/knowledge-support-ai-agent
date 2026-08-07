@@ -188,7 +188,7 @@ def test_compression_handler_logs_strategy(caplog: pytest.LogCaptureFixture) -> 
     handler = CompressionAnalyticsHandler()
     event = _make_compression_event(strategy="token_limit")
 
-    with caplog.at_level("INFO"):
+    with caplog.at_level("INFO", logger="app.infrastructure.analytics.event_handlers"):
         handler.handle(event)
 
     assert "token_limit" in caplog.text
@@ -198,7 +198,7 @@ def test_compression_handler_logs_ratio(caplog: pytest.LogCaptureFixture) -> Non
     handler = CompressionAnalyticsHandler()
     event = _make_compression_event(compression_ratio=0.6)
 
-    with caplog.at_level("INFO"):
+    with caplog.at_level("INFO", logger="app.infrastructure.analytics.event_handlers"):
         handler.handle(event)
 
     assert "0.600" in caplog.text
@@ -208,7 +208,7 @@ def test_compression_handler_logs_chunk_counts(caplog: pytest.LogCaptureFixture)
     handler = CompressionAnalyticsHandler()
     event = _make_compression_event(original_chunk_count=10, compressed_chunk_count=4)
 
-    with caplog.at_level("INFO"):
+    with caplog.at_level("INFO", logger="app.infrastructure.analytics.event_handlers"):
         handler.handle(event)
 
     assert "10" in caplog.text
