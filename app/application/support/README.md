@@ -10,9 +10,14 @@ This sub-package contains everything belonging to the support domain: models, po
   - `unit_of_work/` — domain-scoped transactional boundaries (`MessagingUnitOfWork`, `KnowledgeUnitOfWork`)
   - `chat_model.py` — `ChatModel`, `ChatMessage`, `ChatResponse`, `ChatModelOverrides` (per-call model, max_tokens, temperature overrides)
   - `settings_resolver.py` — `SettingsResolver`; resolves settings keys with optional KB config overrides
-  - `embedding_model.py`, `prompt_builder.py`, `tool_registry.py`, `observability.py`, `chunk_strategy.py`, `vector_store.py`, `search_params_builder.py`
+  - `context_compressor.py` — `ContextCompressor` port and `CompressionResult`; implemented by `TokenLimitCompressor` and `MMRCompressor` in `app/infrastructure/ai/context_compressor/`
+  - `message_sanitizer.py`, `observability.py`, `prompt_builder.py`, `tool_registry.py`, `search_strategy.py`, `vector_store.py`
+- `events/` — domain events raised by use cases
+  - `question_answered.py` — raised after a chat turn completes and both messages are persisted
+  - `context_compressed.py` — raised after context compression is applied during retrieval
 - `services/` — shared application-layer logic consumed by multiple use cases
-  - `chunk_retriever.py` — wraps vector store search with deduplication, capping, and token budget enforcement
+  - `chunk_retriever.py` — wraps vector store search with deduplication, capping, optional context compression, and token budget enforcement
+  - `history_optimizer.py` — applies retention policies to conversation history before LLM calls
 - `use_cases/` — one module per user-facing action
 
 ## Use Cases
@@ -23,15 +28,17 @@ This sub-package contains everything belonging to the support domain: models, po
 2. Sanitize the user message to neutralize prompt injection attempts
 3. Rewrite the sanitized query using the QueryRewriter (if enabled)
 4. Embed the rewritten query into a query vector
-5. Retrieve relevant knowledge chunks via semantic or hybrid search, building a `RetrievalConfig` from the resolved settings and applying deduplication, max-chunks cap, and token budget
+5. Retrieve relevant knowledge chunks via semantic or hybrid search, building a `RetrievalConfig` from the resolved settings and applying deduplication, max-chunks cap, optional context compression, and token budget
 6. Resolve the contact by phone, creating one if it doesn't exist
 7. Resolve the active conversation for that contact, creating one if needed
-8. Load the conversation's message history
-9. Build the full prompt: system prompt + retrieved context + history + rewritten user message
-10. Call the LLM with `ChatModelOverrides` (model, max_tokens, temperature) resolved per KB, optionally invoking tools during generation
-11. Persist the user turn and the assistant reply
-12. Commit the transaction
-13. Return an `AnswerResult` with the reply text and the list of retrieved chunks to the caller
+8. If compression was applied, publish a `ContextCompressed` event with the real `conversation_id`
+9. Load the conversation's message history
+10. Build the full prompt: system prompt + retrieved context + history + rewritten user message
+11. Call the LLM with `ChatModelOverrides` (model, max_tokens, temperature) resolved per KB, optionally invoking tools during generation
+12. Persist the user turn and the assistant reply
+13. Commit the transaction
+14. Publish a `QuestionAnswered` event
+15. Return an `AnswerResult` with the reply text and the list of retrieved chunks to the caller
 
 ```mermaid
 sequenceDiagram
@@ -39,8 +46,10 @@ sequenceDiagram
     participant Embed as EmbeddingModel
     participant RS as RetrievalService
     participant VS as VectorStore
+    participant CC as ContextCompressor
     participant UoW as MessagingUnitOfWork
     participant LLM as ChatModel
+    participant Bus as EventPublisher
 
     UC->>Rewrite: rewrite(sanitized_message, history)
     Rewrite-->>UC: rewritten_query
@@ -51,17 +60,25 @@ sequenceDiagram
     VS-->>RS: SearchResult list (with document_title, source)
     RS->>RS: deduplicate by chunk text
     RS->>RS: cap at max_chunks
+    opt compression_enabled
+        RS->>CC: compress(chunks, query, max_tokens, threshold)
+        CC-->>RS: CompressionResult (compressed_chunks, compression_ratio)
+    end
     RS->>RS: truncate to max_context_tokens
     RS->>RS: format chunks with document title and source for citations
-    RS-->>UC: RetrievalResult (context string + SearchResult list)
+    RS-->>UC: RetrievalResult (context string + SearchResult list + compression metadata)
     UC->>UoW: contacts.get_or_create_by_phone(phone)
     UC->>UoW: conversations.get_or_create_for_contact(contact_id)
+    opt compression was applied
+        UC->>Bus: publish(ContextCompressed)
+    end
     UC->>UoW: messages.list_by_conversation(conversation_id)
     UC->>LLM: generate(history + rewritten_message, context)
     LLM-->>UC: ChatResponse
     UC->>UoW: messages.create(user turn)
     UC->>UoW: messages.create(assistant turn)
     UC->>UoW: commit()
+    UC->>Bus: publish(QuestionAnswered)
     UC-->>Caller: AnswerResult (reply + chunks)
 ```
 

@@ -4,6 +4,7 @@ from dataclasses import dataclass
 
 import tiktoken
 
+from app.application.support.ports.context_compressor import ContextCompressor
 from app.application.support.ports.search_strategy import SearchStrategy
 from app.application.support.ports.vector_store import SearchResult, VectorStore
 
@@ -20,6 +21,9 @@ class RetrievalConfig:
         max_chunks: Maximum number of deduplicated chunks to include in context.
         max_context_tokens: Maximum total tokens allowed in the assembled context.
         encoding_name: tiktoken encoding name used for token counting.
+        compression_enabled: If True, apply context compression before token truncation.
+        compression_strategy: Identifier of the compression strategy to apply.
+        compression_threshold: Strategy-specific parameter (e.g., MMR lambda).
     """
 
     top_k: int
@@ -27,6 +31,9 @@ class RetrievalConfig:
     max_chunks: int
     max_context_tokens: int
     encoding_name: str
+    compression_enabled: bool = False
+    compression_strategy: str | None = None
+    compression_threshold: float | None = None
 
 
 def _format_chunk(result: SearchResult) -> str:
@@ -56,10 +63,16 @@ class RetrievalResult:
         context: Assembled context string ready for the prompt, or None when no
             chunks passed the filters.
         chunks: Ordered list of SearchResult items that were included in context.
+        compression_ratio: Ratio of compressed to original tokens, or None when
+            compression was not applied.
+        original_chunk_count: Number of chunks before compression, or None when
+            compression was not applied.
     """
 
     context: str | None
     chunks: list[SearchResult]
+    compression_ratio: float | None = None
+    original_chunk_count: int | None = None
 
 
 class ChunkRetriever:
@@ -89,10 +102,12 @@ class ChunkRetriever:
         query: str | None = None,
         knowledge_base_id: uuid.UUID | None = None,
         metadata_filters: dict[str, str] | None = None,
+        context_compressor: ContextCompressor | None = None,
     ) -> RetrievalResult:
         """Search the vector store and return context and chunk metadata.
 
         Deduplicates results by exact chunk text, caps at max_chunks, then
+        optionally compresses context to reduce token count, and finally
         truncates to max_context_tokens.
 
         Args:
@@ -102,6 +117,8 @@ class ChunkRetriever:
             knowledge_base_id: If set, only return chunks belonging to this
                 knowledge base.
             metadata_filters: Optional key-value pairs for JSONB containment filtering.
+            context_compressor: Optional context compression service to reduce
+                context size after retrieval and before token-based truncation.
 
         Returns:
             RetrievalResult with the assembled context string (or None) and the
@@ -134,6 +151,24 @@ class ChunkRetriever:
         capped = deduplicated[: config.max_chunks]
         logger.debug("%d chunks after dedup+cap", len(capped))
 
+        compression_ratio: float | None = None
+        original_chunk_count: int | None = None
+        if config.compression_enabled and context_compressor is not None:
+            original_chunk_count = len(capped)
+            compression = context_compressor.compress(
+                chunks=capped,
+                query=query,
+                max_tokens=config.max_context_tokens,
+                threshold=config.compression_threshold,
+            )
+            capped = compression.compressed_chunks
+            compression_ratio = compression.compression_ratio
+            logger.debug(
+                "Context compressed: %d chunks, ratio=%.3f",
+                len(capped),
+                compression.compression_ratio,
+            )
+
         encoding = tiktoken.get_encoding(config.encoding_name)
         included: list[SearchResult] = []
         chunks: list[str] = []
@@ -154,4 +189,9 @@ class ChunkRetriever:
         logger.debug(
             "Retrieved %s chunks (%s tokens) for RAG context", len(chunks), total_tokens
         )
-        return RetrievalResult(context="\n\n".join(chunks), chunks=included)
+        return RetrievalResult(
+            context="\n\n".join(chunks),
+            chunks=included,
+            compression_ratio=compression_ratio,
+            original_chunk_count=original_chunk_count,
+        )

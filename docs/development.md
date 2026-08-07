@@ -165,11 +165,13 @@ app/
         ai/           # LLM and embedding provider implementations
             chat/         # Chat model providers
             chunking/     # Text chunking strategies
+            context_compressor/ # Context compression strategies
             embeddings/   # Embedding provider implementations
             history_policies/ # Conversation retention policies
             message_sanitizer/ # User input sanitization
             mock/         # Mock providers for testing
             prompt_builder/ # Prompt assembly from history and context
+            query_rewriter/ # Query rewriting before embedding
             tools/    Tool registry, decorator, and tool implementations
         analytics/    Analytics event handlers
         database/

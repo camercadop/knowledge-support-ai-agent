@@ -72,6 +72,9 @@ class Settings(BaseSettings):
     prompts_message_rejected_reply: str = ""
     query_rewriting_enabled: bool = False
     query_rewrite_prompt: str = ""
+    context_compression_enabled: bool = False
+    context_compression_strategy: str | None = None
+    context_compression_threshold: float | None = None
 
 
 settings = Settings()  # type: ignore[call-arg]

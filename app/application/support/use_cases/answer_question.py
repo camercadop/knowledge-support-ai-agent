@@ -5,6 +5,7 @@ from dataclasses import dataclass, field
 from app.application.shared.events.event_publisher import EventPublisher
 from app.application.shared.ports.unit_of_work import UnitOfWork
 from app.application.shared.security.logger import log_security_event
+from app.application.support.events.context_compressed import ContextCompressed
 from app.application.support.events.question_answered import QuestionAnswered
 from app.application.support.exceptions.message_rejected import MessageRejected
 from app.application.support.ports.chat_model import (
@@ -45,6 +46,9 @@ _RETRIEVAL_KEYS = [
     "retrieval_max_chunks",
     "retrieval_max_context_tokens",
     "retrieval_encoding",
+    "context_compression_enabled",
+    "context_compression_strategy",
+    "context_compression_threshold",
 ]
 
 _PROMPT_KEYS = [
@@ -191,6 +195,9 @@ class AnswerQuestion:
                 max_chunks=int(resolved["retrieval_max_chunks"]),  # type: ignore[call-overload]
                 max_context_tokens=int(resolved["retrieval_max_context_tokens"]),  # type: ignore[call-overload]
                 encoding_name=str(resolved["retrieval_encoding"]),
+                compression_enabled=bool(resolved["context_compression_enabled"]),
+                compression_strategy=resolved["context_compression_strategy"],  # type: ignore[arg-type]
+                compression_threshold=resolved["context_compression_threshold"],  # type: ignore[arg-type]
             )
             prompt_overrides = PromptOverrides(
                 system_instructions=str(resolved["prompts_system_instructions"]),
@@ -221,6 +228,17 @@ class AnswerQuestion:
                 AbstractConversationRepository  # type: ignore[type-abstract]
             ).get_or_create_for_contact(contact.id)
             logger.debug("Handling chat turn for conversation %s", conversation.id)
+
+            if retrieval.compression_ratio is not None:
+                self._event_publisher.publish(
+                    ContextCompressed(
+                        conversation_id=conversation.id,
+                        strategy=str(retrieval_config.compression_strategy),
+                        compression_ratio=retrieval.compression_ratio,
+                        original_chunk_count=retrieval.original_chunk_count or 0,
+                        compressed_chunk_count=len(retrieval.chunks),
+                    )
+                )
 
             history = self._uow.get(AbstractMessageRepository).list_by_conversation(  # type: ignore[type-abstract]
                 conversation.id

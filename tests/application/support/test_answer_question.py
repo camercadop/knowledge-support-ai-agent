@@ -4,6 +4,7 @@ from unittest.mock import MagicMock
 import pytest
 from sqlalchemy.orm import Session
 
+from app.application.support.events.context_compressed import ContextCompressed
 from app.application.support.exceptions.message_rejected import MessageRejected
 from app.application.support.ports.chat_model import ChatMessage, Role
 from app.application.support.ports.message_sanitizer import MessageSanitizer
@@ -64,6 +65,7 @@ def _make_use_case(
     history_optimizer: ConversationHistoryOptimizer | None = None,
     message_sanitizer: MessageSanitizer | None = None,
     query_rewriter: QueryRewriter | None = None,
+    event_publisher: InMemoryEventBus | None = None,
 ) -> AnswerQuestion:
     retrieval_service = ChunkRetriever(
         vector_store=vector_store,
@@ -71,7 +73,7 @@ def _make_use_case(
     )
     return AnswerQuestion(
         uow=uow,
-        event_publisher=InMemoryEventBus(),
+        event_publisher=event_publisher or InMemoryEventBus(),
         chat_model=MockChatModel(reply=reply, token_total=token_total),
         embedding_model=MockEmbeddingModel(),
         retrieval_service=retrieval_service,
@@ -389,3 +391,97 @@ def test_prompt_builder_receives_resolved_prompt_overrides(
     assert overrides["system_instructions"] == settings.prompts_system_instructions
     assert overrides["grounded_instructions"] == settings.prompts_grounded_instructions
     assert overrides["no_context_instructions"] == settings.prompts_no_context_instructions
+
+
+# --- ContextCompressed event ---
+
+
+def test_context_compressed_event_published_when_compression_applied(
+    uow: SqlAlchemyUnitOfWork, vector_store: FakeVectorStore
+) -> None:
+    """ContextCompressed is published with a real conversation_id when compression ran."""
+    from app.application.support.services.chunk_retriever import RetrievalResult
+
+    received: list[ContextCompressed] = []
+
+    class _CapturingHandler:
+        def handle(self, event: ContextCompressed) -> None:
+            received.append(event)
+
+    retrieval_service = MagicMock(spec=ChunkRetriever)
+    retrieval_service.retrieve.return_value = RetrievalResult(
+        context="some context",
+        chunks=[],
+        compression_ratio=0.6,
+        original_chunk_count=5,
+    )
+
+    event_bus = InMemoryEventBus()
+    event_bus.subscribe(ContextCompressed, _CapturingHandler())
+
+    use_case = AnswerQuestion(
+        uow=uow,
+        event_publisher=event_bus,
+        chat_model=MockChatModel(reply="hello"),
+        embedding_model=MockEmbeddingModel(),
+        retrieval_service=retrieval_service,
+        prompt_builder=DefaultPromptBuilder(
+            config=PromptConfig(
+                system_instructions=settings.prompts_system_instructions,
+                grounded_instructions=settings.prompts_grounded_instructions,
+                no_context_instructions=settings.prompts_no_context_instructions,
+            )
+        ),
+        instrumentation=NullInstrumentation(),
+        message_sanitizer=RegexMessageSanitizer(patterns=[]),
+    )
+    use_case.handle(_PHONE, "Hi")
+
+    assert len(received) == 1
+    assert received[0].conversation_id is not None
+    assert received[0].compression_ratio == 0.6
+    assert received[0].original_chunk_count == 5
+
+
+def test_context_compressed_event_not_published_when_no_compression(
+    uow: SqlAlchemyUnitOfWork, vector_store: FakeVectorStore
+) -> None:
+    """ContextCompressed is not published when compression_ratio is None."""
+    from app.application.support.services.chunk_retriever import RetrievalResult
+
+    received: list[ContextCompressed] = []
+
+    class _CapturingHandler:
+        def handle(self, event: ContextCompressed) -> None:
+            received.append(event)
+
+    retrieval_service = MagicMock(spec=ChunkRetriever)
+    retrieval_service.retrieve.return_value = RetrievalResult(
+        context=None,
+        chunks=[],
+        compression_ratio=None,
+        original_chunk_count=None,
+    )
+
+    event_bus = InMemoryEventBus()
+    event_bus.subscribe(ContextCompressed, _CapturingHandler())
+
+    use_case = AnswerQuestion(
+        uow=uow,
+        event_publisher=event_bus,
+        chat_model=MockChatModel(reply="hello"),
+        embedding_model=MockEmbeddingModel(),
+        retrieval_service=retrieval_service,
+        prompt_builder=DefaultPromptBuilder(
+            config=PromptConfig(
+                system_instructions=settings.prompts_system_instructions,
+                grounded_instructions=settings.prompts_grounded_instructions,
+                no_context_instructions=settings.prompts_no_context_instructions,
+            )
+        ),
+        instrumentation=NullInstrumentation(),
+        message_sanitizer=RegexMessageSanitizer(patterns=[]),
+    )
+    use_case.handle(_PHONE, "Hi")
+
+    assert received == []

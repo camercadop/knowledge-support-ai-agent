@@ -22,6 +22,7 @@ WhatsApp Cloud API is the intended communication channel, with a REST API availa
 - Tool calling — `search_documents` and `get_current_date` built in, with input validation, query sanitization, and execution timeout
 - Conversation history optimization — pluggable retention policies (token limit, message count, role filter, summarization)
 - Query rewriting — rewrites user queries before embedding to improve retrieval quality, controlled by `QUERY_REWRITING_ENABLED`
+- Context compression — reduces retrieved chunks before prompt assembly via token-limit or MMR strategies, controlled by `CONTEXT_COMPRESSION_ENABLED`
 - Provider independence — chat and embedding providers are swappable at config time
 - OpenTelemetry instrumentation — spans and metrics for use cases and RAG pipeline
 - Rate limiting — moving-window algorithm via slowapi, configurable per environment
@@ -110,6 +111,9 @@ uv run alembic upgrade head
 | `RETRIEVAL_MODE` | Retrieval strategy: `vector` for pure cosine similarity, `hybrid` for vector + full-text search fused via RRF (default: `vector`) |
 | `RETRIEVAL_HYBRID_FTS_LANGUAGE` | PostgreSQL FTS language configuration used in hybrid mode (default: `english`) |
 | `RETRIEVAL_HYBRID_RRF_K` | RRF smoothing constant used in hybrid mode — higher values reduce the impact of rank differences (default: `60`) |
+| `CONTEXT_COMPRESSION_ENABLED` | Enable context compression after retrieval (default: `false`) |
+| `CONTEXT_COMPRESSION_STRATEGY` | Compression strategy: `token_limit` to keep highest-ranked chunks within budget, `mmr` for Maximal Marginal Relevance diversity selection (default: `token_limit`) |
+| `CONTEXT_COMPRESSION_THRESHOLD` | MMR lambda in [0, 1] — 0.0 = maximum diversity, 1.0 = maximum relevance (default: `0.5`) |
 | `CHUNK_STRATEGY` | Chunking strategy: `fixed`, `recursive`, `markdown` (default: `fixed`) |
 | `CHUNK_SIZE` | Target chunk size in characters (default: `500`) |
 | `CHUNK_OVERLAP` | Overlap between consecutive chunks in characters (default: `50`) |
@@ -203,6 +207,7 @@ app/
         shared/       # Cross-domain utilities: events, base ports, CRUD, and security
             security/ # Application-layer security utilities (no infrastructure dependencies)
         <domain>/     # One sub-package per domain
+            events/       # Domain events raised by use cases
             models/       # Application-layer value objects
             ports/        # Abstract interfaces (ports)
                 repositories/  # One abstract repo per aggregate root
@@ -217,10 +222,12 @@ app/
     domain/           # Domain models and business logic
     infrastructure/
         ai/           # Chat and embedding provider implementations
-            chunking/       # Chunking strategy implementations
+            chunking/         # Chunking strategy implementations
+            context_compressor/ # Context compression strategy implementations
             history_policies/ # Message retention policy implementations
-            prompt_builder/ # PromptBuilder implementations
-            tools/    # Tool registry, @tool decorator, and tool implementations
+            prompt_builder/   # PromptBuilder implementations
+            query_rewriter/   # Query rewriter implementations
+            tools/            # Tool registry, @tool decorator, and tool implementations
         analytics/    # Event handlers for analytics domain
         database/
             sqlalchemy/ # Models, repositories, migrations, and PostgreSQL engine

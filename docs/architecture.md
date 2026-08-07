@@ -164,6 +164,7 @@ app/
         ai/
             chat/             # Chat completion adapters
             chunking/         # Chunking strategy adapters
+            context_compressor/ # Context compression strategy adapters
             embeddings/       # Embedding adapters
             history_policies/ # Message retention policy adapters
             message_sanitizer/ # Message sanitizer adapters

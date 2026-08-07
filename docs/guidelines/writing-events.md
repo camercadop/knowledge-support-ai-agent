@@ -86,6 +86,8 @@ class CreateUser:
 
 Always publish after commit — never before. The event signals that the state change is durable. See [Writing Use Cases](writing-use-cases.md) for the full use case structure.
 
+**Exception — pipeline analytics events:** Events that signal a processing step rather than a state change may be published before `uow.commit()`, as long as they carry no data that depends on a committed transaction. These events are fire-and-forget analytics signals, not state-change notifications.
+
 ## Wiring the Bus
 
 Register handlers on the `InMemoryEventBus` in the container, before building the use case:

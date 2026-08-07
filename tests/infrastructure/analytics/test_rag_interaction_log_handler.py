@@ -3,6 +3,8 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from unittest.mock import MagicMock
 
+import pytest
+
 from app.application.analytics.models.rag_interaction_log import RagInteractionLog
 from app.application.analytics.ports.repositories.rag_interaction_log import (
     AbstractRagInteractionLogRepository,
@@ -11,9 +13,13 @@ from app.application.analytics.use_cases.record_rag_interaction import (
     RecordRagInteraction,
 )
 from app.application.shared.ports.unit_of_work import UnitOfWork
+from app.application.support.events.context_compressed import ContextCompressed
 from app.application.support.events.question_answered import QuestionAnswered
 from app.application.support.ports.vector_store import SearchResult
-from app.infrastructure.analytics.event_handlers import RagInteractionLogHandler
+from app.infrastructure.analytics.event_handlers import (
+    CompressionAnalyticsHandler,
+    RagInteractionLogHandler,
+)
 
 
 @dataclass
@@ -76,6 +82,18 @@ def _make_event(**kwargs: object) -> QuestionAnswered:
     }
     defaults.update(kwargs)
     return QuestionAnswered(**defaults)  # type: ignore[arg-type]
+
+
+def _make_compression_event(**kwargs: object) -> ContextCompressed:
+    defaults: dict[str, object] = {
+        "conversation_id": uuid.uuid4(),
+        "strategy": "token_limit",
+        "compression_ratio": 0.6,
+        "original_chunk_count": 5,
+        "compressed_chunk_count": 3,
+    }
+    defaults.update(kwargs)
+    return ContextCompressed(**defaults)  # type: ignore[arg-type]
 
 
 # --- RagInteractionLogHandler ---
@@ -161,3 +179,37 @@ def test_persists_none_chunks_when_no_context() -> None:
     use_case.handle(_make_event(chunks=None))
 
     assert uow._repo._logs[0].chunks is None
+
+
+# --- CompressionAnalyticsHandler ---
+
+
+def test_compression_handler_logs_strategy(caplog: pytest.LogCaptureFixture) -> None:
+    handler = CompressionAnalyticsHandler()
+    event = _make_compression_event(strategy="token_limit")
+
+    with caplog.at_level("INFO"):
+        handler.handle(event)
+
+    assert "token_limit" in caplog.text
+
+
+def test_compression_handler_logs_ratio(caplog: pytest.LogCaptureFixture) -> None:
+    handler = CompressionAnalyticsHandler()
+    event = _make_compression_event(compression_ratio=0.6)
+
+    with caplog.at_level("INFO"):
+        handler.handle(event)
+
+    assert "0.600" in caplog.text
+
+
+def test_compression_handler_logs_chunk_counts(caplog: pytest.LogCaptureFixture) -> None:
+    handler = CompressionAnalyticsHandler()
+    event = _make_compression_event(original_chunk_count=10, compressed_chunk_count=4)
+
+    with caplog.at_level("INFO"):
+        handler.handle(event)
+
+    assert "10" in caplog.text
+    assert "4" in caplog.text

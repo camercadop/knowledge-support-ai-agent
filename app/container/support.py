@@ -6,6 +6,7 @@ from app.application.analytics.use_cases.export_rag_interactions import (
 from app.application.analytics.use_cases.record_rag_interaction import (
     RecordRagInteraction,
 )
+from app.application.support.events.context_compressed import ContextCompressed
 from app.application.support.events.question_answered import QuestionAnswered
 from app.application.support.ports.embedding_model import EmbeddingModel
 from app.application.support.ports.message_retention_policy import (
@@ -35,7 +36,10 @@ from app.infrastructure.ai.query_rewriter import (
     PassthroughQueryRewriter,
 )
 from app.infrastructure.ai.tools.registry import build_tool_registry
-from app.infrastructure.analytics.event_handlers import RagInteractionLogHandler
+from app.infrastructure.analytics.event_handlers import (
+    CompressionAnalyticsHandler,
+    RagInteractionLogHandler,
+)
 from app.infrastructure.core.settings import SettingsResolverAdapter
 from app.infrastructure.database.sqlalchemy.postgresql.unit_of_work.base import (
     SqlAlchemyUnitOfWork,
@@ -152,6 +156,10 @@ class SupportContainer(BaseContainer):
         event_bus.subscribe(
             QuestionAnswered,
             RagInteractionLogHandler(RecordRagInteraction(SqlAlchemyUnitOfWork(db))),
+        )
+        event_bus.subscribe(
+            ContextCompressed,
+            CompressionAnalyticsHandler(),
         )
         return AnswerQuestion(
             uow=SqlAlchemyUnitOfWork(db),

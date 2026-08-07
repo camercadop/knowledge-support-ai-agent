@@ -50,7 +50,7 @@
 - ✅ Hybrid Search
 - ✅ Metadata Filters
 - ✅ Query Rewriting
-- Context Compression
+- ✅ Context Compression
 - Reranking
 
 ### Responses
