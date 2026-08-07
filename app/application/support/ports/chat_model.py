@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from enum import StrEnum
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, TypedDict
 
 if TYPE_CHECKING:
     from app.application.support.ports.tool_registry import ToolRegistry
@@ -42,6 +42,19 @@ class ChatResponse:
     model_used: str
 
 
+class ChatModelOverrides(TypedDict, total=False):
+    """Per-call chat model overrides.
+
+    All keys are optional. Any key present takes precedence over the model's
+    configured default for that option. Omitted keys fall back to the
+    model's own configuration.
+    """
+
+    model: str
+    max_tokens: int
+    temperature: float
+
+
 class ChatModel(ABC):
     """Port that defines the contract for chat completion providers.
 
@@ -54,6 +67,7 @@ class ChatModel(ABC):
         self,
         messages: list[ChatMessage],
         tool_registry: ToolRegistry | None = None,
+        overrides: ChatModelOverrides | None = None,
     ) -> ChatResponse:
         """Generate a reply for the given message history.
 
@@ -64,6 +78,9 @@ class ChatModel(ABC):
             tool_registry: Optional registry of tools the model may invoke.
                 When provided, the model may call tools and receive their results
                 before producing the final reply.
+            overrides: Optional per-call overrides for model, max_tokens, and
+                temperature. Any key present takes precedence over the model's
+                configured defaults.
 
         Returns:
             A ChatResponse with the reply and token usage.

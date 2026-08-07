@@ -3,6 +3,7 @@ from typing import TYPE_CHECKING
 from app.application.support.ports.chat_model import (
     ChatMessage,
     ChatModel,
+    ChatModelOverrides,
     ChatResponse,
     Role,
     TokenUsage,
@@ -40,12 +41,14 @@ class MockChatModel(ChatModel):
         self,
         messages: list[ChatMessage],
         tool_registry: ToolRegistry | None = None,
+        overrides: ChatModelOverrides | None = None,
     ) -> ChatResponse:
         """Return a fixed assistant reply regardless of input.
 
         Args:
             messages: Ignored.
             tool_registry: Ignored.
+            overrides: Ignored.
 
         Returns:
             A ChatResponse with the configured reply and zero token usage.

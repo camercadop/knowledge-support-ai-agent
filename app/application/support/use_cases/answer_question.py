@@ -1,6 +1,6 @@
 import logging
 import uuid
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from app.application.shared.events.event_publisher import EventPublisher
 from app.application.shared.ports.unit_of_work import UnitOfWork
@@ -10,6 +10,7 @@ from app.application.support.exceptions.message_rejected import MessageRejected
 from app.application.support.ports.chat_model import (
     ChatMessage,
     ChatModel,
+    ChatModelOverrides,
     ChatResponse,
     Role,
 )
@@ -51,6 +52,20 @@ _PROMPT_KEYS = [
     "prompts_no_context_instructions",
     "prompts_message_rejected_reply",
 ]
+
+_CHAT_KEYS = [
+    "chat_model",
+    "chat_max_tokens",
+    "chat_temperature",
+]
+
+
+@dataclass
+class GenerateOverrides:
+    """Per-call overrides passed to the internal _generate method."""
+
+    prompt: PromptOverrides | None = field(default=None)
+    chat_model: ChatModelOverrides | None = field(default=None)
 
 
 @dataclass(frozen=True)
@@ -143,7 +158,7 @@ class AnswerQuestion:
         """
         with self._instrumentation.root_span("answer_question.handle"):
             resolved = resolve_settings_batch(
-                _RETRIEVAL_KEYS + _PROMPT_KEYS, knowledge_base_id
+                _RETRIEVAL_KEYS + _PROMPT_KEYS + _CHAT_KEYS, knowledge_base_id
             )
 
             try:
@@ -175,6 +190,11 @@ class AnswerQuestion:
                     resolved["prompts_no_context_instructions"]
                 ),
             )
+            chat_model_overrides = ChatModelOverrides(
+                model=str(resolved["chat_model"]),
+                max_tokens=int(resolved["chat_max_tokens"]),  # type: ignore[call-overload]
+                temperature=float(str(resolved["chat_temperature"])),
+            )
 
             embedding = self._embed(rewritten_message)
             retrieval = self._retrieve(
@@ -204,7 +224,14 @@ class AnswerQuestion:
             if self._history_optimizer is not None:
                 messages = self._history_optimizer.optimize_history(messages)
 
-            response = self._generate(messages, retrieval, prompt_overrides)
+            response = self._generate(
+                messages,
+                retrieval,
+                overrides=GenerateOverrides(
+                    prompt=prompt_overrides,
+                    chat_model=chat_model_overrides,
+                ),
+            )
             self._record_metrics(retrieval, response)
 
             self._uow.get(AbstractMessageRepository).create(  # type: ignore[type-abstract]
@@ -284,24 +311,27 @@ class AnswerQuestion:
         self,
         messages: list[ChatMessage],
         retrieval: RetrievalResult,
-        prompt_overrides: PromptOverrides,
+        overrides: GenerateOverrides,
     ) -> ChatResponse:
         """Build the prompt, call the LLM, and record generation latency.
 
         Args:
             messages: Full message history including the current user turn.
             retrieval: Retrieval result used to assemble the RAG context.
-            prompt_overrides: Per-call prompt string overrides applied on top of
-                the builder's configured defaults.
+            overrides: Per-call prompt and chat model overrides.
 
         Returns:
             ChatResponse with the assistant reply and token usage.
         """
         prompt = self._prompt_builder.build(
-            messages, retrieval.context, prompt_overrides
+            messages, retrieval.context, overrides.prompt
         )
         with self._instrumentation.span("llm.generate"):
-            return self._chat_model.generate(prompt, tool_registry=self._tool_registry)
+            return self._chat_model.generate(
+                prompt,
+                tool_registry=self._tool_registry,
+                overrides=overrides.chat_model,
+            )
 
     def _record_metrics(
         self, retrieval: RetrievalResult, response: ChatResponse

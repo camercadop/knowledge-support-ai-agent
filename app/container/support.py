@@ -22,7 +22,7 @@ from app.application.support.use_cases.ingest_document import IngestDocument
 from app.application.support.use_cases.knowledge_base import KnowledgeBaseCRUD
 from app.config.settings import settings
 from app.container.base import BaseContainer
-from app.infrastructure.ai.chat.openai import OpenAIChatModel
+from app.infrastructure.ai.chat.openai import ChatModelSettings, OpenAIChatModel
 from app.infrastructure.ai.chunking.factory import build_chunk_strategy
 from app.infrastructure.ai.embeddings.openai import OpenAIEmbeddingModel
 from app.infrastructure.ai.message_sanitizer import RegexMessageSanitizer
@@ -67,7 +67,16 @@ class SupportContainer(BaseContainer):
             )
         )
         self._message_sanitizer = RegexMessageSanitizer(patterns=[])
-        self._chat_model = OpenAIChatModel(prompt_builder=self._prompt_builder)
+        self._chat_model = OpenAIChatModel(
+            prompt_builder=self._prompt_builder,
+            settings=ChatModelSettings(
+                api_key=settings.chat_api_key,
+                base_url=settings.chat_base_url,
+                model=settings.chat_model,
+                max_tokens=settings.chat_max_tokens,
+                temperature=settings.chat_temperature,
+            ),
+        )
         self._embedding_model = self._resolve_embedding_model()
         self._chunk_strategy = build_chunk_strategy()
         self._conversation_history_optimizer = self._create_history_optimizer()

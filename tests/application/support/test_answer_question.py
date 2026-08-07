@@ -18,7 +18,7 @@ from app.application.support.services.chunk_retriever import ChunkRetriever
 from app.application.support.services.history_optimizer import (
     ConversationHistoryOptimizer,
 )
-from app.application.support.use_cases.answer_question import AnswerQuestion
+from app.application.support.use_cases.answer_question import AnswerQuestion, GenerateOverrides
 from app.config.settings import settings
 from app.infrastructure.ai.message_sanitizer import RegexMessageSanitizer
 from app.infrastructure.ai.mock.chat import MockChatModel
@@ -384,7 +384,8 @@ def test_prompt_builder_receives_resolved_prompt_overrides(
         message_sanitizer=RegexMessageSanitizer(patterns=[]),
     )
     use_case.handle(_PHONE, "Hi")
-    _, _, overrides = prompt_builder.build.call_args.args
+    call_args = prompt_builder.build.call_args
+    overrides = call_args.args[2] if len(call_args.args) > 2 else call_args.kwargs.get("overrides")
     assert overrides["system_instructions"] == settings.prompts_system_instructions
     assert overrides["grounded_instructions"] == settings.prompts_grounded_instructions
     assert overrides["no_context_instructions"] == settings.prompts_no_context_instructions

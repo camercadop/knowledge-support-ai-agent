@@ -1,15 +1,29 @@
 import json
 from unittest.mock import MagicMock
 
-from app.application.support.ports.chat_model import ChatMessage, Role
+from app.application.support.ports.chat_model import ChatMessage, ChatModelOverrides, Role
 from app.application.support.ports.tool_registry import ToolDefinition, ToolParameter
-from app.infrastructure.ai.chat.openai import OpenAIChatModel, _to_function_tool, _to_input
+from app.infrastructure.ai.chat.openai import (
+    ChatModelSettings,
+    OpenAIChatModel,
+    _to_function_tool,
+    _to_input,
+)
 from app.infrastructure.ai.mock.tool_registry import MockToolRegistry
+
+_DEFAULT_OVERRIDES = ChatModelOverrides(model="gpt-4o-mini", max_tokens=512, temperature=1.0)
 
 
 def _make_model() -> OpenAIChatModel:
     model = OpenAIChatModel.__new__(OpenAIChatModel)
     model._client = MagicMock()
+    model._settings = ChatModelSettings(
+        api_key="test",
+        model="gpt-4o-mini",
+        max_tokens=512,
+        temperature=1.0,
+    )
+    model._prompt_builder = MagicMock()
     return model
 
 
@@ -81,7 +95,7 @@ def test_generate_returns_reply_and_token_usage() -> None:
         "hello", total=10, input=6, output=4
     )
     messages = [ChatMessage(role=Role.USER, content="hi")]
-    response = model.generate(messages)
+    response = model.generate(messages, overrides=_DEFAULT_OVERRIDES)
     assert response.message.content == "hello"
     assert response.usage.total == 10
     assert response.usage.input_tokens == 6
@@ -91,7 +105,7 @@ def test_generate_returns_reply_and_token_usage() -> None:
 def test_generate_without_tool_registry_sends_no_tools() -> None:
     model = _make_model()
     model._client.responses.create.return_value = _make_response("ok")
-    model.generate([ChatMessage(role=Role.USER, content="hi")])
+    model.generate([ChatMessage(role=Role.USER, content="hi")], overrides=_DEFAULT_OVERRIDES)
     call_kwargs = model._client.responses.create.call_args.kwargs
     assert "tools" not in call_kwargs
 
@@ -100,7 +114,7 @@ def test_generate_with_tool_registry_sends_tool_definitions() -> None:
     model = _make_model()
     model._client.responses.create.return_value = _make_response("ok")
     registry = MockToolRegistry(handlers={"get_current_date": lambda _: "2025-01-01"})
-    model.generate([ChatMessage(role=Role.USER, content="hi")], tool_registry=registry)
+    model.generate([ChatMessage(role=Role.USER, content="hi")], tool_registry=registry, overrides=_DEFAULT_OVERRIDES)
     call_kwargs = model._client.responses.create.call_args.kwargs
     assert any(t["name"] == "get_current_date" for t in call_kwargs["tools"])
 
@@ -128,6 +142,7 @@ def test_generate_executes_tool_call_and_loops_to_final_reply() -> None:
     response = model.generate(
         [ChatMessage(role=Role.USER, content="what day is it?")],
         tool_registry=registry,
+        overrides=_DEFAULT_OVERRIDES,
     )
 
     assert response.message.content == "today is 2025-01-01"
