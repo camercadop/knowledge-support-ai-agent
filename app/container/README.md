@@ -15,13 +15,23 @@ Each domain-scoped container inherits from `BaseContainer` and overrides `_setup
 ```python
 class SupportContainer(BaseContainer):
     def _setup(self) -> None:
-        self._chat_model = OpenAIChatModel(...)
+        self._chat_model = OpenAIChatModel(
+            prompt_builder=...,
+            settings=ChatModelSettings(
+                api_key=settings.chat_api_key,
+                base_url=settings.chat_base_url,
+                model=settings.chat_model,
+                max_tokens=settings.chat_max_tokens,
+                temperature=settings.chat_temperature,
+            ),
+        )
+        self._settings_resolver = SettingsResolverAdapter()
 
     def answer_question(self, db: Session) -> AnswerQuestion:
         return AnswerQuestion(
-            uow=SqlAlchemyMessagingUnitOfWork(db),
+            uow=SqlAlchemyUnitOfWork(db),
             chat_model=self._chat_model,
-            embedding_model=self._singleton(OpenAIEmbeddingModel),
+            settings_resolver=self._settings_resolver,
             instrumentation=self._instrumentation(ANSWER_QUESTION_INSTRUMENTATION),
         )
 ```

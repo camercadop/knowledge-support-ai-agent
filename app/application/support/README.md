@@ -8,7 +8,9 @@ This sub-package contains everything belonging to the support domain: models, po
 - `ports/` — abstract interfaces the use cases depend on
   - `repositories/` — one abstract repository per aggregate root
   - `unit_of_work/` — domain-scoped transactional boundaries (`MessagingUnitOfWork`, `KnowledgeUnitOfWork`)
-  - `chat_model.py`, `embedding_model.py`, `prompt_builder.py`, `tool_registry.py`, `observability.py`, `chunk_strategy.py`, `vector_store.py`, `search_params_builder.py`
+  - `chat_model.py` — `ChatModel`, `ChatMessage`, `ChatResponse`, `ChatModelOverrides` (per-call model, max_tokens, temperature overrides)
+  - `settings_resolver.py` — `SettingsResolver`; resolves settings keys with optional KB config overrides
+  - `embedding_model.py`, `prompt_builder.py`, `tool_registry.py`, `observability.py`, `chunk_strategy.py`, `vector_store.py`, `search_params_builder.py`
 - `services/` — shared application-layer logic consumed by multiple use cases
   - `chunk_retriever.py` — wraps vector store search with deduplication, capping, and token budget enforcement
 - `use_cases/` — one module per user-facing action
@@ -17,18 +19,19 @@ This sub-package contains everything belonging to the support domain: models, po
 
 ### AnswerQuestion
 
-1. Sanitize the user message to neutralize prompt injection attempts
-2. Rewrite the sanitized query using the QueryRewriter (if enabled)
-3. Embed the rewritten query into a query vector
-4. Retrieve relevant knowledge chunks via semantic or hybrid search, building a `RetrievalConfig` from the resolved settings and applying deduplication, max-chunks cap, and token budget
-5. Resolve the contact by phone, creating one if it doesn't exist
-6. Resolve the active conversation for that contact, creating one if needed
-7. Load the conversation's message history
-8. Build the full prompt: system prompt + retrieved context + history + rewritten user message
-9. Call the LLM, optionally invoking tools during generation
-10. Persist the user turn and the assistant reply
-11. Commit the transaction
-12. Return an `AnswerResult` with the reply text and the list of retrieved chunks to the caller
+1. Resolve settings for the current KB (retrieval config, prompt overrides, chat model overrides) via the injected `SettingsResolver`; falls back to global settings when no resolver is provided
+2. Sanitize the user message to neutralize prompt injection attempts
+3. Rewrite the sanitized query using the QueryRewriter (if enabled)
+4. Embed the rewritten query into a query vector
+5. Retrieve relevant knowledge chunks via semantic or hybrid search, building a `RetrievalConfig` from the resolved settings and applying deduplication, max-chunks cap, and token budget
+6. Resolve the contact by phone, creating one if it doesn't exist
+7. Resolve the active conversation for that contact, creating one if needed
+8. Load the conversation's message history
+9. Build the full prompt: system prompt + retrieved context + history + rewritten user message
+10. Call the LLM with `ChatModelOverrides` (model, max_tokens, temperature) resolved per KB, optionally invoking tools during generation
+11. Persist the user turn and the assistant reply
+12. Commit the transaction
+13. Return an `AnswerResult` with the reply text and the list of retrieved chunks to the caller
 
 ```mermaid
 sequenceDiagram

@@ -24,6 +24,7 @@ from app.application.support.ports.repositories.conversation import (
     AbstractConversationRepository,
 )
 from app.application.support.ports.repositories.message import AbstractMessageRepository
+from app.application.support.ports.settings_resolver import SettingsResolver
 from app.application.support.ports.tool_registry import ToolRegistry
 from app.application.support.ports.vector_store import SearchResult
 from app.application.support.services.chunk_retriever import (
@@ -34,7 +35,7 @@ from app.application.support.services.chunk_retriever import (
 from app.application.support.services.history_optimizer import (
     ConversationHistoryOptimizer,
 )
-from app.infrastructure.core.settings import resolve_settings_batch
+from app.config.settings import settings as global_settings
 
 logger = logging.getLogger(__name__)
 
@@ -119,6 +120,7 @@ class AnswerQuestion:
         tool_registry: ToolRegistry | None = None,
         history_optimizer: ConversationHistoryOptimizer | None = None,
         query_rewriter: QueryRewriter | None = None,
+        settings_resolver: SettingsResolver | None = None,
     ) -> None:
         self._uow = uow
         self._event_publisher = event_publisher
@@ -131,6 +133,7 @@ class AnswerQuestion:
         self._instrumentation = instrumentation
         self._history_optimizer = history_optimizer
         self._query_rewriter = query_rewriter
+        self._settings_resolver = settings_resolver
 
     def handle(
         self,
@@ -157,9 +160,15 @@ class AnswerQuestion:
             AnswerResult with the assistant reply and retrieved chunk metadata.
         """
         with self._instrumentation.root_span("answer_question.handle"):
-            resolved = resolve_settings_batch(
-                _RETRIEVAL_KEYS + _PROMPT_KEYS + _CHAT_KEYS, knowledge_base_id
-            )
+            if self._settings_resolver is not None:
+                resolved = self._settings_resolver.resolve_batch(
+                    _RETRIEVAL_KEYS + _PROMPT_KEYS + _CHAT_KEYS, knowledge_base_id
+                )
+            else:
+                resolved = {
+                    key: getattr(global_settings, key)
+                    for key in _RETRIEVAL_KEYS + _PROMPT_KEYS + _CHAT_KEYS
+                }
 
             try:
                 sanitized_message = self._message_sanitizer.sanitize(user_message)

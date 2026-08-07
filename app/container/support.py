@@ -36,6 +36,7 @@ from app.infrastructure.ai.query_rewriter import (
 )
 from app.infrastructure.ai.tools.registry import build_tool_registry
 from app.infrastructure.analytics.event_handlers import RagInteractionLogHandler
+from app.infrastructure.core.settings import SettingsResolverAdapter
 from app.infrastructure.database.sqlalchemy.postgresql.unit_of_work.base import (
     SqlAlchemyUnitOfWork,
 )
@@ -81,6 +82,7 @@ class SupportContainer(BaseContainer):
         self._chunk_strategy = build_chunk_strategy()
         self._conversation_history_optimizer = self._create_history_optimizer()
         self._query_rewriter = self._create_query_rewriter()
+        self._settings_resolver = SettingsResolverAdapter()
 
         self._search_strategy = get_search_strategy(settings.retrieval_mode, settings)
 
@@ -163,6 +165,7 @@ class SupportContainer(BaseContainer):
             tool_registry=build_tool_registry(db, metadata_filters=metadata_filters),
             history_optimizer=self._conversation_history_optimizer,
             query_rewriter=self._query_rewriter,
+            settings_resolver=self._settings_resolver,
         )
 
     def clear_history(self, db: Session) -> ClearHistory:

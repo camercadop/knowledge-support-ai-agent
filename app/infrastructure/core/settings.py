@@ -7,6 +7,7 @@ from cachetools.keys import hashkey
 from app.application.support.ports.repositories.knowledge_base_config import (
     AbstractKnowledgeBaseConfigRepository,
 )
+from app.application.support.ports.settings_resolver import SettingsResolver
 from app.config.settings import settings
 from app.infrastructure.database.sqlalchemy.postgresql.engine import SessionLocal
 from app.infrastructure.database.sqlalchemy.postgresql.unit_of_work.base import (
@@ -133,3 +134,26 @@ def resolve_settings_batch(
             )
             result[key] = global_value
     return result
+
+
+class SettingsResolverAdapter(SettingsResolver):
+    """SettingsResolver implementation backed by the KB config database table.
+
+    Resolves settings keys against the knowledge base config, falling back to
+    the global settings when no KB override is present.
+    """
+
+    def resolve_batch(
+        self, keys: list[str], kb_id: uuid.UUID | None
+    ) -> dict[str, object]:
+        """Resolve multiple settings keys, with KB config taking priority.
+
+        Args:
+            keys: List of Settings field names to resolve.
+            kb_id: The knowledge base whose config overrides are checked first.
+                When None, all values are returned from the global settings.
+
+        Returns:
+            A dict mapping each key to its resolved value.
+        """
+        return resolve_settings_batch(keys, kb_id)

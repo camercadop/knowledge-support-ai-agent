@@ -38,11 +38,11 @@
 
 ### Knowledge Base Configuration
 
-- Chat Model
+- ✅ Chat Model
 - Embedding Model
-- Top K
-- Temperature
-- Prompt Template
+- ✅ Top K
+- ✅ Temperature
+- ✅ Prompt Template
 - Guardrails
 
 ### Retrieval

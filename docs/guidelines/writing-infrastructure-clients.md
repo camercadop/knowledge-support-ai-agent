@@ -11,16 +11,33 @@ Infrastructure clients live in `app/infrastructure/` and wrap external SDKs or s
 Infrastructure clients implement a port defined in `app/application/<domain>/ports/`. They receive their dependencies via constructor injection — never by reading settings or instantiating SDKs at module level.
 
 ```python
+from dataclasses import dataclass
+
 from app.application.<domain>.ports.my_port import MyPort
-from app.config.settings import settings
+
+
+@dataclass(frozen=True)
+class ExternalServiceSettings:
+    """Configuration options for ExternalServiceClient."""
+
+    api_key: str
+    base_url: str | None = None
 
 
 class ExternalServiceClient(MyPort):
     """MyPort implementation backed by ExternalService."""
 
-    def __init__(self) -> None:
-        """Initialize the SDK client from application settings."""
-        self._client = ExternalSDK(api_key=settings.external_api_key)
+    def __init__(self, settings: ExternalServiceSettings) -> None:
+        """Initialize the SDK client from the provided settings.
+
+        Args:
+            settings: Configuration options for the external service.
+        """
+        self._client = ExternalSDK(
+            api_key=settings.api_key,
+            base_url=settings.base_url,
+        )
+        self._settings = settings
 
     def do_something(self, payload: str) -> MyResult:
         """Send a request to the external service and return the typed result.
@@ -35,7 +52,7 @@ class ExternalServiceClient(MyPort):
         return MyResult(content=raw.text)
 ```
 
-The client is instantiated by the domain container in `_setup` and injected into use cases. Route handlers never import or instantiate infrastructure clients directly.
+The settings dataclass is constructed in the domain container's `_setup` method from the global `settings` object and injected into the client. Route handlers never import or instantiate infrastructure clients directly.
 
 ## Rules
 
