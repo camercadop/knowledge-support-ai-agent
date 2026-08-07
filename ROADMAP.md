@@ -34,9 +34,16 @@
 ### Knowledge Bases
 
 - ✅ Multiple Knowledge Bases
-- Departments
-- Collections
 - ✅ Metadata
+
+### Knowledge Base Configuration
+
+- Chat Model
+- Embedding Model
+- Top K
+- Temperature
+- Prompt Template
+- Guardrails
 
 ### Retrieval
 
@@ -44,12 +51,14 @@
 - ✅ Metadata Filters
 - ✅ Query Rewriting
 - Context Compression
+- Reranking
 
 ### Responses
 
 - ✅ Citations
 - ✅ Source Attribution
 - ✅ Confidence Score
+- Answer Quality Assessment
 
 ### Conversations
 
@@ -61,13 +70,14 @@
 
 ## Phase 3 — AI Safety & Reliability
 
-### Guardrails
+### AI Safety
 
 - Prompt Injection Detection
 - Toxicity Detection
 - PII Detection
 - Output Validation
 - Retrieval Guardrails
+- Grounding Verification
 
 ### Reliability
 
@@ -75,6 +85,7 @@
 - Circuit Breaker
 - Provider Fallback
 - Response Cache
+- Timeout Policies
 
 ### Security
 
@@ -89,47 +100,27 @@
 
 ### Analytics
 
-- Cost Dashboard
 - Usage Dashboard
 - Retrieval Dashboard
 - Feedback Dashboard
+- Prompt Analytics
 
-### Evaluation
+### Offline Evaluation
 
 - Golden Dataset
 - DeepEval
 - RAGAS
 - LLM-as-a-Judge
 
+### Online Evaluation
+
+- User Feedback
+- Human Review
+- Regression Detection
+
 ### Administration
 
-- Prompt Registry
-- Model Registry
-- Embedding Registry
-
----
-
-## Phase 5 — Connectors
-
-### Enterprise Systems
-
-- Enterprise Information Platform
-- SharePoint
-- Confluence
-- Notion
-
-### Source Control
-
-- GitHub
-- GitLab
-
-### Cloud Storage
-
-- S3
-- Azure Blob
-- Google Cloud Storage
-
-### Generic
-
-- REST Connector
-- Webhook Connector
+- Knowledge Base Configuration
+- Provider Configuration
+- Prompt Management
+- Model Configuration
