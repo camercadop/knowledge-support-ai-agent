@@ -1,6 +1,20 @@
 from abc import ABC, abstractmethod
+from typing import TypedDict
 
 from app.application.support.ports.chat_model import ChatMessage
+
+
+class PromptOverrides(TypedDict, total=False):
+    """Per-call prompt string overrides.
+
+    All keys are optional. Any key present takes precedence over the builder's
+    configured default for that instruction. Omitted keys fall back to the
+    builder's own configuration.
+    """
+
+    system_instructions: str
+    grounded_instructions: str
+    no_context_instructions: str
 
 
 class PromptBuilder(ABC):
@@ -15,6 +29,7 @@ class PromptBuilder(ABC):
         self,
         messages: list[ChatMessage],
         context: str | None = None,
+        overrides: PromptOverrides | None = None,
     ) -> list[ChatMessage]:
         """Assemble the full message list to send to the chat model.
 
@@ -27,6 +42,8 @@ class PromptBuilder(ABC):
             context: Optional retrieved knowledge chunks to ground the response.
                 When None, the system prompt instructs the model to acknowledge
                 it has no context rather than fabricate an answer.
+            overrides: Optional per-call prompt string overrides. Any key present
+                takes precedence over the builder's configured default.
 
         Returns:
             Full ordered list of ChatMessage objects starting with the system message.

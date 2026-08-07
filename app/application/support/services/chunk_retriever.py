@@ -10,6 +10,25 @@ from app.application.support.ports.vector_store import SearchResult, VectorStore
 logger = logging.getLogger(__name__)
 
 
+@dataclass(frozen=True)
+class RetrievalConfig:
+    """Parameters that control post-retrieval quality filtering.
+
+    Attributes:
+        top_k: Maximum number of results to request from the vector store.
+        min_score: If set, exclude chunks with a cosine distance above this value.
+        max_chunks: Maximum number of deduplicated chunks to include in context.
+        max_context_tokens: Maximum total tokens allowed in the assembled context.
+        encoding_name: tiktoken encoding name used for token counting.
+    """
+
+    top_k: int
+    min_score: float | None
+    max_chunks: int
+    max_context_tokens: int
+    encoding_name: str
+
+
 def _format_chunk(result: SearchResult) -> str:
     """Format a search result chunk with its document title and source.
 
@@ -53,34 +72,20 @@ class ChunkRetriever:
         vector_store: Store used to retrieve relevant knowledge chunks.
         strategy: SearchStrategy that controls retrieval mode and context
             construction.
-        top_k: Maximum number of results to request from the vector store.
-        min_score: If set, exclude chunks with a cosine distance above this value.
-        max_chunks: Maximum number of deduplicated chunks to include in context.
-        max_context_tokens: Maximum total tokens allowed in the assembled context.
-        encoding_name: tiktoken encoding name used for token counting.
     """
 
     def __init__(
         self,
         vector_store: VectorStore,
         strategy: SearchStrategy,
-        top_k: int,
-        min_score: float | None,
-        max_chunks: int,
-        max_context_tokens: int,
-        encoding_name: str,
     ) -> None:
         self._vector_store = vector_store
         self._strategy = strategy
-        self._top_k = top_k
-        self._min_score = min_score
-        self._max_chunks = max_chunks
-        self._max_context_tokens = max_context_tokens
-        self._encoding = tiktoken.get_encoding(encoding_name)
 
     def retrieve(
         self,
         embedding: list[float],
+        config: RetrievalConfig,
         query: str | None = None,
         knowledge_base_id: uuid.UUID | None = None,
         metadata_filters: dict[str, str] | None = None,
@@ -92,6 +97,7 @@ class ChunkRetriever:
 
         Args:
             embedding: Query vector to search against.
+            config: Retrieval parameters controlling filtering and token budget.
             query: Raw query text forwarded to the active search strategy.
             knowledge_base_id: If set, only return chunks belonging to this
                 knowledge base.
@@ -103,8 +109,8 @@ class ChunkRetriever:
         """
         results = self._vector_store.search(
             embedding,
-            top_k=self._top_k,
-            min_score=self._min_score,
+            top_k=config.top_k,
+            min_score=config.min_score,
             knowledge_base_id=knowledge_base_id,
             metadata_filters=metadata_filters,
             query=query,
@@ -125,16 +131,17 @@ class ChunkRetriever:
                 seen.add(result.chunk)
                 deduplicated.append(result)
 
-        capped = deduplicated[: self._max_chunks]
+        capped = deduplicated[: config.max_chunks]
         logger.debug("%d chunks after dedup+cap", len(capped))
 
+        encoding = tiktoken.get_encoding(config.encoding_name)
         included: list[SearchResult] = []
         chunks: list[str] = []
         total_tokens = 0
         for result in capped:
             formatted = _format_chunk(result)
-            tokens = len(self._encoding.encode(formatted))
-            if total_tokens + tokens > self._max_context_tokens:
+            tokens = len(encoding.encode(formatted))
+            if total_tokens + tokens > config.max_context_tokens:
                 break
             chunks.append(formatted)
             included.append(result)

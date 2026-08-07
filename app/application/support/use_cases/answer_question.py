@@ -16,7 +16,7 @@ from app.application.support.ports.chat_model import (
 from app.application.support.ports.embedding_model import EmbeddingModel
 from app.application.support.ports.message_sanitizer import MessageSanitizer
 from app.application.support.ports.observability import BaseInstrumentation
-from app.application.support.ports.prompt_builder import PromptBuilder
+from app.application.support.ports.prompt_builder import PromptBuilder, PromptOverrides
 from app.application.support.ports.query_rewriter import QueryRewriter
 from app.application.support.ports.repositories.contact import AbstractContactRepository
 from app.application.support.ports.repositories.conversation import (
@@ -27,14 +27,30 @@ from app.application.support.ports.tool_registry import ToolRegistry
 from app.application.support.ports.vector_store import SearchResult
 from app.application.support.services.chunk_retriever import (
     ChunkRetriever,
+    RetrievalConfig,
     RetrievalResult,
 )
 from app.application.support.services.history_optimizer import (
     ConversationHistoryOptimizer,
 )
-from app.config.settings import settings
+from app.infrastructure.core.settings import resolve_settings_batch
 
 logger = logging.getLogger(__name__)
+
+_RETRIEVAL_KEYS = [
+    "retrieval_top_k",
+    "retrieval_min_score",
+    "retrieval_max_chunks",
+    "retrieval_max_context_tokens",
+    "retrieval_encoding",
+]
+
+_PROMPT_KEYS = [
+    "prompts_system_instructions",
+    "prompts_grounded_instructions",
+    "prompts_no_context_instructions",
+    "prompts_message_rejected_reply",
+]
 
 
 @dataclass(frozen=True)
@@ -126,9 +142,12 @@ class AnswerQuestion:
             AnswerResult with the assistant reply and retrieved chunk metadata.
         """
         with self._instrumentation.root_span("answer_question.handle"):
+            resolved = resolve_settings_batch(
+                _RETRIEVAL_KEYS + _PROMPT_KEYS, knowledge_base_id
+            )
+
             try:
                 sanitized_message = self._message_sanitizer.sanitize(user_message)
-
                 rewritten_message = (
                     self._query_rewriter.rewrite(sanitized_message, history=[])
                     if self._query_rewriter is not None
@@ -138,11 +157,24 @@ class AnswerQuestion:
                 log_security_event(
                     "support.message_rejected", phone=phone, reason=exc.reason
                 )
-
                 return AnswerResult(
-                    reply=settings.prompts_message_rejected_reply,
+                    reply=str(resolved["prompts_message_rejected_reply"]),
                     chunks=None,
                 )
+            retrieval_config = RetrievalConfig(
+                top_k=int(resolved["retrieval_top_k"]),  # type: ignore[call-overload]
+                min_score=resolved["retrieval_min_score"],  # type: ignore[arg-type]
+                max_chunks=int(resolved["retrieval_max_chunks"]),  # type: ignore[call-overload]
+                max_context_tokens=int(resolved["retrieval_max_context_tokens"]),  # type: ignore[call-overload]
+                encoding_name=str(resolved["retrieval_encoding"]),
+            )
+            prompt_overrides = PromptOverrides(
+                system_instructions=str(resolved["prompts_system_instructions"]),
+                grounded_instructions=str(resolved["prompts_grounded_instructions"]),
+                no_context_instructions=str(
+                    resolved["prompts_no_context_instructions"]
+                ),
+            )
 
             embedding = self._embed(rewritten_message)
             retrieval = self._retrieve(
@@ -150,6 +182,7 @@ class AnswerQuestion:
                 query=rewritten_message,
                 knowledge_base_id=knowledge_base_id,
                 metadata_filters=metadata_filters,
+                config=retrieval_config,
             )
 
             contact = self._uow.get(AbstractContactRepository).get_or_create_by_phone(  # type: ignore[type-abstract]
@@ -171,7 +204,7 @@ class AnswerQuestion:
             if self._history_optimizer is not None:
                 messages = self._history_optimizer.optimize_history(messages)
 
-            response = self._generate(messages, retrieval)
+            response = self._generate(messages, retrieval, prompt_overrides)
             self._record_metrics(retrieval, response)
 
             self._uow.get(AbstractMessageRepository).create(  # type: ignore[type-abstract]
@@ -218,6 +251,7 @@ class AnswerQuestion:
     def _retrieve(
         self,
         embedding: list[float],
+        config: RetrievalConfig,
         query: str | None = None,
         knowledge_base_id: uuid.UUID | None = None,
         metadata_filters: dict[str, str] | None = None,
@@ -226,6 +260,7 @@ class AnswerQuestion:
 
         Args:
             embedding: Query vector to search against.
+            config: Retrieval parameters controlling filtering and token budget.
             query: Raw query text forwarded to the retrieval service for
                 hybrid search implementations.
             knowledge_base_id: If set, only return chunks belonging to this
@@ -239,24 +274,32 @@ class AnswerQuestion:
         with self._instrumentation.span("retrieval.retrieve"):
             return self._retrieval_service.retrieve(
                 embedding,
+                config=config,
                 query=query,
                 knowledge_base_id=knowledge_base_id,
                 metadata_filters=metadata_filters,
             )
 
     def _generate(
-        self, messages: list[ChatMessage], retrieval: RetrievalResult
+        self,
+        messages: list[ChatMessage],
+        retrieval: RetrievalResult,
+        prompt_overrides: PromptOverrides,
     ) -> ChatResponse:
         """Build the prompt, call the LLM, and record generation latency.
 
         Args:
             messages: Full message history including the current user turn.
             retrieval: Retrieval result used to assemble the RAG context.
+            prompt_overrides: Per-call prompt string overrides applied on top of
+                the builder's configured defaults.
 
         Returns:
             ChatResponse with the assistant reply and token usage.
         """
-        prompt = self._prompt_builder.build(messages, retrieval.context)
+        prompt = self._prompt_builder.build(
+            messages, retrieval.context, prompt_overrides
+        )
         with self._instrumentation.span("llm.generate"):
             return self._chat_model.generate(prompt, tool_registry=self._tool_registry)
 

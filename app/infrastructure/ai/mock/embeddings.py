@@ -2,7 +2,7 @@ from app.application.support.ports.embedding_model import EmbeddingModel
 
 
 class MockEmbeddingModel(EmbeddingModel):
-    """Stub embedding model that returns a zero vector without making API calls.
+    """Stub embedding model that returns a unit vector without making API calls.
 
     Use in tests to avoid real provider calls and keep the suite deterministic.
     Pass custom dimensions to match the expected vector size.
@@ -19,12 +19,15 @@ class MockEmbeddingModel(EmbeddingModel):
         return self._model_name
 
     def embed(self, text: str) -> list[float]:
-        """Return a zero vector of the configured dimensions.
+        """Return a unit vector of the configured dimensions.
+
+        The first element is 1.0 and the rest are 0.0, ensuring cosine distance
+        is well-defined (0.0 against itself) and passes typical min_score filters.
 
         Args:
             text: Ignored.
 
         Returns:
-            A list of zeros with length equal to the configured dimensions.
+            A unit vector with length equal to the configured dimensions.
         """
-        return [0.0] * self._dimensions
+        return [1.0] + [0.0] * (self._dimensions - 1)

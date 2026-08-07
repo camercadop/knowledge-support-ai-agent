@@ -20,7 +20,7 @@ This sub-package contains everything belonging to the support domain: models, po
 1. Sanitize the user message to neutralize prompt injection attempts
 2. Rewrite the sanitized query using the QueryRewriter (if enabled)
 3. Embed the rewritten query into a query vector
-4. Retrieve relevant knowledge chunks via semantic or hybrid search, applying deduplication, max-chunks cap, and token budget
+4. Retrieve relevant knowledge chunks via semantic or hybrid search, building a `RetrievalConfig` from the resolved settings and applying deduplication, max-chunks cap, and token budget
 5. Resolve the contact by phone, creating one if it doesn't exist
 6. Resolve the active conversation for that contact, creating one if needed
 7. Load the conversation's message history
@@ -43,7 +43,7 @@ sequenceDiagram
     Rewrite-->>UC: rewritten_query
     UC->>Embed: embed(rewritten_query)
     Embed-->>UC: query_vector
-    UC->>RS: retrieve(query_vector, query)
+    UC->>RS: retrieve(query_vector, config, query)
     RS->>VS: search(query_vector, top_k, min_score, metadata_filters, params)
     VS-->>RS: SearchResult list (with document_title, source)
     RS->>RS: deduplicate by chunk text

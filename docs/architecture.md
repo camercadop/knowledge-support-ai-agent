@@ -181,6 +181,7 @@ app/
         middleware/       # ASGI middleware
         observability/    # OTel instrumentation
             definitions/  # Instrumentation config constants grouped by domain
+        core/             # Cross-cutting infrastructure utilities
         routers/          # Reusable router utilities
         security/         # Infrastructure-layer security adapters
         vectorstores/

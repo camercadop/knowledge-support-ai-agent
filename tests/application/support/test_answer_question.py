@@ -68,11 +68,6 @@ def _make_use_case(
     retrieval_service = ChunkRetriever(
         vector_store=vector_store,
         strategy=VectorSearchStrategy(settings),
-        top_k=5,
-        min_score=None,
-        max_chunks=5,
-        max_context_tokens=2000,
-        encoding_name="cl100k_base",
     )
     return AnswerQuestion(
         uow=uow,
@@ -363,3 +358,33 @@ def test_query_rewriter_is_not_called_when_none(
     )
     messages = uow.get(AbstractMessageRepository).list_by_conversation(conversation.id)
     assert messages[0].content == "hello"
+
+
+def test_prompt_builder_receives_resolved_prompt_overrides(
+    uow: SqlAlchemyUnitOfWork, vector_store: FakeVectorStore
+) -> None:
+    """AnswerQuestion passes resolved prompt strings as PromptOverrides to build()."""
+    prompt_builder = MagicMock()
+    prompt_builder.build.return_value = [
+        ChatMessage(role=Role.SYSTEM, content="system"),
+        ChatMessage(role=Role.USER, content="Hi"),
+    ]
+    retrieval_service = ChunkRetriever(
+        vector_store=vector_store,
+        strategy=VectorSearchStrategy(settings),
+    )
+    use_case = AnswerQuestion(
+        uow=uow,
+        event_publisher=InMemoryEventBus(),
+        chat_model=MockChatModel(reply="hello"),
+        embedding_model=MockEmbeddingModel(),
+        retrieval_service=retrieval_service,
+        prompt_builder=prompt_builder,
+        instrumentation=NullInstrumentation(),
+        message_sanitizer=RegexMessageSanitizer(patterns=[]),
+    )
+    use_case.handle(_PHONE, "Hi")
+    _, _, overrides = prompt_builder.build.call_args.args
+    assert overrides["system_instructions"] == settings.prompts_system_instructions
+    assert overrides["grounded_instructions"] == settings.prompts_grounded_instructions
+    assert overrides["no_context_instructions"] == settings.prompts_no_context_instructions

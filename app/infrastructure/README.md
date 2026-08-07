@@ -4,6 +4,7 @@ This package contains adapters for every external system the application depends
 
 ## Sub-packages
 
+- `core/` — cross-cutting infrastructure utilities
 - `database/` — SQLAlchemy engine, session factory, ORM models, repositories, and migrations
 - `ai/` — chat and embedding provider adapters
 - `vectorstores/` — vector store implementations (pgvector)

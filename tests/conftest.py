@@ -7,6 +7,7 @@ from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session
 
 from app.infrastructure.database.sqlalchemy.postgresql.base import Base
+import app.infrastructure.database.sqlalchemy.postgresql.models  # noqa: F401
 
 _TEST_DATABASE_URL = os.getenv(
     "TEST_DATABASE_URL",

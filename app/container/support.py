@@ -136,18 +136,11 @@ class SupportContainer(BaseContainer):
         retrieval_service = ChunkRetriever(
             vector_store=PgVectorStore(db, self._search_strategy),
             strategy=self._search_strategy,
-            top_k=settings.retrieval_top_k,
-            min_score=settings.retrieval_min_score,
-            max_chunks=settings.retrieval_max_chunks,
-            max_context_tokens=settings.retrieval_max_context_tokens,
-            encoding_name=settings.retrieval_encoding,
         )
         event_bus = InMemoryEventBus()
         event_bus.subscribe(
             QuestionAnswered,
-            RagInteractionLogHandler(
-                RecordRagInteraction(SqlAlchemyUnitOfWork(db))
-            ),
+            RagInteractionLogHandler(RecordRagInteraction(SqlAlchemyUnitOfWork(db))),
         )
         return AnswerQuestion(
             uow=SqlAlchemyUnitOfWork(db),

@@ -1,7 +1,7 @@
 from typing import TypedDict
 
 from app.application.support.ports.chat_model import ChatMessage, Role
-from app.application.support.ports.prompt_builder import PromptBuilder
+from app.application.support.ports.prompt_builder import PromptBuilder, PromptOverrides
 
 
 class PromptConfig(TypedDict):
@@ -38,6 +38,7 @@ class DefaultPromptBuilder(PromptBuilder):
         self,
         messages: list[ChatMessage],
         context: str | None = None,
+        overrides: PromptOverrides | None = None,
     ) -> list[ChatMessage]:
         """Prepend a system message and return the full ordered message list.
 
@@ -46,19 +47,28 @@ class DefaultPromptBuilder(PromptBuilder):
             context: Optional retrieved knowledge chunks. When provided, the system
                 message instructs the model to answer only from those excerpts.
                 When None, the model is instructed to acknowledge the lack of context.
+            overrides: Optional per-call prompt string overrides. Any key present
+                takes precedence over the builder's configured default.
 
         Returns:
             Full ordered list starting with the system ChatMessage.
         """
+        system_instructions = (
+            overrides.get("system_instructions") if overrides else None
+        ) or self._config["system_instructions"]
+        grounded_instructions = (
+            overrides.get("grounded_instructions") if overrides else None
+        ) or self._config["grounded_instructions"]
+        no_context_instructions = (
+            overrides.get("no_context_instructions") if overrides else None
+        ) or self._config["no_context_instructions"]
+
         if context:
             system_content = (
-                f"{self._config['system_instructions']}\n\n{self._config['grounded_instructions']}"
+                f"{system_instructions}\n\n{grounded_instructions}"
                 f"\n\nKnowledge base excerpts:\n{context}"
             )
         else:
-            system_content = (
-                f"{self._config['system_instructions']}\n\n"
-                f"{self._config['no_context_instructions']}"
-            )
+            system_content = f"{system_instructions}\n\n{no_context_instructions}"
 
         return [ChatMessage(role=Role.SYSTEM, content=system_content), *messages]
