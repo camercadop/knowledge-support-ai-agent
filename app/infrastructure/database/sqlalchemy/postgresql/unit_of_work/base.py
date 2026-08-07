@@ -41,7 +41,7 @@ class SqlAlchemyUnitOfWork(UnitOfWork):
         """
         if repo_type not in self._cache:
             import app.infrastructure.database.sqlalchemy.postgresql.repositories  # noqa: F401
-            from app.infrastructure.database.sqlalchemy.postgresql.repositories.registry import (
+            from app.infrastructure.database.sqlalchemy.postgresql.repositories.registry import (  # noqa: E501
                 get_repository,
             )
 

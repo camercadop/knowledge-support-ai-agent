@@ -31,10 +31,28 @@ class KnowledgeBaseUpdateRequest(BaseModel):
         return v.replace("\n", " ").replace("\r", " ")
 
 
-
 class KnowledgeBaseResponse(BaseModel):
     """Response returned after a knowledge base is created or retrieved."""
 
     id: uuid.UUID
     name: str
     description: str | None
+
+
+class KnowledgeBaseConfigEntryRequest(BaseModel):
+    """Payload for upserting a single knowledge base configuration entry."""
+
+    key: str = Field(min_length=1, max_length=255)
+    value: str = Field(min_length=1, max_length=255)
+
+    @field_validator("key", "value")
+    @classmethod
+    def sanitize(cls, v: str) -> str:
+        """Strip newline characters to prevent log injection."""
+        return v.replace("\n", " ").replace("\r", " ")
+
+
+class KnowledgeBaseConfigResponse(BaseModel):
+    """Response containing all configuration entries for a knowledge base."""
+
+    config: dict[str, str]
